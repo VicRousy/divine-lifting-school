@@ -29,7 +29,7 @@ function App() {
   return (
     <div className="admin-layout">
       <aside className="sidebar">
-        <div className="sidebar-logo">DIVINE LIFTING</div>
+        <div className="sidebar-logo">DIVINE LIFTING SCHOOL</div>
         
         <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} 
              onClick={() => setActiveTab('overview')}>
