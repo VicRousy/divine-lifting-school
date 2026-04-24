@@ -61,6 +61,14 @@ function StudentList({ refreshTrigger, onUpdate }) {
     return fullName.includes(searchTerm.toLowerCase());
   })
 
+  // Shared inline style for inputs and select to force dark theme
+  const forceDarkStyle = {
+    backgroundColor: '#1e293b',
+    color: '#f8fafc',
+    border: '1px solid #334155',
+    width: '100%'
+  };
+
   return (
     <div className="admin-table-container">
       <input 
@@ -92,6 +100,7 @@ function StudentList({ refreshTrigger, onUpdate }) {
         </tbody>
       </table>
 
+      {/* EDIT MODAL */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: 'left' }}>
@@ -99,30 +108,72 @@ function StudentList({ refreshTrigger, onUpdate }) {
             
             <div className="form-group">
               <label className="text-dim">First Name</label>
-              <input className="counter" value={editData.first_name} onChange={(e) => setEditData({...editData, first_name: e.target.value})} />
+              <input 
+                className="counter" 
+                style={forceDarkStyle}
+                value={editData.first_name} 
+                onChange={(e) => setEditData({...editData, first_name: e.target.value})} 
+              />
             </div>
             
             <div className="form-group">
               <label className="text-dim">Middle Name</label>
-              <input className="counter" value={editData.middle_name} onChange={(e) => setEditData({...editData, middle_name: e.target.value})} />
+              <input 
+                className="counter" 
+                style={forceDarkStyle}
+                value={editData.middle_name} 
+                onChange={(e) => setEditData({...editData, middle_name: e.target.value})} 
+              />
             </div>
             
             <div className="form-group">
               <label className="text-dim">Last Name</label>
-              <input className="counter" value={editData.last_name} onChange={(e) => setEditData({...editData, last_name: e.target.value})} />
+              <input 
+                className="counter" 
+                style={forceDarkStyle}
+                value={editData.last_name} 
+                onChange={(e) => setEditData({...editData, last_name: e.target.value})} 
+              />
             </div>
             
             <div className="form-group">
               <label className="text-dim">Promote to Class</label>
-              <select className="counter" style={{ color: 'white' }} value={editData.class_id} onChange={(e) => setEditData({...editData, class_id: e.target.value})}>
-                <option value="">-- Select Class --</option>
-                {classes.map(c => <option key={c.id} value={c.id}>{c.class_name}</option>)}
+              <select 
+                className="counter" 
+                style={forceDarkStyle} 
+                value={editData.class_id} 
+                onChange={(e) => setEditData({...editData, class_id: e.target.value})}
+              >
+                <option value="" style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>-- Select Class --</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id} style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>
+                    {c.class_name}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="action-group" style={{ marginTop: '20px' }}>
               <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowEditModal(false)}>Cancel</button>
               <button className="btn-delete" style={{ flex: 1, background: '#38bdf8' }} onClick={handleUpdate}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MODAL (Keep as is, but ensure it uses consistent styles) */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 style={{ color: '#ef4444' }}>Delete Student?</h3>
+            <p className="text-dim">This action cannot be undone.</p>
+            <div className="action-group" style={{ marginTop: '20px' }}>
+              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowDeleteModal(false)}>Back</button>
+              <button className="btn-delete" style={{ flex: 1 }} onClick={async () => {
+                await supabase.from('students').delete().eq('id', selectedStudent.id);
+                fetchStudents();
+                setShowDeleteModal(false);
+              }}>Delete Forever</button>
             </div>
           </div>
         </div>

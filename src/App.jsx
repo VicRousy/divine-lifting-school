@@ -8,26 +8,25 @@ import StudentList from './components/StudentList'
 import TeacherList from './components/TeacherList'
 import ClassList from './components/ClassList'
 import SubjectList from './components/SubjectList'
+import DashboardStats from './components/DashboardStats'
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [stats, setStats] = useState({ teachers: 0, classes: 0, students: 0 })
+  // This trigger tells the Stats and Lists to refresh their data
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  const fetchCounts = async () => {
-    const { count: tCount } = await supabase.from('teachers').select('*', { count: 'exact', head: true })
-    const { count: cCount } = await supabase.from('classes').select('*', { count: 'exact', head: true })
-    const { count: sCount } = await supabase.from('students').select('*', { count: 'exact', head: true })
-    
-    setStats({
-      teachers: tCount || 0,
-      classes: cCount || 0,
-      students: sCount || 0
-    })
+  // Helper to refresh the entire dashboard data
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1)
   }
 
-  useEffect(() => {
-    fetchCounts()
-  }, [])
+  // Helper to format tab names for the header (e.g. "student-list" -> "Student Master List")
+  const getHeaderTitle = () => {
+    if (activeTab === 'student-list') return 'Student Master List'
+    if (activeTab === 'teacher-list') return 'Staff Directory'
+    if (activeTab === 'class-list') return 'Classroom Manager'
+    return activeTab.replace('-', ' ').toUpperCase()
+  }
 
   return (
     <div className="admin-layout">
@@ -36,11 +35,11 @@ function App() {
         
         <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} 
              onClick={() => setActiveTab('overview')}>
-          Dashboard Home
+          🏠 Dashboard Home
         </div>
 
         <hr style={{ borderColor: '#334155', margin: '10px 0' }} />
-        <small style={{ color: '#64748b', marginLeft: '15px' }}>REGISTRATION</small>
+        <small style={{ color: '#64748b', marginLeft: '15px', fontSize: '0.7rem' }}>REGISTRATION</small>
 
         <div className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} 
              onClick={() => setActiveTab('teachers')}>
@@ -58,7 +57,7 @@ function App() {
         </div>
 
         <hr style={{ borderColor: '#334155', margin: '10px 0' }} />
-        <small style={{ color: '#64748b', marginLeft: '15px' }}>MANAGEMENT</small>
+        <small style={{ color: '#64748b', marginLeft: '15px', fontSize: '0.7rem' }}>MANAGEMENT</small>
 
         <div className={`nav-item ${activeTab === 'student-list' ? 'active' : ''}`} 
              onClick={() => setActiveTab('student-list')}>
@@ -82,20 +81,8 @@ function App() {
       </aside>
 
       <main className="main-content">
-        <div className="stats-grid">
-          <div className="stat-box">
-            <h4>Total Teachers</h4>
-            <p>{stats.teachers.toString().padStart(2, '0')}</p>
-          </div>
-          <div className="stat-box">
-            <h4>Active Classes</h4>
-            <p>{stats.classes.toString().padStart(2, '0')}</p>
-          </div>
-          <div className="stat-box">
-            <h4>Registered Students</h4>
-            <p>{stats.students.toString().padStart(2, '0')}</p>
-          </div>
-        </div>
+        {/* The new Stats component handles all the counting now */}
+        <DashboardStats refreshTrigger={refreshTrigger} />
 
         <div className="dashboard-card">
           {activeTab === 'overview' ? (
@@ -103,21 +90,30 @@ function App() {
               <h2 style={{marginTop: 0}}>Welcome, Administrator</h2>
               <p style={{color: '#94a3b8'}}>School overview and recent system updates.</p>
               <hr style={{borderColor: '#334155', margin: '20px 0'}} />
-              <RecentActivity />
+              <RecentActivity refreshTrigger={refreshTrigger} />
             </div>
           ) : (
             <>
-              <h2 style={{marginTop: 0}}>{activeTab.replace('-', ' ').toUpperCase()}</h2>
+              <h2 style={{marginTop: 0, color: '#f8fafc'}}>{getHeaderTitle()}</h2>
+              
               {/* --- REGISTRATION FORMS --- */}
-              {activeTab === 'teachers' && <AddTeacher onAdd={fetchCounts} />}
-              {activeTab === 'classes' && <AddClass onAdd={fetchCounts} />}
-              {activeTab === 'students' && <AddStudent onAdd={fetchCounts} />}
+              {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} />}
+              {activeTab === 'classes' && <AddClass onAdd={refreshData} />}
+              {activeTab === 'students' && <AddStudent onAdd={refreshData} />}
 
               {/* --- MASTER LISTS --- */}
-              {activeTab === 'student-list' && <StudentList refreshTrigger={stats.students} onUpdate={fetchCounts} />}
-              {activeTab === 'teacher-list' && <TeacherList refreshTrigger={stats.teachers} onUpdate={fetchCounts} />}
-              {activeTab === 'class-list' && <ClassList refreshTrigger={stats.classes} onUpdate={fetchCounts} />}
-              {activeTab === 'subjects' && <SubjectList refreshTrigger={stats.students} />}
+              {activeTab === 'student-list' && (
+                <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} />
+              )}
+              {activeTab === 'teacher-list' && (
+                <TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} />
+              )}
+              {activeTab === 'class-list' && (
+                <ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} />
+              )}
+              {activeTab === 'subjects' && (
+                <SubjectList refreshTrigger={refreshTrigger} />
+              )}
             </>
           )}
         </div>

@@ -11,13 +11,13 @@
 
 .counter {
   font-size: 16px;
-  padding: 10px 12px; /* Adjusted for better feel in forms */
+  padding: 10px 12px;
   border-radius: 8px;
   color: var(--accent);
   background: var(--accent-bg);
   border: 2px solid transparent;
   transition: all 0.3s ease;
-  margin-bottom: 5px; /* Handled by form-group now */
+  margin-bottom: 5px;
 
   &:hover {
     border-color: var(--accent-border);
@@ -105,19 +105,10 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Column 1: Primary Info (Name) */
 .admin-table th:nth-child(1), 
-.admin-table td:nth-child(1) {
-  width: 45%; 
-}
-
-/* Column 2: Secondary Info (Class/Status) */
+.admin-table td:nth-child(1) { width: 45%; }
 .admin-table th:nth-child(2), 
-.admin-table td:nth-child(2) {
-  width: 30%; 
-}
-
-/* Column 3: Action Buttons */
+.admin-table td:nth-child(2) { width: 30%; }
 .admin-table th:nth-child(3), 
 .admin-table td:nth-child(3) {
   width: 25%;
@@ -139,7 +130,6 @@
   font-weight: 500;
   white-space: nowrap;
 }
-
 .btn-delete:hover { transform: scale(1.05); }
 
 .btn-cancel {
@@ -165,7 +155,7 @@
   padding: 30px;
   border-radius: 12px;
   border: 1px solid #334155;
-  width: 400px; /* Slightly wider for form inputs */
+  width: 400px;
 }
 
 /* --- SEARCH BAR & INPUTS --- */
@@ -178,7 +168,6 @@
   display: block;          
 }
 
-/* --- FORM GROUPING (For Modals/Registration) --- */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -187,10 +176,49 @@
   text-align: left;
 }
 
-/* --- ACTION BUTTONS (The Fix for Joint Buttons) --- */
 .action-group {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px; /* This creates the space between the buttons */
+  gap: 12px;
+}
+
+/* --- AGGRESSIVE THEME OVERRIDE FOR INPUTS/SELECTS --- */
+/* This forces the dark theme and removes the browser's "white blanket" */
+input, select, option {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* Target Modal Selects specifically to override OS-level white backgrounds */
+.modal-content select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  /* Add a custom dropdown arrow since appearance:none removes it */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 1em;
+  padding-right: 40px !important;
+}
+
+/* This forces the dropdown list items to stay dark */
+select option {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+input:focus, select:focus {
+  outline: 2px solid var(--accent) !important;
+  background-color: #0f172a !important;
+}
+
+/* Fix for invisible placeholder text */
+::placeholder {
+  color: #64748b;
+  opacity: 1;
 }
