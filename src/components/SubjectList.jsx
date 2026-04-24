@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 
-function SubjectList() {
+function SubjectList({ refreshTrigger }) {
   const [subjects, setSubjects] = useState([])
   const [newSubject, setNewSubject] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [targetId, setTargetId] = useState(null)
 
   const fetchSubjects = async () => {
-    const { data } = await supabase.from('subjects').select('*')
+    const { data } = await supabase.from('subjects').select('*').order('subject_name', { ascending: true })
     setSubjects(data || [])
   }
 
@@ -35,26 +36,43 @@ function SubjectList() {
     fetchSubjects()
   }
 
-  useEffect(() => { fetchSubjects() }, [])
+  useEffect(() => { fetchSubjects() }, [refreshTrigger])
+
+  const filteredSubjects = subjects.filter(s => 
+    s.subject_name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="admin-table-container">
-      {/* ADD SUBJECT SECTION - Styled to match Staff/Class forms */}
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '30px', maxWidth: '600px' }}>
+      {/* HEADER SECTION: Search + Add */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
+        
+        {/* Search bar matching other lists */}
         <input 
-          className="counter" 
-          value={newSubject} 
-          onChange={(e) => setNewSubject(e.target.value)}
-          placeholder="Enter Subject Name (e.g. Mathematics)"
-          style={{ flex: 1, background: '#1e293b', padding: '12px' }}
+          type="text" 
+          className="counter search-input"
+          placeholder="🔍 Filter subjects..." 
+          style={{ margin: 0, maxWidth: '300px' }}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button 
-          className="btn-delete" 
-          onClick={addSubject} 
-          style={{ background: '#38bdf8', padding: '0 30px', height: '48px' }}
-        >
-          Add
-        </button>
+
+        {/* Inline Add Subject Form */}
+        <div style={{ display: 'flex', gap: '10px', flex: 1, justifyContent: 'flex-end', maxWidth: '500px' }}>
+          <input 
+            className="counter" 
+            value={newSubject} 
+            onChange={(e) => setNewSubject(e.target.value)}
+            placeholder="New Subject Name..."
+            style={{ flex: 1, background: '#f5f5f5', border: '1px solid #334155' }}
+          />
+          <button 
+            className="btn-delete" 
+            onClick={addSubject} 
+            style={{ background: '#38bdf8', padding: '0 25px' }}
+          >
+            Add
+          </button>
+        </div>
       </div>
 
       <table className="admin-table">
@@ -65,11 +83,15 @@ function SubjectList() {
           </tr>
         </thead>
         <tbody>
-          {subjects.map(s => (
+          {filteredSubjects.map(s => (
             <tr key={s.id}>
-              <td>{s.subject_name}</td>
+              <td style={{ fontSize: '1.1rem', fontWeight: '500' }}>{s.subject_name}</td>
               <td style={{ textAlign: 'right' }}>
-                <button className="btn-delete" onClick={() => handleDeleteClick(s.id)}>
+                <button 
+                  className="btn-delete" 
+                  style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                  onClick={() => handleDeleteClick(s.id)}
+                >
                   Delete
                 </button>
               </td>
@@ -78,14 +100,15 @@ function SubjectList() {
         </tbody>
       </table>
 
+      {/* CONFIRMATION MODAL */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 style={{ color: '#f8fafc' }}>Remove Subject?</h3>
-            <p className="text-dim" style={{ margin: '10px 0 20px' }}>This action cannot be undone.</p>
+            <p className="text-dim" style={{ margin: '10px 0 20px' }}>Deleting this subject might affect reports and academic records.</p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn-delete" style={{ flex: 1 }} onClick={confirmDelete}>Confirm</button>
+              <button className="btn-delete" style={{ flex: 1 }} onClick={confirmDelete}>Confirm Delete</button>
             </div>
           </div>
         </div>
