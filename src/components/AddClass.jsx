@@ -1,63 +1,64 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
 function AddClass(props) {
   const [className, setClassName] = useState('')
-  const [selectedTeacher, setSelectedTeacher] = useState('')
-  const [teachers, setTeachers] = useState([])
   const [msg, setMsg] = useState('')
 
-  useEffect(() => {
-    // We need to get teachers so we can link one to this class
-    async function getTeachers() {
-      const { data } = await supabase.from('teachers').select('id, first_name, last_name')
-      setTeachers(data || [])
-    }
-    getTeachers()
-  }, [])
-
-  const handleSaveClass = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    if (!selectedTeacher) return setMsg('Please select a teacher')
+    setMsg('Creating class...')
 
     const { error } = await supabase
       .from('classes')
       .insert([{ 
-        class_name: className, 
-        class_teacher_id: selectedTeacher 
+        class_name: className 
       }])
 
-    if (error) setMsg(error.message)
-    else {
-      setMsg(`Class "${className}" created!`)
-			if (props.onAdd) props.onAdd();
+    if (error) {
+      setMsg('Error: ' + error.message)
+    } else {
+      setMsg('Class "' + className + '" added successfully!')
       setClassName('')
+      
+      // Refreshes the list in Classroom Manager automatically
+      if (props.onAdd) props.onAdd();
     }
   }
 
   return (
-    <div style={{ border: '1px solid #444', padding: '20px', marginTop: '20px' }}>
-      <h3>Create a New Class</h3>
-      <form onSubmit={handleSaveClass}>
-        <input 
-          placeholder="Class Name (e.g. Primary 1)" 
-          value={className} 
-          onChange={(e) => setClassName(e.target.value)} 
-          required 
-        />
+    <div className="admin-table-container" style={{ maxWidth: '500px' }}>
+      <div className="modal-content" style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none' }}>
+        <h3 style={{ color: '#f8fafc', marginBottom: '20px' }}>Register New Class</h3>
         
-        <select onChange={(e) => setSelectedTeacher(e.target.value)} required>
-          <option value="">-- Select Teacher --</option>
-          {teachers.map(t => (
-            <option key={t.id} value={t.id}>
-              {t.first_name} {t.last_name}
-            </option>
-          ))}
-        </select>
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label className="text-dim" style={{ fontSize: '0.8rem' }}>Class Name</label>
+            <input 
+              className="counter" 
+              style={{ background: '#1e293b', padding: '12px', width: '100%' }}
+              placeholder="e.g. Basic 5" 
+              value={className} 
+              onChange={(e) => setClassName(e.target.value)} 
+              required 
+            />
+          </div>
 
-        <button type="submit">Create Class</button>
-      </form>
-      <p>{msg}</p>
+          <button 
+            type="submit" 
+            className="btn-delete" 
+            style={{ background: '#38bdf8', marginTop: '10px', height: '45px' }}
+          >
+            Save Class
+          </button>
+        </form>
+
+        {msg && (
+          <p className="text-accent" style={{ marginTop: '15px', fontSize: '0.9rem' }}>
+            {msg}
+          </p>
+        )}
+      </div>
     </div>
   )
 }

@@ -4,7 +4,10 @@ import AddTeacher from './components/AddTeacher'
 import AddClass from './components/AddClass'
 import AddStudent from './components/AddStudent'
 import RecentActivity from './components/RecentActivity'
-import StudentList from './components/StudentList' // 1. Import the new list component
+import StudentList from './components/StudentList'
+import TeacherList from './components/TeacherList'
+import ClassList from './components/ClassList'
+import SubjectList from './components/SubjectList'
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -36,25 +39,45 @@ function App() {
           Dashboard Home
         </div>
 
-        {/* 2. Added the Master List Tab */}
+        <hr style={{ borderColor: '#334155', margin: '10px 0' }} />
+        <small style={{ color: '#64748b', marginLeft: '15px' }}>REGISTRATION</small>
+
+        <div className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} 
+             onClick={() => setActiveTab('teachers')}>
+          ➕ Add Teacher
+        </div>
+        
+        <div className={`nav-item ${activeTab === 'classes' ? 'active' : ''}`} 
+             onClick={() => setActiveTab('classes')}>
+          ➕ Add Classroom
+        </div>
+        
+        <div className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} 
+             onClick={() => setActiveTab('students')}>
+          ➕ Admit Student
+        </div>
+
+        <hr style={{ borderColor: '#334155', margin: '10px 0' }} />
+        <small style={{ color: '#64748b', marginLeft: '15px' }}>MANAGEMENT</small>
+
         <div className={`nav-item ${activeTab === 'student-list' ? 'active' : ''}`} 
              onClick={() => setActiveTab('student-list')}>
           📋 Student Master List
         </div>
 
-        <div className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} 
-             onClick={() => setActiveTab('teachers')}>
-          Staff Management
+        <div className={`nav-item ${activeTab === 'teacher-list' ? 'active' : ''}`} 
+             onClick={() => setActiveTab('teacher-list')}>
+          👩‍🏫 Staff Directory
         </div>
-        
-        <div className={`nav-item ${activeTab === 'classes' ? 'active' : ''}`} 
-             onClick={() => setActiveTab('classes')}>
-          Classrooms
+
+        <div className={`nav-item ${activeTab === 'class-list' ? 'active' : ''}`} 
+             onClick={() => setActiveTab('class-list')}>
+          🏫 Classroom Manager
         </div>
-        
-        <div className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} 
-             onClick={() => setActiveTab('students')}>
-          Student Registry
+
+        <div className={`nav-item ${activeTab === 'subjects' ? 'active' : ''}`} 
+             onClick={() => setActiveTab('subjects')}>
+          📚 Subject Master
         </div>
       </aside>
 
@@ -78,18 +101,23 @@ function App() {
           {activeTab === 'overview' ? (
             <div>
               <h2 style={{marginTop: 0}}>Welcome, Administrator</h2>
-              <p style={{color: '#94a3b8'}}>Here is a summary of the school's current status.</p>
+              <p style={{color: '#94a3b8'}}>School overview and recent system updates.</p>
               <hr style={{borderColor: '#334155', margin: '20px 0'}} />
               <RecentActivity />
             </div>
           ) : (
             <>
               <h2 style={{marginTop: 0}}>{activeTab.replace('-', ' ').toUpperCase()}</h2>
-              {/* 3. Logic to show the Master List */}
-              {activeTab === 'student-list' && <StudentList refreshTrigger={stats.students} onUpdate={fetchCounts} />}
+              {/* --- REGISTRATION FORMS --- */}
               {activeTab === 'teachers' && <AddTeacher onAdd={fetchCounts} />}
               {activeTab === 'classes' && <AddClass onAdd={fetchCounts} />}
               {activeTab === 'students' && <AddStudent onAdd={fetchCounts} />}
+
+              {/* --- MASTER LISTS --- */}
+              {activeTab === 'student-list' && <StudentList refreshTrigger={stats.students} onUpdate={fetchCounts} />}
+              {activeTab === 'teacher-list' && <TeacherList refreshTrigger={stats.teachers} onUpdate={fetchCounts} />}
+              {activeTab === 'class-list' && <ClassList refreshTrigger={stats.classes} onUpdate={fetchCounts} />}
+              {activeTab === 'subjects' && <SubjectList refreshTrigger={stats.students} />}
             </>
           )}
         </div>
