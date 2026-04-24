@@ -11,13 +11,13 @@
 
 .counter {
   font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
+  padding: 10px 12px; /* Adjusted for better feel in forms */
+  border-radius: 8px;
   color: var(--accent);
   background: var(--accent-bg);
   border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+  transition: all 0.3s ease;
+  margin-bottom: 5px; /* Handled by form-group now */
 
   &:hover {
     border-color: var(--accent-border);
@@ -83,7 +83,7 @@
   @media (max-width: 1024px) { flex-direction: column; text-align: center; }
 }
 
-/* --- TABLE STYLES (THE FIX FOR SPACING) --- */
+/* --- TABLE STYLES --- */
 .admin-table-container {
   margin-top: 20px;
   width: 100% !important;   
@@ -91,11 +91,10 @@
 }
 
 .admin-table {
-  width: 100% !important;   /* Force table to fill the whole card */
+  width: 100% !important;
   min-width: 100%;
   border-collapse: collapse;
   color: #f8fafc;
-  /* table-layout: fixed is what allows us to force column widths */
   table-layout: fixed;      
 }
 
@@ -106,26 +105,22 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* COLUMN WIDTHS: 
-   This is what creates the big space between ClassName, Status, and Action.
-*/
-
-/* Column 1: Class Name or Staff Name */
+/* Column 1: Primary Info (Name) */
 .admin-table th:nth-child(1), 
 .admin-table td:nth-child(1) {
   width: 45%; 
 }
 
-/* Column 2: Status or Middle Name */
+/* Column 2: Secondary Info (Class/Status) */
 .admin-table th:nth-child(2), 
 .admin-table td:nth-child(2) {
-  width: 35%; 
+  width: 30%; 
 }
 
-/* Column 3: Action Button */
+/* Column 3: Action Buttons */
 .admin-table th:nth-child(3), 
 .admin-table td:nth-child(3) {
-  width: 20%;
+  width: 25%;
   text-align: right;
   padding-right: 20px;
 }
@@ -142,9 +137,19 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .btn-delete:hover { transform: scale(1.05); }
+
+.btn-cancel {
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
 /* --- MODAL STYLES --- */
 .modal-overlay {
@@ -160,6 +165,32 @@
   padding: 30px;
   border-radius: 12px;
   border: 1px solid #334155;
-  text-align: center;
-  width: 350px;
+  width: 400px; /* Slightly wider for form inputs */
+}
+
+/* --- SEARCH BAR & INPUTS --- */
+.search-input {
+  width: 100%;
+  max-width: 400px;        
+  background: #1e293b;
+  padding: 12px;
+  margin-bottom: 25px;
+  display: block;          
+}
+
+/* --- FORM GROUPING (For Modals/Registration) --- */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+/* --- ACTION BUTTONS (The Fix for Joint Buttons) --- */
+.action-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px; /* This creates the space between the buttons */
 }
