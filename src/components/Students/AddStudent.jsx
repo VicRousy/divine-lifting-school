@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 
 function AddStudent(props) {
   const [fullName, setFullName] = useState('')
@@ -60,7 +60,7 @@ function AddStudent(props) {
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>Student Full Name</label>
             <input 
               className="counter" 
-              style={{ background: '#1e293b', padding: '12px', width: '100%' }}
+              style={{ background: '#1e293b', padding: '12px',color: 'white', width: '100%' }}
               placeholder="e.g. John Joe Doe" 
               value={fullName} 
               onChange={(e) => setFullName(e.target.value)} 

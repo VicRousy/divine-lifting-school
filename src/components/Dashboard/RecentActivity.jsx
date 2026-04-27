@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 
-function RecentActivity() {
+function RecentActivity({ refreshTrigger }) {
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -36,9 +36,10 @@ function RecentActivity() {
     }
   }
 
+  // Added refreshTrigger here so it updates when you add someone!
   useEffect(() => {
     fetchGlobalActivity()
-  }, [])
+  }, [refreshTrigger])
 
   // Simple "Time Ago" formatter
   const formatTime = (dateString) => {

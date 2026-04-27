@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 
 function AddTeacher(props) {
   const [firstName, setFirstName] = useState('')
@@ -45,7 +45,7 @@ function AddTeacher(props) {
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>First Name</label>
             <input 
               className="counter" /* Using your existing styled input feel */
-              style={{ background: '#1e293b', padding: '12px', width: '100%' }}
+              style={{ background: '#1e293b', padding: '12px',  color: 'white', width: '100%' }}
               placeholder="e.g. Favour" 
               value={firstName} 
               onChange={(e) => setFirstName(e.target.value)} 
@@ -57,7 +57,7 @@ function AddTeacher(props) {
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>Middle Name (Optional)</label>
             <input 
               className="counter"
-              style={{ background: '#1e293b', padding: '12px', width: '100%' }}
+              style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="e.g. Peace" 
               value={middleName} 
               onChange={(e) => setMiddleName(e.target.value)} 
@@ -68,7 +68,7 @@ function AddTeacher(props) {
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>Last Name</label>
             <input 
               className="counter"
-              style={{ background: '#1e293b', padding: '12px', width: '100%' }}
+              style={{ background: '#1e293b', padding: '12px',  color: 'white', width: '100%' }}
               placeholder="e.g. Peace" 
               value={lastName} 
               onChange={(e) => setLastName(e.target.value)} 

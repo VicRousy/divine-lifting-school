@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 
 function SubjectList({ refreshTrigger }) {
   const [subjects, setSubjects] = useState([])
@@ -63,7 +63,7 @@ function SubjectList({ refreshTrigger }) {
             value={newSubject} 
             onChange={(e) => setNewSubject(e.target.value)}
             placeholder="New Subject Name..."
-            style={{ flex: 1, background: '#f5f5f5', border: '1px solid #334155' }}
+            style={{ flex: 1, background: '#334155' , color: 'white', border: '1px solid #334155' }}
           />
           <button 
             className="btn-delete" 

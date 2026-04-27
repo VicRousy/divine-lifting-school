@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../../supabaseClient'
 
 function AddClass(props) {
   const [className, setClassName] = useState('')
@@ -35,7 +35,7 @@ function AddClass(props) {
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>Class Name</label>
             <input 
               className="counter" 
-              style={{ background: '#1e293b', width: '100%' }}
+              style={{ background: '#1e293b',color: 'white', width: '100%' }}
               placeholder="e.g. Basic 5" 
               value={className} 
               onChange={(e) => setClassName(e.target.value)} 
