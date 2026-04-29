@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
-function ScoreEntry() {
+function ScoreEntry({ showToast }) { // Destructured showToast from props
   const [classes, setClasses] = useState([])
   const [subjects, setSubjects] = useState([])
   const [students, setStudents] = useState([])
@@ -10,7 +10,7 @@ function ScoreEntry() {
   const [selectedSubject, setSelectedSubject] = useState('')
   const [term, setTerm] = useState('First Term 2026')
   
-  const [scores, setScores] = useState({}) // Stores {student_id: {ca: 0, exam: 0}}
+  const [scores, setScores] = useState({}) 
   const [loading, setLoading] = useState(false)
 
   // Divine Lifting Custom Grading Scale
@@ -19,12 +19,11 @@ function ScoreEntry() {
     if (score >= 80) return { grade: 'A+', remark: 'Distinction', color: '#10b981' };
     if (score >= 70) return { grade: 'A1', remark: 'Excellent', color: '#34d399' };
     if (score >= 60) return { grade: 'B',  remark: 'Very Good', color: '#38bdf8' };
-    if (score >= 50) return { grade: 'C',  remark: 'Credit',    color: '#f59e0b' };
-    if (score >= 40) return { grade: 'D',  remark: 'Pass',      color: '#94a3b8' };
+    if (score >= 50) return { grade: 'C',  remark: 'Credit',     color: '#f59e0b' };
+    if (score >= 40) return { grade: 'D',  remark: 'Pass',       color: '#94a3b8' };
     return { grade: 'F', remark: 'Fail', color: '#ef4444' };
   };
 
-  // 1. Initial Setup: Get Classes and Subjects
   useEffect(() => {
     const setup = async () => {
       const { data: cls } = await supabase.from('classes').select('*')
@@ -35,7 +34,6 @@ function ScoreEntry() {
     setup()
   }, [])
 
-  // 2. Load Students when Class is selected
   useEffect(() => {
     if (selectedClass) {
       const fetchStudents = async () => {
@@ -62,11 +60,23 @@ function ScoreEntry() {
     }))
   }
 
-  // UPDATED: Fixed "Duplicate Key" and "non-DEFAULT" errors
   const saveAllScores = async () => {
     if (!selectedSubject || !selectedClass) {
-        alert("Please select both a Class and a Subject first!");
+        showToast("Please select both a Class and a Subject first!", "error");
         return;
+    }
+
+    // --- Validation Logic ---
+    let invalidEntry = false;
+    students.forEach(s => {
+      const ca = parseFloat(scores[s.id].ca || 0);
+      const exam = parseFloat(scores[s.id].exam || 0);
+      if (ca > 40 || exam > 60) invalidEntry = true;
+    });
+
+    if (invalidEntry) {
+      showToast("Validation Error: CA cannot exceed 40 and Exam cannot exceed 60.", "error");
+      return;
     }
 
     setLoading(true)
@@ -76,7 +86,6 @@ function ScoreEntry() {
       class_id: selectedClass,
       ca_score: parseFloat(scores[s.id].ca || 0),
       exam_score: parseFloat(scores[s.id].exam || 0),
-      // total_score is removed here because the database handles it automatically
       term: term,
       academic_year: '2025/2026'
     }))
@@ -89,36 +98,34 @@ function ScoreEntry() {
 
     setLoading(false)
     if (error) {
-        console.error(error)
-        alert("Error saving: " + error.message)
+        showToast("Error saving: " + error.message, "error")
     } else {
-        alert("Successfully saved scores for " + students.length + " students!")
+        showToast(`Successfully saved results for ${students.length} students!`, "success")
     }
   }
 
   return (
     <div className="admin-table-container">
-      <h2 style={{ color: '#f8fafc' }}>Academic Gradebook</h2>
+      <h2 style={{ color: '#f8fafc', marginBottom: '20px' }}>Academic Gradebook</h2>
       
-      {/* Filters */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '30px' }}>
         <div className="form-group">
-          <label className="text-dim">Class</label>
-          <select className="counter" onChange={(e) => setSelectedClass(e.target.value)} style={{width: '100%'}}>
+          <label className="text-dim" style={{fontSize: '0.8rem'}}>Class</label>
+          <select className="counter" onChange={(e) => setSelectedClass(e.target.value)} style={{width: '100%', background: '#1e293b', color: 'white'}}>
             <option value="">Select Class</option>
             {classes.map(c => <option key={c.id} value={c.id}>{c.class_name}</option>)}
           </select>
         </div>
         <div className="form-group">
-          <label className="text-dim">Subject</label>
-          <select className="counter" onChange={(e) => setSelectedSubject(e.target.value)} style={{width: '100%'}}>
+          <label className="text-dim" style={{fontSize: '0.8rem'}}>Subject</label>
+          <select className="counter" onChange={(e) => setSelectedSubject(e.target.value)} style={{width: '100%', background: '#1e293b', color: 'white'}}>
             <option value="">Select Subject</option>
             {subjects.map(s => <option key={s.id} value={s.id}>{s.subject_name}</option>)}
           </select>
         </div>
         <div className="form-group">
-          <label className="text-dim">Term</label>
-          <select className="counter" value={term} onChange={(e) => setTerm(e.target.value)} style={{width: '100%'}}>
+          <label className="text-dim" style={{fontSize: '0.8rem'}}>Term</label>
+          <select className="counter" value={term} onChange={(e) => setTerm(e.target.value)} style={{width: '100%', background: '#1e293b', color: 'white'}}>
             <option>First Term 2026</option>
             <option>Second Term 2026</option>
             <option>Third Term 2026</option>
@@ -126,70 +133,74 @@ function ScoreEntry() {
         </div>
       </div>
 
-      {/* Entry Table */}
-      {selectedClass && selectedSubject && (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Student Name</th>
-              <th style={{ width: '120px' }}>CA (40)</th>
-              <th style={{ width: '120px' }}>Exam (60)</th>
-              <th style={{ width: '140px', textAlign: 'right' }}>Total & Grade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map(s => {
-              const total = (parseFloat(scores[s.id]?.ca || 0) + parseFloat(scores[s.id]?.exam || 0)) || 0;
-              const gradeInfo = getGrade(total);
+      {selectedClass && selectedSubject && students.length > 0 ? (
+        <>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th style={{ width: '120px' }}>CA (40)</th>
+                <th style={{ width: '120px' }}>Exam (60)</th>
+                <th style={{ width: '140px', textAlign: 'right' }}>Total & Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map(s => {
+                const total = (parseFloat(scores[s.id]?.ca || 0) + parseFloat(scores[s.id]?.exam || 0)) || 0;
+                const gradeInfo = getGrade(total);
 
-              return (
-                <tr key={s.id}>
-                  <td>{s.first_name} {s.last_name}</td>
-                  <td>
-                    <input 
-                      type="number" 
-                      className="counter" 
-                      placeholder="0"
-                      value={scores[s.id]?.ca || ''}
-                      onChange={(e) => handleScoreChange(s.id, 'ca', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input 
-                      type="number" 
-                      className="counter" 
-                      placeholder="0"
-                      value={scores[s.id]?.exam || ''}
-                      onChange={(e) => handleScoreChange(s.id, 'exam', e.target.value)}
-                    />
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 'bold', color: gradeInfo.color, fontSize: '1.1rem' }}>
-                      {total}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: gradeInfo.color }}>
-                      Grade: {gradeInfo.grade}
-                    </div>
-                    <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
-                      {gradeInfo.remark}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+                return (
+                  <tr key={s.id}>
+                    <td style={{fontWeight: '500'}}>{s.first_name} {s.last_name}</td>
+                    <td>
+                      <input 
+                        type="number" 
+                        className="counter" 
+                        style={{background: '#0f172a', border: '1px solid #334155'}}
+                        placeholder="0"
+                        value={scores[s.id]?.ca || ''}
+                        onChange={(e) => handleScoreChange(s.id, 'ca', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        className="counter" 
+                        style={{background: '#0f172a', border: '1px solid #334155'}}
+                        placeholder="0"
+                        value={scores[s.id]?.exam || ''}
+                        onChange={(e) => handleScoreChange(s.id, 'exam', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 'bold', color: gradeInfo.color, fontSize: '1.1rem' }}>
+                        {total}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: gradeInfo.color }}>
+                        Grade: {gradeInfo.grade}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
-      {selectedClass && selectedSubject && (
-        <button 
-          onClick={saveAllScores} 
-          disabled={loading}
-          className="btn-delete" 
-          style={{ background: '#38bdf8', marginTop: '20px', width: '200px' }}
-        >
-          {loading ? 'Saving...' : '💾 Save All Results'}
-        </button>
+          <button 
+            onClick={saveAllScores} 
+            disabled={loading}
+            className="btn-delete" 
+            style={{ background: '#38bdf8', marginTop: '20px', width: '200px' }}
+          >
+            {loading ? 'Saving...' : '💾 Save All Results'}
+          </button>
+        </>
+      ) : selectedClass && selectedSubject ? (
+        <p className="text-dim" style={{padding: '20px'}}>No students found in this class.</p>
+      ) : (
+        <p className="text-dim" style={{padding: '20px', textAlign: 'center', border: '1px dashed #334155', borderRadius: '8px'}}>
+          Please select a class and subject to begin grading.
+        </p>
       )}
     </div>
   )
