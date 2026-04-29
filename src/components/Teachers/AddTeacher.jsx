@@ -5,26 +5,29 @@ function AddTeacher(props) {
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('') 
   const [lastName, setLastName] = useState('')
-  const [msg, setMsg] = useState('')
 
   const handleSave = async (e) => {
     e.preventDefault()
-    setMsg('Saving to database...')
+    
+    // Using an ID prefix for better tracking
+    const generatedStaffId = 'TCH-' + Math.floor(Math.random() * 1000);
 
     const { error } = await supabase
       .from('teachers')
       .insert([{ 
         first_name: firstName, 
-        middle_name: middleName || '-', // Uses a dash if middle name is empty
+        middle_name: middleName || '-', 
         last_name: lastName,
-        staff_id: 'TCH-' + Math.floor(Math.random() * 1000),
+        staff_id: generatedStaffId,
         email: firstName.toLowerCase() + '.' + lastName.toLowerCase() + '@school.com'
       }])
 
     if (error) {
-      setMsg('Error: ' + error.message)
+      props.showToast('Error: ' + error.message, 'error')
     } else {
-      setMsg('Teacher added successfully!')
+      // SUCCESS! Clean and professional notification
+      props.showToast(`${firstName} ${lastName} registered successfully!`, 'success')
+      
       // Clear the boxes
       setFirstName('')
       setMiddleName('') 
@@ -44,8 +47,8 @@ function AddTeacher(props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>First Name</label>
             <input 
-              className="counter" /* Using your existing styled input feel */
-              style={{ background: '#1e293b', padding: '12px',  color: 'white', width: '100%' }}
+              className="counter" 
+              style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="e.g. Favour" 
               value={firstName} 
               onChange={(e) => setFirstName(e.target.value)} 
@@ -68,8 +71,8 @@ function AddTeacher(props) {
             <label className="text-dim" style={{ fontSize: '0.8rem' }}>Last Name</label>
             <input 
               className="counter"
-              style={{ background: '#1e293b', padding: '12px',  color: 'white', width: '100%' }}
-              placeholder="e.g. Peace" 
+              style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
+              placeholder="e.g. Adebayo" 
               value={lastName} 
               onChange={(e) => setLastName(e.target.value)} 
               required 
@@ -78,18 +81,12 @@ function AddTeacher(props) {
 
           <button 
             type="submit" 
-            className="btn-delete" /* Using your styled button but we can rename it later */
+            className="btn-delete" 
             style={{ background: '#38bdf8', marginTop: '10px', height: '45px' }}
           >
             Confirm Registration
           </button>
         </form>
-
-        {msg && (
-          <p className="text-accent" style={{ marginTop: '15px', fontSize: '0.9rem', fontWeight: '500' }}>
-            {msg}
-          </p>
-        )}
       </div>
     </div>
   )

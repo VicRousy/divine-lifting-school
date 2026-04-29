@@ -5,7 +5,6 @@ function AddStudent(props) {
   const [fullName, setFullName] = useState('')
   const [selectedClass, setSelectedClass] = useState('')
   const [classes, setClasses] = useState([])
-  const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(false)
 
   // We fetch the classes so the dropdown menu has options
@@ -20,12 +19,11 @@ function AddStudent(props) {
   const handleSave = async (e) => {
     e.preventDefault()
     if (!selectedClass) {
-      setMsg('Please select a class first.')
+      props.showToast('Please select a class first.', 'error')
       return
     }
     
     setLoading(true)
-    setMsg('Registering student...')
 
     const { error } = await supabase
       .from('students')
@@ -36,10 +34,13 @@ function AddStudent(props) {
       }])
 
     setLoading(false)
+
     if (error) {
-      setMsg('Error: ' + error.message)
+      props.showToast('Error: ' + error.message, 'error')
     } else {
-      setMsg('Student admitted successfully!')
+      // SUCCESS! Use the new toast instead of local message
+      props.showToast(`${fullName} admitted successfully!`, 'success')
+      
       setFullName('')
       setSelectedClass('')
       
@@ -96,12 +97,6 @@ function AddStudent(props) {
             {loading ? 'Processing...' : 'Admit Student'}
           </button>
         </form>
-
-        {msg && (
-          <p className="text-accent" style={{ marginTop: '15px', fontSize: '0.9rem' }}>
-            {msg}
-          </p>
-        )}
       </div>
     </div>
   )

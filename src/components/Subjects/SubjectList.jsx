@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import ConfirmModal from '../ConfirmModal'
 
-function SubjectList({ refreshTrigger }) {
+function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast from props
   const [subjects, setSubjects] = useState([])
   const [newSubject, setNewSubject] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [targetId, setTargetId] = useState(null)
+  const [selectedSubject, setSelectedSubject] = useState(null)
 
   const fetchSubjects = async () => {
     const { data } = await supabase.from('subjects').select('*').order('subject_name', { ascending: true })
@@ -18,22 +19,31 @@ function SubjectList({ refreshTrigger }) {
     try {
       const { error } = await supabase.from('subjects').insert([{ subject_name: newSubject }])
       if (error) throw error
+      
+      showToast(`"${newSubject}" added to curriculum`, 'success') // Nice success toast
       setNewSubject('')
       fetchSubjects()
     } catch (err) {
-      alert(err.message)
+      showToast(err.message, 'error') // Toast for errors instead of alert
     }
   }
 
-  const handleDeleteClick = (id) => {
-    setTargetId(id)
+  const handleDeleteClick = (subject) => {
+    setSelectedSubject(subject)
     setShowModal(true)
   }
 
   const confirmDelete = async () => {
-    await supabase.from('subjects').delete().eq('id', targetId)
-    setShowModal(false)
-    fetchSubjects()
+    try {
+      const { error } = await supabase.from('subjects').delete().eq('id', selectedSubject.id)
+      if (error) throw error
+      
+      showToast(`${selectedSubject.subject_name} has been removed`, 'success')
+      setShowModal(false)
+      fetchSubjects()
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
   }
 
   useEffect(() => { fetchSubjects() }, [refreshTrigger])
@@ -44,10 +54,7 @@ function SubjectList({ refreshTrigger }) {
 
   return (
     <div className="admin-table-container">
-      {/* HEADER SECTION: Search + Add */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
-        
-        {/* Search bar matching other lists */}
         <input 
           type="text" 
           className="counter search-input"
@@ -56,7 +63,6 @@ function SubjectList({ refreshTrigger }) {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        {/* Inline Add Subject Form */}
         <div style={{ display: 'flex', gap: '10px', flex: 1, justifyContent: 'flex-end', maxWidth: '500px' }}>
           <input 
             className="counter" 
@@ -90,7 +96,7 @@ function SubjectList({ refreshTrigger }) {
                 <button 
                   className="btn-delete" 
                   style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-                  onClick={() => handleDeleteClick(s.id)}
+                  onClick={() => handleDeleteClick(s)}
                 >
                   Delete
                 </button>
@@ -100,19 +106,15 @@ function SubjectList({ refreshTrigger }) {
         </tbody>
       </table>
 
-      {/* CONFIRMATION MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ color: '#f8fafc' }}>Remove Subject?</h3>
-            <p className="text-dim" style={{ margin: '10px 0 20px' }}>Deleting this subject might affect reports and academic records.</p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn-delete" style={{ flex: 1 }} onClick={confirmDelete}>Confirm Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal 
+        isOpen={showModal}
+        title="Remove Subject?"
+        message={`Are you sure you want to delete ${selectedSubject?.subject_name}? Deleting this subject might affect reports and academic records.`}
+        confirmText="Confirm Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowModal(false)}
+        type="danger"
+      />
     </div>
   )
 }

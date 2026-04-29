@@ -12,28 +12,37 @@ function Login({ onLogin }) {
     setLoading(true)
     setError('')
 
+    // 1. Authenticate with Supabase Auth
     const { data, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
     })
 
     if (authError) {
-      setError(authError.message)
+      setError(authError.message === 'Invalid login credentials' 
+        ? "Incorrect email or password." 
+        : authError.message)
       setLoading(false)
       return
     }
 
-    // Fetch user role
-    const { data: roleData } = await supabase
+    // 2. Fetch user role from your 'user_roles' table
+    // We use .maybeSingle() to handle cases where the role record might be missing
+    const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role, reference_id')
       .eq('user_id', data.user.id)
-      .single()
+      .maybeSingle()
 
-    if (roleData) {
+    if (roleError) {
+      console.error("Role fetch error:", roleError)
+      setError("Database connection error. Please try again.")
+    } else if (roleData) {
+      // Success: Pass role and user object back to App.jsx
       onLogin(roleData.role, data.user)
     } else {
-      setError('No role assigned to this user')
+      // Security check: Auth worked, but no role assigned in our table
+      setError('Access Denied: No school role assigned to this account.')
     }
     
     setLoading(false)
@@ -65,7 +74,7 @@ function Login({ onLogin }) {
           DIVINE LIFTING SCHOOL
         </h2>
         <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '30px' }}>
-          School Management System
+          Management System Portal
         </p>
 
         <form onSubmit={handleLogin}>
@@ -106,7 +115,15 @@ function Login({ onLogin }) {
           />
 
           {error && (
-            <p style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '15px' }}>
+            <p style={{ 
+                color: '#ef4444', 
+                fontSize: '0.85rem', 
+                marginBottom: '15px', 
+                textAlign: 'center',
+                background: 'rgba(239, 68, 68, 0.1)',
+                padding: '8px',
+                borderRadius: '5px'
+            }}>
               {error}
             </p>
           )}
@@ -123,10 +140,11 @@ function Login({ onLogin }) {
               borderRadius: '8px',
               fontWeight: 'bold',
               cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              transition: 'transform 0.2s ease'
             }}
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign In to Portal'}
           </button>
         </form>
       </div>

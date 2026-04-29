@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import ConfirmModal from '../ConfirmModal' // Import the new shared component
 
-// Added onSelectStudent to props
 function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
@@ -57,6 +57,13 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
     }
   }
 
+  const handleDelete = async () => {
+    await supabase.from('students').delete().eq('id', selectedStudent.id);
+    fetchStudents();
+    setShowDeleteModal(false);
+    if (onUpdate) onUpdate();
+  }
+
   const filteredStudents = students.filter(s => {
     const fullName = `${s.first_name} ${s.middle_name || ''} ${s.last_name}`.toLowerCase();
     return fullName.includes(searchTerm.toLowerCase());
@@ -89,7 +96,6 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
         <tbody>
           {filteredStudents.map(s => (
             <tr key={s.id}>
-              {/* Added onClick and styling to the name for Profile View */}
               <td 
                 onClick={() => onSelectStudent && onSelectStudent(s)}
                 style={{ cursor: 'pointer', fontWeight: '500' }}
@@ -108,59 +114,38 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
         </tbody>
       </table>
 
-      {/* EDIT MODAL */}
+      {/* EDIT MODAL - Keep as is for the form layout */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: 'left' }}>
             <h3>Edit Student & Class</h3>
-            
             <div className="form-group">
               <label className="text-dim">First Name</label>
-              <input 
-                className="counter" 
-                style={forceDarkStyle}
-                value={editData.first_name} 
-                onChange={(e) => setEditData({...editData, first_name: e.target.value})} 
-              />
-            </div>
+              <input className="counter" style={forceDarkStyle} value={editData.first_name} onChange={(e) => setEditData({...editData, first_name: e.target.value})} />
+            </div>v
             
             <div className="form-group">
               <label className="text-dim">Middle Name</label>
-              <input 
-                className="counter" 
-                style={forceDarkStyle}
-                value={editData.middle_name} 
-                onChange={(e) => setEditData({...editData, middle_name: e.target.value})} 
-              />
+              <input className="counter" style={forceDarkStyle} value={editData.middle_name} onChange={(e) => setEditData({...editData, middle_name: e.target.value})} />
             </div>
-            
             <div className="form-group">
               <label className="text-dim">Last Name</label>
-              <input 
-                className="counter" 
-                style={forceDarkStyle}
-                value={editData.last_name} 
-                onChange={(e) => setEditData({...editData, last_name: e.target.value})} 
-              />
+              <input className="counter" style={forceDarkStyle} value={editData.last_name} onChange={(e) => setEditData({...editData, last_name: e.target.value})} />
             </div>
-            
             <div className="form-group">
               <label className="text-dim">Promote to Class</label>
               <select 
                 className="counter" 
                 style={forceDarkStyle} 
                 value={editData.class_id} 
-                onChange={(e) => setFormData({...editData, class_id: e.target.value})}
+                onChange={(e) => setEditData({...editData, class_id: e.target.value})} // Fixed setFormData bug here
               >
                 <option value="" style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>-- Select Class --</option>
                 {classes.map(c => (
-                  <option key={c.id} value={c.id} style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>
-                    {c.class_name}
-                  </option>
+                  <option key={c.id} value={c.id} style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>{c.class_name}</option>
                 ))}
               </select>
             </div>
-
             <div className="action-group" style={{ marginTop: '20px' }}>
               <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowEditModal(false)}>Cancel</button>
               <button className="btn-delete" style={{ flex: 1, background: '#38bdf8' }} onClick={handleUpdate}>Save Changes</button>
@@ -169,23 +154,16 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
         </div>
       )}
 
-      {/* DELETE MODAL */}
-      {showDeleteModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ color: '#ef4444' }}>Delete Student?</h3>
-            <p className="text-dim">This action cannot be undone.</p>
-            <div className="action-group" style={{ marginTop: '20px' }}>
-              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowDeleteModal(false)}>Back</button>
-              <button className="btn-delete" style={{ flex: 1 }} onClick={async () => {
-                await supabase.from('students').delete().eq('id', selectedStudent.id);
-                fetchStudents();
-                setShowDeleteModal(false);
-              }}>Delete Forever</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* NEW UPDATED DELETE CONFIRMATION */}
+      <ConfirmModal 
+        isOpen={showDeleteModal}
+        title="Delete Student?"
+        message={`Are you sure you want to permanently delete ${selectedStudent?.first_name} ${selectedStudent?.last_name}? This action cannot be undone.`}
+        confirmText="Cofirm"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+        type="danger"
+      />
     </div>
   )
 }

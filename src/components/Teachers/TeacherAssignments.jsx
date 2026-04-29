@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import ConfirmModal from '../ConfirmModal'
 
-function TeacherAssignments({ refreshTrigger }) {
+function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured showToast
   const [teachers, setTeachers] = useState([])
   const [classes, setClasses] = useState([])
   const [subjects, setSubjects] = useState([])
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(false)
   
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [targetAssignment, setTargetAssignment] = useState(null)
+
   const [formData, setFormData] = useState({ teacher_id: '', class_id: '', subject_id: '' })
 
   const fetchData = async () => {
@@ -15,7 +19,6 @@ function TeacherAssignments({ refreshTrigger }) {
     const { data: c } = await supabase.from('classes').select('id, class_name')
     const { data: s } = await supabase.from('subjects').select('id, subject_name')
     
-    // Updated selection to get the actual names from joined tables
     const { data: a } = await supabase.from('teacher_assignments').select(`
       id,
       teachers (first_name, last_name),
@@ -33,7 +36,7 @@ function TeacherAssignments({ refreshTrigger }) {
 
   const handleAssign = async () => {
     if (!formData.teacher_id || !formData.class_id || !formData.subject_id) {
-      alert("Please ensure all fields are selected.")
+      showToast("Please ensure all fields are selected.", "error")
       return
     }
 
@@ -47,24 +50,39 @@ function TeacherAssignments({ refreshTrigger }) {
     const { error } = await supabase.from('teacher_assignments').insert([payload])
     
     if (error) {
-      alert(error.code === '23505' ? "This assignment already exists." : "Error: " + error.message)
+      // Professional error handling via Toasts
+      const errorMsg = error.code === '23505' 
+        ? "This assignment already exists." 
+        : "Error: " + error.message;
+      showToast(errorMsg, "error")
     } else {
+      showToast("Role assigned successfully!", "success")
       setFormData({ teacher_id: '', class_id: '', subject_id: '' })
       fetchData()
     }
     setLoading(false)
   }
 
-  const removeAssignment = async (id) => {
-    const { error } = await supabase.from('teacher_assignments').delete().eq('id', id)
-    if (!error) fetchData()
+  const initiateRemove = (asgn) => {
+    setTargetAssignment(asgn)
+    setShowConfirm(true)
+  }
+
+  const confirmRemove = async () => {
+    const { error } = await supabase.from('teacher_assignments').delete().eq('id', targetAssignment.id)
+    if (error) {
+      showToast("Failed to remove assignment.", "error")
+    } else {
+      showToast("Assignment removed.", "success")
+      fetchData()
+    }
+    setShowConfirm(false)
   }
 
   return (
     <div className="admin-table-container" style={{ marginTop: '20px', background: 'rgba(255,255,255,0.02)' }}>
-      <h3 style={{ color: '#f8fafc', marginBottom: '20px' }}>Teacher Assignments</h3>
+      <h3 style={{ color: '#f8fafc', marginBottom: '20px' }}>Teacher Role Management</h3>
       
-      {/* The Dropdown Row - Now fully connected to logic */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', flexWrap: 'wrap' }}>
         <select 
           className="counter" 
@@ -124,7 +142,6 @@ function TeacherAssignments({ refreshTrigger }) {
         <tbody>
           {assignments.map((asgn) => (
             <tr key={asgn.id}>
-              {/* Mapping nested Supabase data */}
               <td style={{ fontWeight: '600' }}>
                 {asgn.teachers?.first_name} {asgn.teachers?.last_name}
               </td>
@@ -133,7 +150,7 @@ function TeacherAssignments({ refreshTrigger }) {
               <td style={{ textAlign: 'right' }}>
                 <button 
                   className="btn-delete" 
-                  onClick={() => removeAssignment(asgn.id)}
+                  onClick={() => initiateRemove(asgn)}
                   style={{ padding: '5px 15px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
                 >
                   Remove
@@ -143,6 +160,16 @@ function TeacherAssignments({ refreshTrigger }) {
           ))}
         </tbody>
       </table>
+
+      <ConfirmModal 
+        isOpen={showConfirm}
+        title="Remove Assignment?"
+        message={`Are you sure you want to remove ${targetAssignment?.teachers?.first_name} from teaching ${targetAssignment?.subjects?.subject_name} in ${targetAssignment?.classes?.class_name}?`}
+        confirmText="Remove Role"
+        onConfirm={confirmRemove}
+        onCancel={() => setShowConfirm(false)}
+        type="danger"
+      />
     </div>
   )
 }

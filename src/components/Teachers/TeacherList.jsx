@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import ConfirmModal from '../ConfirmModal' // Import shared component
 
 function TeacherList({ refreshTrigger }) {
   const [teachers, setTeachers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [targetId, setTargetId] = useState(null)
+  const [targetTeacher, setTargetTeacher] = useState(null) // Track full teacher object
   const [loading, setLoading] = useState(true)
 
   const fetchTeachers = async () => {
@@ -23,14 +24,14 @@ function TeacherList({ refreshTrigger }) {
 
   useEffect(() => { fetchTeachers() }, [refreshTrigger])
 
-  const handleDeleteClick = (id) => {
-    setTargetId(id)
+  const handleDeleteClick = (teacher) => {
+    setTargetTeacher(teacher)
     setShowModal(true)
   }
 
   const confirmDelete = async () => {
     try {
-      const { error } = await supabase.from('teachers').delete().eq('id', targetId)
+      const { error } = await supabase.from('teachers').delete().eq('id', targetTeacher.id)
       if (error) throw error
       setShowModal(false)
       fetchTeachers()
@@ -39,7 +40,6 @@ function TeacherList({ refreshTrigger }) {
     }
   }
 
-  // Filter teachers based on first, middle, or last name
   const filteredTeachers = teachers.filter(t => {
     const fullName = `${t.first_name} ${t.middle_name || ''} ${t.last_name}`.toLowerCase();
     return fullName.includes(searchTerm.toLowerCase());
@@ -49,7 +49,6 @@ function TeacherList({ refreshTrigger }) {
 
   return (
     <div className="admin-table-container">
-      {/* SEARCH BAR */}
       <input 
         type="text" 
         className="counter search-input"
@@ -71,8 +70,7 @@ function TeacherList({ refreshTrigger }) {
               <td>{t.first_name} {t.last_name}</td>
               <td className="text-dim">{t.middle_name || '-'}</td>
               <td className="action-group">
-                {/* Space for an Edit button later if needed */}
-                <button className="btn-delete" onClick={() => handleDeleteClick(t.id)}>
+                <button className="btn-delete" onClick={() => handleDeleteClick(t)}>
                   Delete
                 </button>
               </td>
@@ -81,25 +79,16 @@ function TeacherList({ refreshTrigger }) {
         </tbody>
       </table>
 
-      {/* DELETE CONFIRMATION MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ color: '#ef4444' }}>Remove Staff Member?</h3>
-            <p className="text-dim" style={{ margin: '15px 0 25px' }}>
-              This will permanently delete this record from the database.
-            </p>
-            <div className="action-group">
-              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowModal(false)}>
-                Cancel
-              </button>
-              <button className="btn-delete" style={{ flex: 1 }} onClick={confirmDelete}>
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* NEW UPDATED DELETE CONFIRMATION */}
+      <ConfirmModal 
+        isOpen={showModal}
+        title="Remove Staff Member?"
+        message={`Are you sure you want to remove ${targetTeacher?.first_name} ${targetTeacher?.last_name}? This will permanently delete their record from the database.`}
+        confirmText="Confirm"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowModal(false)}
+        type="danger"
+      />
     </div>
   )
 }

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import ConfirmModal from '../ConfirmModal'
 
-function ClassList({ refreshTrigger }) {
+function ClassList({ refreshTrigger, showToast }) { // Added showToast to props
   const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('') // Added search
+  const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [targetId, setTargetId] = useState(null)
+  const [selectedClass, setSelectedClass] = useState(null)
 
   const fetchClasses = async () => {
     try {
@@ -15,7 +16,7 @@ function ClassList({ refreshTrigger }) {
       if (error) throw error
       setClasses(data || [])
     } catch (err) {
-      console.error("Class fetch error:", err.message)
+      showToast("Error fetching classes: " + err.message, "error")
     } finally {
       setLoading(false)
     }
@@ -23,23 +24,26 @@ function ClassList({ refreshTrigger }) {
 
   useEffect(() => { fetchClasses() }, [refreshTrigger])
 
-  const handleDeleteClick = (id) => {
-    setTargetId(id)
+  const handleDeleteClick = (cls) => {
+    setSelectedClass(cls)
     setShowModal(true)
   }
 
   const confirmDelete = async () => {
     try {
-      const { error } = await supabase.from('classes').delete().eq('id', targetId)
+      const { error } = await supabase.from('classes').delete().eq('id', selectedClass.id)
       if (error) throw error
+      
+      showToast(`${selectedClass.class_name} has been successfully deleted.`, "success")
       setShowModal(false)
       fetchClasses()
     } catch (err) {
-      alert("Error: " + err.message)
+      // Handles database constraint errors gracefully
+      showToast("Could not delete class. It might still have students assigned.", "error")
+      setShowModal(false)
     }
   }
 
-  // Filter classrooms by name
   const filteredClasses = classes.filter(c => 
     c.class_name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -48,7 +52,6 @@ function ClassList({ refreshTrigger }) {
 
   return (
     <div className="admin-table-container">
-      {/* SEARCH BAR - Matches Student/Teacher style */}
       <input 
         type="text" 
         className="counter search-input"
@@ -61,6 +64,7 @@ function ClassList({ refreshTrigger }) {
           <tr>
             <th>Class Name</th>
             <th>Status</th>
+            <th>Tuition Fee</th>
             <th style={{ textAlign: 'right' }}>Action</th>
           </tr>
         </thead>
@@ -69,8 +73,15 @@ function ClassList({ refreshTrigger }) {
             <tr key={c.id}>
               <td>{c.class_name}</td>
               <td className="text-accent">Active</td>
-              <td className="action-group">
-                <button className="btn-delete" onClick={() => handleDeleteClick(c.id)}>
+              <td style={{ color: '#38bdf8', fontWeight: '500' }}>
+                ₦{Number(c.base_fee || 0).toLocaleString()}
+              </td>
+              <td className="action-group" style={{ textAlign: 'right' }}>
+                <button 
+                  className="btn-delete" 
+                  style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                  onClick={() => handleDeleteClick(c)}
+                >
                   Delete
                 </button>
               </td>
@@ -79,25 +90,15 @@ function ClassList({ refreshTrigger }) {
         </tbody>
       </table>
 
-      {/* DELETE MODAL - Now using your cleaned-up CSS */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ textAlign: 'left' }}>
-            <h3 style={{ color: '#ef4444' }}>Delete Class?</h3>
-            <p className="text-dim" style={{ marginBottom: '20px' }}>
-              Removing this classroom is permanent. All associated student records might be affected.
-            </p>
-            <div className="action-group">
-              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowModal(false)}>
-                Cancel
-              </button>
-              <button className="btn-delete" style={{ flex: 1 }} onClick={confirmDelete}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal 
+        isOpen={showModal}
+        title="Delete Class?"
+        message={`Are you sure you want to delete the ${selectedClass?.class_name} classroom? All associated student records might be affected.`}
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowModal(false)}
+        type="danger"
+      />
     </div>
   )
 }
