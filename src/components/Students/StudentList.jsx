@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-import ConfirmModal from '../ConfirmModal' // Import the new shared component
+import ConfirmModal from '../ConfirmModal'
 
-function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
+function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) { // Destructured showToast
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -50,18 +50,27 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
       })
       .eq('id', selectedStudent.id)
 
-    if (error) alert(error.message)
-    else {
-      fetchStudents(); setShowEditModal(false);
+    if (error) {
+      showToast(error.message, 'error')
+    } else {
+      showToast(`${editData.first_name}'s profile updated!`, 'success')
+      fetchStudents(); 
+      setShowEditModal(false);
       if (onUpdate) onUpdate();
     }
   }
 
   const handleDelete = async () => {
-    await supabase.from('students').delete().eq('id', selectedStudent.id);
-    fetchStudents();
-    setShowDeleteModal(false);
-    if (onUpdate) onUpdate();
+    const { error } = await supabase.from('students').delete().eq('id', selectedStudent.id);
+    
+    if (error) {
+      showToast("Could not delete student. Check for related records.", "error")
+    } else {
+      showToast(`${selectedStudent.first_name} removed from registry.`, "success")
+      fetchStudents();
+      setShowDeleteModal(false);
+      if (onUpdate) onUpdate();
+    }
   }
 
   const filteredStudents = students.filter(s => {
@@ -105,8 +114,8 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
                 {s.first_name} {s.middle_name ? `${s.middle_name} ` : ''}{s.last_name}
               </td>
               <td className="text-accent">{s.classes?.class_name || 'Unassigned'}</td>
-              <td className="action-group">
-                <button className="btn-delete" style={{ background: '#38bdf8' }} onClick={() => openEditModal(s)}>Edit / Promote</button>
+              <td className="action-group" style={{ textAlign: 'right' }}>
+                <button className="btn-delete" style={{ background: '#38bdf8', marginRight: '8px' }} onClick={() => openEditModal(s)}>Edit / Promote</button>
                 <button className="btn-delete" onClick={() => { setSelectedStudent(s); setShowDeleteModal(true); }}>Delete</button>
               </td>
             </tr>
@@ -114,39 +123,39 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
         </tbody>
       </table>
 
-      {/* EDIT MODAL - Keep as is for the form layout */}
+      {/* EDIT MODAL */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: 'left' }}>
-            <h3>Edit Student & Class</h3>
-            <div className="form-group">
+            <h3 style={{ color: '#f8fafc', marginBottom: '20px' }}>Edit Student & Class</h3>
+            <div className="form-group" style={{ marginBottom: '15px' }}>
               <label className="text-dim">First Name</label>
               <input className="counter" style={forceDarkStyle} value={editData.first_name} onChange={(e) => setEditData({...editData, first_name: e.target.value})} />
-            </div>v
+            </div>
             
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: '15px' }}>
               <label className="text-dim">Middle Name</label>
               <input className="counter" style={forceDarkStyle} value={editData.middle_name} onChange={(e) => setEditData({...editData, middle_name: e.target.value})} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: '15px' }}>
               <label className="text-dim">Last Name</label>
               <input className="counter" style={forceDarkStyle} value={editData.last_name} onChange={(e) => setEditData({...editData, last_name: e.target.value})} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: '25px' }}>
               <label className="text-dim">Promote to Class</label>
               <select 
                 className="counter" 
                 style={forceDarkStyle} 
                 value={editData.class_id} 
-                onChange={(e) => setEditData({...editData, class_id: e.target.value})} // Fixed setFormData bug here
+                onChange={(e) => setEditData({...editData, class_id: e.target.value})}
               >
-                <option value="" style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>-- Select Class --</option>
+                <option value="">-- Select Class --</option>
                 {classes.map(c => (
-                  <option key={c.id} value={c.id} style={{ backgroundColor: '#1e293b', color: '#f8fafc' }}>{c.class_name}</option>
+                  <option key={c.id} value={c.id}>{c.class_name}</option>
                 ))}
               </select>
             </div>
-            <div className="action-group" style={{ marginTop: '20px' }}>
+            <div className="action-group" style={{ display: 'flex', gap: '10px' }}>
               <button className="btn-cancel" style={{ flex: 1 }} onClick={() => setShowEditModal(false)}>Cancel</button>
               <button className="btn-delete" style={{ flex: 1, background: '#38bdf8' }} onClick={handleUpdate}>Save Changes</button>
             </div>
@@ -154,12 +163,12 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent }) {
         </div>
       )}
 
-      {/* NEW UPDATED DELETE CONFIRMATION */}
+      {/* SHARED DELETE CONFIRMATION */}
       <ConfirmModal 
         isOpen={showDeleteModal}
         title="Delete Student?"
         message={`Are you sure you want to permanently delete ${selectedStudent?.first_name} ${selectedStudent?.last_name}? This action cannot be undone.`}
-        confirmText="Cofirm"
+        confirmText="Confirm Delete"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteModal(false)}
         type="danger"
