@@ -41,7 +41,6 @@ function App() {
   const [selectedStudentProfile, setSelectedStudentProfile] = useState(null)
   const [toast, setToast] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [viewMode, setViewMode] = useState('admin')
   const initialized = useRef(false)
 
   const showToast = (message, type = 'success') => {
@@ -60,7 +59,7 @@ function App() {
           setSession(parsed)
           setUserRole(parsed.role)
           setUserInfo(parsed.userInfo)
-          setViewMode(parsed.role)
+          setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : 'overview')
         }
       } catch (error) {
         console.error('Initialization error:', error)
@@ -77,7 +76,7 @@ function App() {
     setSession(sessionData)
     setUserRole(role)
     setUserInfo(userInfo)
-    setViewMode(role)
+    setActiveTab(role === 'teacher' ? 'teacher-dashboard' : 'overview')
     setLoading(false)
     localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Welcome back! Logged in as ${role}`, 'success')
@@ -89,14 +88,16 @@ function App() {
     setUserRole(null)
     setUserInfo(null)
     setActiveTab('overview')
-    setViewMode('admin')
     localStorage.removeItem('dls_session')
     showToast('Logged out successfully', 'success')
   }
 
   const switchPortal = (mode) => {
-    setViewMode(mode)
+    setUserRole(mode)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
+    const sessionData = { role: mode, userInfo, loginTime: new Date().toISOString() }
+    setSession(sessionData)
+    localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Switched to ${mode} portal`, 'success')
   }
 
@@ -114,7 +115,18 @@ function App() {
       'class-list': 'Classroom Manager',
       'subjects': 'Subject Curriculum',
       'assignments': 'Teacher Assignments',
-      'score-entry': 'Result Manager & Gradebook'
+      'score-entry': 'Result Manager & Gradebook',
+      'teacher-dashboard': 'My Dashboard',
+      'scores': 'Gradebook',
+      'roster': 'Class Roster',
+      'teacher-attendance': 'Attendance Marking',
+      'teacher-comms': 'Announcements',
+      'promote': 'Class Promotion',
+      'import': 'Bulk Import',
+      'approval': 'Grade Approval',
+      'reports': 'Report Cards',
+      'scale': 'Grade Scale',
+      'fees': 'Fee Management'
     }
     return titles[activeTab] || activeTab.toUpperCase()
   }
@@ -132,154 +144,204 @@ function App() {
 
   if (!session) return <Login onLogin={handleLogin} />
 
-  if (viewMode === 'teacher' || userRole === 'teacher') {
-    return (
-      <>
-        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-        {userRole === 'admin' && (
-          <div style={{ background: '#1e293b', padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155' }}>
-            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Viewing: Teacher Portal</span>
-            <button onClick={() => switchPortal('admin')} style={{ background: '#38bdf8', color: '#020617', border: 'none', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-              Switch to Admin Portal
-            </button>
-          </div>
-        )}
-        <TeacherPortalContent
-          user={userInfo}
-          teacherId={userInfo?.id}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          showToast={showToast}
-          onLogout={() => setShowLogoutConfirm(true)}
-        />
-        <ConfirmModal
-          isOpen={showLogoutConfirm}
-          title="Confirm Logout"
-          message="Are you sure you want to log out?"
-          confirmText="Logout"
-          onConfirm={handleLogout}
-          onCancel={() => setShowLogoutConfirm(false)}
-          type="danger"
-        />
-      </>
-    )
-  }
-
   return (
-    <div className="admin-layout">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    <div className="admin-layout" style={{ display: 'flex', height: '100vh', background: '#0f172a', color: '#f8fafc', overflow: 'hidden' }}>
+      
+      {/* SIDEBAR */}
+      <aside style={{ width: '260px', background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0 }}>
+        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#38bdf8' }}>DLS Admin</h2>
+          <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Management Portal</p>
+          
+          {/* Admin/Teacher Toggle */}
+          <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
+            <button 
+              onClick={() => switchPortal('admin')}
+              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'admin' ? '#38bdf8' : 'transparent', color: userRole === 'admin' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+            >Admin</button>
+            <button 
+              onClick={() => switchPortal('teacher')}
+              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'teacher' ? '#38bdf8' : 'transparent', color: userRole === 'teacher' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+            >Teacher</button>
+          </div>
+        </div>
 
-      <aside className="sidebar">
-        <div className="sidebar-logo">DIVINE LIFTING SCHOOL</div>
+        <nav style={{ flex: 1, overflowY: 'auto', padding: '20px 0' }}>
+          {/* Admin Menu */}
+          {userRole === 'admin' && (
+            <>
+              <SidebarGroup title="Dashboard">
+                <SidebarItem icon="📊" label="Dashboard" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+              </SidebarGroup>
+              
+              <SidebarGroup title="Students">
+                <SidebarItem icon="👥" label="All Students" active={activeTab === 'student-list'} onClick={() => setActiveTab('student-list')} />
+                <SidebarItem icon="➕" label="Add Student" active={activeTab === 'students'} onClick={() => setActiveTab('students')} />
+                <SidebarItem icon="🎓" label="Promote Students" active={activeTab === 'promote'} onClick={() => setActiveTab('promote')} />
+                <SidebarItem icon="📥" label="Bulk Import (CSV)" active={activeTab === 'import'} onClick={() => setActiveTab('import')} />
+              </SidebarGroup>
 
-        <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => { setActiveTab('overview'); setSelectedStudentProfile(null); }}> Dashboard Home</div>
+              <SidebarGroup title="Academics">
+                <SidebarItem icon="📝" label="Score Entry" active={activeTab === 'score-entry'} onClick={() => setActiveTab('score-entry')} />
+                <SidebarItem icon="✅" label="Grade Approval" active={activeTab === 'approval'} onClick={() => setActiveTab('approval')} />
+                <SidebarItem icon="📄" label="Report Cards" active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
+                <SidebarItem icon="️" label="Grade Scale" active={activeTab === 'scale'} onClick={() => setActiveTab('scale')} />
+                <SidebarItem icon="📚" label="Subjects" active={activeTab === 'subjects'} onClick={() => setActiveTab('subjects')} />
+              </SidebarGroup>
+              
+              <SidebarGroup title="Staff">
+                <SidebarItem icon="👩‍🏫" label="Staff Directory" active={activeTab === 'teacher-list'} onClick={() => setActiveTab('teacher-list')} />
+                <SidebarItem icon="➕" label="Add Teacher" active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} />
+                <SidebarItem icon="🔗" label="Assignments" active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} />
+              </SidebarGroup>
 
-        <hr className="sidebar-divider" />
-        <small className="sidebar-label">REGISTRATION</small>
-        <div className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setSelectedStudentProfile(null); }}> Add Teacher</div>
-        <div className={`nav-item ${activeTab === 'classes' ? 'active' : ''}`} onClick={() => { setActiveTab('classes'); setSelectedStudentProfile(null); }}> Add Classroom</div>
-        <div className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setSelectedStudentProfile(null); }}> Admit Student</div>
+              <SidebarGroup title="Finance">
+                <SidebarItem icon="💰" label="Fee Management" active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} />
+              </SidebarGroup>
+            </>
+          )}
 
-        <hr className="sidebar-divider" />
-        <small className="sidebar-label">MANAGEMENT</small>
-        <div className={`nav-item ${activeTab === 'student-list' ? 'active' : ''}`} onClick={() => { setActiveTab('student-list'); setSelectedStudentProfile(null); }}> Student Master List</div>
-        <div className={`nav-item ${activeTab === 'teacher-list' ? 'active' : ''}`} onClick={() => { setActiveTab('teacher-list'); setSelectedStudentProfile(null); }}> Staff Directory</div>
-        <div className={`nav-item ${activeTab === 'class-list' ? 'active' : ''}`} onClick={() => { setActiveTab('class-list'); setSelectedStudentProfile(null); }}> Classroom Manager</div>
-        <div className={`nav-item ${activeTab === 'subjects' ? 'active' : ''}`} onClick={() => { setActiveTab('subjects'); setSelectedStudentProfile(null); }}> Subject Master</div>
-        <div className={`nav-item ${activeTab === 'assignments' ? 'active' : ''}`} onClick={() => { setActiveTab('assignments'); setSelectedStudentProfile(null); }}> Teacher Assignments</div>
+          {/* Teacher Menu */}
+          {userRole === 'teacher' && (
+            <>
+              <SidebarGroup title="Dashboard">
+                <SidebarItem icon="📊" label="My Dashboard" active={activeTab === 'teacher-dashboard'} onClick={() => setActiveTab('teacher-dashboard')} />
+              </SidebarGroup>
+              
+              <SidebarGroup title="Academics">
+                <SidebarItem icon="📝" label="Gradebook" active={activeTab === 'scores'} onClick={() => setActiveTab('scores')} />
+                <SidebarItem icon="👥" label="Class Roster" active={activeTab === 'roster'} onClick={() => setActiveTab('roster')} />
+                <SidebarItem icon="📋" label="Attendance" active={activeTab === 'teacher-attendance'} onClick={() => setActiveTab('teacher-attendance')} />
+              </SidebarGroup>
+              
+              <SidebarGroup title="Communication">
+                <SidebarItem icon="" label="Announcements" active={activeTab === 'teacher-comms'} onClick={() => setActiveTab('teacher-comms')} />
+              </SidebarGroup>
+            </>
+          )}
+        </nav>
 
-        <hr className="sidebar-divider" />
-        <small className="sidebar-label">ACADEMICS</small>
-        <div className={`nav-item ${activeTab === 'score-entry' ? 'active' : ''}`} onClick={() => { setActiveTab('score-entry'); setSelectedStudentProfile(null); }}> Result Manager</div>
-
-        <hr className="sidebar-divider" />
-        <div className="nav-item" onClick={() => switchPortal('teacher')} style={{ color: '#a855f7' }}> Switch to Teacher Portal</div>
-        <div className="nav-item" onClick={() => setShowLogoutConfirm(true)} style={{ color: '#ef4444', marginTop: 'auto' }}> Logout</div>
+        <div style={{ padding: '20px', borderTop: '1px solid #334155' }}>
+          <button onClick={() => setShowLogoutConfirm(true)} style={{ width: '100%', padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Logout</button>
+        </div>
       </aside>
 
-      <main className="main-content">
-        <DashboardStats refreshTrigger={refreshTrigger} />
-        <div className="dashboard-card">
-          <h2 className="content-title">{getHeaderTitle()}</h2>
+      {/* MAIN CONTENT */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        
+        {/* TOP HEADER BAR */}
+        <header style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
+            <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* User Profile Card */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#0f172a', padding: '8px 15px', borderRadius: '10px', border: '1px solid #334155' }}>
+              <div style={{ width: '35px', height: '35px', background: '#38bdf8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#0f172a' }}>
+                {userInfo?.name?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{userInfo?.name || 'User'}</div>
+                <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{userInfo?.staffId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
+              </div>
+            </div>
+          </div>
+        </header>
 
-          {activeTab === 'overview' && (
-            <div>
-              <p className="text-dim">Welcome, Administrator. Here is the current state of the school.</p>
-              <hr className="content-divider" />
-              <RecentActivity refreshTrigger={refreshTrigger} />
+        {/* CONTENT SCROLL AREA */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '30px' }}>
+          
+          {/* Search and Actions Bar (Only on Admin Dashboard) */}
+          {activeTab === 'overview' && userRole === 'admin' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', gap: '15px' }}>
+              <input type="text" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }} />
+              <button style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+              <button style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
             </div>
           )}
 
-          {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
-          {activeTab === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
-          {activeTab === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
-
-          {activeTab === 'student-list' && (
-            selectedStudentProfile ? (
-              <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
-            ) : (
-              <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onSelectStudent={setSelectedStudentProfile} showToast={showToast} />
-            )
+          {/* DASHBOARD CONTENT */}
+          {userRole === 'admin' && (
+            <>
+              {activeTab === 'overview' && (
+                <div>
+                  <p className="text-dim" style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
+                  <DashboardStats refreshTrigger={refreshTrigger} />
+                  <RecentActivity refreshTrigger={refreshTrigger} />
+                </div>
+              )}
+              {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'student-list' && (
+                selectedStudentProfile ? (
+                  <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
+                ) : (
+                  <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onSelectStudent={setSelectedStudentProfile} showToast={showToast} />
+                )
+              )}
+              {activeTab === 'teacher-list' && <TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
+              {activeTab === 'class-list' && <ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
+              {activeTab === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
+              {activeTab === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
+              {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
+              
+              {/* Placeholders for New Features */}
+              {activeTab === 'promote' && <div className="dashboard-card"><h2>Promote Students</h2><p>Bulk promotion feature coming soon.</p></div>}
+              {activeTab === 'import' && <div className="dashboard-card"><h2>Bulk Import</h2><p>CSV upload feature coming soon.</p></div>}
+              {activeTab === 'approval' && <div className="dashboard-card"><h2>Grade Approval</h2><p>Review and approve teacher submissions.</p></div>}
+              {activeTab === 'reports' && <div className="dashboard-card"><h2>Report Cards</h2><p>Generate and publish report cards.</p></div>}
+              {activeTab === 'scale' && <div className="dashboard-card"><h2>Grade Scale</h2><p>Configure grading boundaries.</p></div>}
+              {activeTab === 'fees' && <div className="dashboard-card"><h2>Fee Management</h2><p>Set fees and record payments.</p></div>}
+            </>
           )}
 
-          {activeTab === 'teacher-list' && <TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
-          {activeTab === 'class-list' && <ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
-          {activeTab === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
-          {activeTab === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
-          {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
+          {userRole === 'teacher' && (
+            <>
+              {activeTab === 'teacher-dashboard' && <TeacherDashboard user={userInfo} teacherId={userInfo?.id} onNavigate={setActiveTab} />}
+              {activeTab === 'scores' && <TeacherGradebook teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'roster' && <ClassRoster teacherId={userInfo?.id} />}
+              {activeTab === 'teacher-attendance' && <AttendanceMarking teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'teacher-comms' && <TeacherComms />}
+            </>
+          )}
         </div>
       </main>
 
-      <ConfirmModal
-        isOpen={showLogoutConfirm}
-        title="Confirm Logout"
-        message="Are you sure you want to log out of the Divine Lifting Admin Portal? Any unsaved progress will be lost."
-        confirmText="Logout"
-        onConfirm={handleLogout}
-        onCancel={() => setShowLogoutConfirm(false)}
-        type="danger"
-      />
+      <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
 }
 
-function TeacherPortalContent({ user, teacherId, activeTab, setActiveTab, showToast, onLogout }) {
-  const navigate = (tab) => setActiveTab(tab)
-
+// Helper Components for Sidebar
+function SidebarGroup({ title, children }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#0f172a' }}>
-      <nav style={{ background: '#1e293b', padding: '12px 20px', display: 'flex', gap: '10px', alignItems: 'center', borderBottom: '1px solid #334155', flexWrap: 'wrap' }}>
-        <span style={{ color: '#38bdf8', fontWeight: 'bold', marginRight: '20px' }}>TEACHER PORTAL</span>
-        <button onClick={() => navigate('teacher-dashboard')} style={navBtnStyle(activeTab === 'teacher-dashboard')}>Dashboard</button>
-        <button onClick={() => navigate('scores')} style={navBtnStyle(activeTab === 'scores')}>Gradebook</button>
-        <button onClick={() => navigate('roster')} style={navBtnStyle(activeTab === 'roster')}>Class Roster</button>
-        <button onClick={() => navigate('teacher-attendance')} style={navBtnStyle(activeTab === 'teacher-attendance')}>Attendance</button>
-        <button onClick={() => navigate('teacher-comms')} style={navBtnStyle(activeTab === 'teacher-comms')}>Announcements</button>
-        <button onClick={onLogout} style={{ ...navBtnStyle(false), background: '#ef4444', color: 'white', marginLeft: 'auto' }}>Logout</button>
-      </nav>
-
-      <div style={{ padding: '20px' }}>
-        {activeTab === 'teacher-dashboard' && <TeacherDashboard user={user} teacherId={teacherId} onNavigate={navigate} />}
-        {activeTab === 'scores' && <TeacherGradebook teacherId={teacherId} showToast={showToast} />}
-        {activeTab === 'roster' && <ClassRoster teacherId={teacherId} />}
-        {activeTab === 'teacher-attendance' && <AttendanceMarking teacherId={teacherId} showToast={showToast} />}
-        {activeTab === 'teacher-comms' && <TeacherComms />}
-      </div>
+    <div style={{ marginBottom: '20px' }}>
+      <h3 style={{ margin: '0 0 10px 20px', fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', letterSpacing: '1px', fontWeight: 'bold' }}>{title}</h3>
+      {children}
     </div>
   )
 }
 
-function navBtnStyle(active) {
-  return {
-    background: active ? '#38bdf8' : 'transparent',
-    color: active ? '#020617' : '#94a3b8',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: active ? 'bold' : 'normal',
-    fontSize: '0.85rem'
-  }
+function SidebarItem({ icon, label, active, onClick }) {
+  return (
+    <div 
+      onClick={onClick}
+      style={{ 
+        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', cursor: 'pointer', 
+        background: active ? '#334155' : 'transparent', borderLeft: active ? '3px solid #38bdf8' : '3px solid transparent',
+        color: active ? '#f8fafc' : '#94a3b8', transition: 'all 0.2s'
+      }}
+      onMouseOver={(e) => { if (!active) e.currentTarget.style.background = '#33415544' }}
+      onMouseOut={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+    >
+      <span>{icon}</span>
+      <span style={{ fontSize: '0.9rem' }}>{label}</span>
+    </div>
+  )
 }
 
 export default App

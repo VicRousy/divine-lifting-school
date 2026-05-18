@@ -194,3 +194,5 @@ export function TeacherNotifications({ teacherId, showToast }) {
     </TeacherPageShell>
   );
 }
+
+export default TeacherAnnouncements;
