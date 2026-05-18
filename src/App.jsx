@@ -12,6 +12,7 @@ import RecentActivity from './components/Dashboard/RecentActivity'
 import AddTeacher from './components/Teachers/AddTeacher'
 import AddClass from './components/Classes/AddClass'
 import AddStudent from './components/Students/AddStudent'
+import BulkImport from './components/Students/BulkImport'
 
 // Management Components
 import StudentList from './components/Students/StudentList'
@@ -23,6 +24,11 @@ import TeacherAssignments from './components/Teachers/TeacherAssignments'
 // Academic Components
 import StudentProfile from './components/Students/StudentProfile'
 import ScoreEntry from './components/Academics/ScoreEntry'
+import GradeApproval from './components/Academics/GradeApproval'
+import ReportCards from './components/Academics/ReportCards'
+
+// Finance Components
+import FeeManagement from './components/Finance/FeeManagement'
 
 // Teacher Portal Components
 import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
@@ -31,8 +37,8 @@ import ClassRoster from './components/TeacherPortal/ClassRoster'
 import TeacherComms from './components/TeacherPortal/TeacherComms'
 import AttendanceMarking from './components/Academics/AttendanceMarking'
 
-// Finance Components
-import FeeManagement from './components/Finance/FeeManagement'
+// Parent Portal
+import ParentDashboard from './components/ParentPortal/ParentDashboard'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -62,7 +68,7 @@ function App() {
           setSession(parsed)
           setUserRole(parsed.role)
           setUserInfo(parsed.userInfo)
-          setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : 'overview')
+          setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
         }
       } catch (error) {
         console.error('Initialization error:', error)
@@ -79,7 +85,7 @@ function App() {
     setSession(sessionData)
     setUserRole(role)
     setUserInfo(userInfo)
-    setActiveTab(role === 'teacher' ? 'teacher-dashboard' : 'overview')
+    setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
     setLoading(false)
     localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Welcome back! Logged in as ${role}`, 'success')
@@ -147,16 +153,36 @@ function App() {
 
   if (!session) return <Login onLogin={handleLogin} />
 
+  // Parent Portal
+  if (userRole === 'parent') {
+    return (
+      <>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        <ParentDashboard userInfo={userInfo} onLogout={() => setShowLogoutConfirm(true)} />
+        <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+      </>
+    )
+  }
+
+  // Student Portal (simplified version of parent portal for now)
+  if (userRole === 'student') {
+    return (
+      <>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        <ParentDashboard userInfo={{ ...userInfo, name: userInfo?.name || 'Student', parentId: userInfo?.studentId }} onLogout={() => setShowLogoutConfirm(true)} />
+        <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+      </>
+    )
+  }
+
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
       
       {/* Global Style to Hide Scrollbars Completely */}
       <style>{`
-        /* Hide scrollbar for Chrome, Safari and Opera */
         ::-webkit-scrollbar {
           display: none;
         }
-        /* Hide scrollbar for IE, Edge and Firefox */
         * {
           -ms-overflow-style: none;
           scrollbar-width: none;
@@ -270,7 +296,7 @@ function App() {
           </div>
         </header>
 
-        {/* CONTENT AREA - No internal scroll, uses browser scroll */}
+        {/* CONTENT AREA */}
         <div style={{ flex: 1, padding: '30px' }}>
           
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
@@ -295,6 +321,7 @@ function App() {
               {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
               {activeTab === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
               {activeTab === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'import' && <BulkImport showToast={showToast} />}
               {activeTab === 'student-list' && (
                 selectedStudentProfile ? (
                   <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
@@ -307,14 +334,13 @@ function App() {
               {activeTab === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
               {activeTab === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
               {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
-              
-              {/* Placeholders for New Features */}
-              {activeTab === 'promote' && <div className="dashboard-card"><h2>Promote Students</h2><p>Bulk promotion feature coming soon.</p></div>}
-              {activeTab === 'import' && <div className="dashboard-card"><h2>Bulk Import</h2><p>CSV upload feature coming soon.</p></div>}
-              {activeTab === 'approval' && <div className="dashboard-card"><h2>Grade Approval</h2><p>Review and approve teacher submissions.</p></div>}
-              {activeTab === 'reports' && <div className="dashboard-card"><h2>Report Cards</h2><p>Generate and publish report cards.</p></div>}
-              {activeTab === 'scale' && <div className="dashboard-card"><h2>Grade Scale</h2><p>Configure grading boundaries.</p></div>}
+              {activeTab === 'approval' && <GradeApproval showToast={showToast} />}
+              {activeTab === 'reports' && <ReportCards showToast={showToast} />}
               {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
+              
+              {/* Placeholders */}
+              {activeTab === 'promote' && <div className="dashboard-card"><h2>Promote Students</h2><p>Bulk promotion feature coming soon.</p></div>}
+              {activeTab === 'scale' && <div className="dashboard-card"><h2>Grade Scale</h2><p>Configure grading boundaries.</p></div>}
             </>
           )}
 
