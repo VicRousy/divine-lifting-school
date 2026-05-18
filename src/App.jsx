@@ -31,6 +31,9 @@ import ClassRoster from './components/TeacherPortal/ClassRoster'
 import TeacherComms from './components/TeacherPortal/TeacherComms'
 import AttendanceMarking from './components/Academics/AttendanceMarking'
 
+// Finance Components
+import FeeManagement from './components/Finance/FeeManagement'
+
 function App() {
   const [session, setSession] = useState(null)
   const [userRole, setUserRole] = useState(null)
@@ -145,10 +148,27 @@ function App() {
   if (!session) return <Login onLogin={handleLogin} />
 
   return (
-    <div className="admin-layout" style={{ display: 'flex', height: '100vh', background: '#0f172a', color: '#f8fafc', overflow: 'hidden' }}>
+    <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
       
+      {/* Global Style to Hide Scrollbars Completely */}
+      <style>{`
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        ::-webkit-scrollbar {
+          display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        * {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        body {
+          margin: 0;
+          overflow-x: hidden;
+        }
+      `}</style>
+
       {/* SIDEBAR */}
-      <aside style={{ width: '260px', background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0 }}>
+      <aside style={{ width: '260px', background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
           <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#38bdf8' }}>DLS Admin</h2>
           <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Management Portal</p>
@@ -166,7 +186,7 @@ function App() {
           </div>
         </div>
 
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '20px 0' }}>
+        <nav style={{ flex: 1, padding: '20px 0' }}>
           {/* Admin Menu */}
           {userRole === 'admin' && (
             <>
@@ -185,12 +205,12 @@ function App() {
                 <SidebarItem icon="📝" label="Score Entry" active={activeTab === 'score-entry'} onClick={() => setActiveTab('score-entry')} />
                 <SidebarItem icon="✅" label="Grade Approval" active={activeTab === 'approval'} onClick={() => setActiveTab('approval')} />
                 <SidebarItem icon="📄" label="Report Cards" active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
-                <SidebarItem icon="️" label="Grade Scale" active={activeTab === 'scale'} onClick={() => setActiveTab('scale')} />
+                <SidebarItem icon="⚖️" label="Grade Scale" active={activeTab === 'scale'} onClick={() => setActiveTab('scale')} />
                 <SidebarItem icon="📚" label="Subjects" active={activeTab === 'subjects'} onClick={() => setActiveTab('subjects')} />
               </SidebarGroup>
               
               <SidebarGroup title="Staff">
-                <SidebarItem icon="👩‍🏫" label="Staff Directory" active={activeTab === 'teacher-list'} onClick={() => setActiveTab('teacher-list')} />
+                <SidebarItem icon="👩‍" label="Staff Directory" active={activeTab === 'teacher-list'} onClick={() => setActiveTab('teacher-list')} />
                 <SidebarItem icon="➕" label="Add Teacher" active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} />
                 <SidebarItem icon="🔗" label="Assignments" active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} />
               </SidebarGroup>
@@ -215,7 +235,7 @@ function App() {
               </SidebarGroup>
               
               <SidebarGroup title="Communication">
-                <SidebarItem icon="" label="Announcements" active={activeTab === 'teacher-comms'} onClick={() => setActiveTab('teacher-comms')} />
+                <SidebarItem icon="📢" label="Announcements" active={activeTab === 'teacher-comms'} onClick={() => setActiveTab('teacher-comms')} />
               </SidebarGroup>
             </>
           )}
@@ -227,10 +247,10 @@ function App() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* TOP HEADER BAR */}
-        <header style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0 }}>
+        <header style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
             <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
@@ -250,8 +270,8 @@ function App() {
           </div>
         </header>
 
-        {/* CONTENT SCROLL AREA */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '30px' }}>
+        {/* CONTENT AREA - No internal scroll, uses browser scroll */}
+        <div style={{ flex: 1, padding: '30px' }}>
           
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
           {activeTab === 'overview' && userRole === 'admin' && (
@@ -294,7 +314,7 @@ function App() {
               {activeTab === 'approval' && <div className="dashboard-card"><h2>Grade Approval</h2><p>Review and approve teacher submissions.</p></div>}
               {activeTab === 'reports' && <div className="dashboard-card"><h2>Report Cards</h2><p>Generate and publish report cards.</p></div>}
               {activeTab === 'scale' && <div className="dashboard-card"><h2>Grade Scale</h2><p>Configure grading boundaries.</p></div>}
-              {activeTab === 'fees' && <div className="dashboard-card"><h2>Fee Management</h2><p>Set fees and record payments.</p></div>}
+              {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
             </>
           )}
 
