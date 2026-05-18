@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
 function Login({ onLogin }) {
-  const [loginId, setLoginId] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -12,67 +12,69 @@ function Login({ onLogin }) {
     setLoading(true)
     setError('')
 
-    try {
-      // Check teachers table first
-      const { data: teacher, error: tError } = await supabase
-        .from('teachers')
-        .select('id, first_name, middle_name, last_name, staff_id, password')
-        .eq('staff_id', loginId.trim())
-        .maybeSingle()
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password
+    })
 
-      if (!tError && teacher && teacher.password === password) {
-        // Fetch role from user_roles
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('reference_id', teacher.id)
-          .eq('role', 'teacher')
-          .maybeSingle()
-
-        onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id })
-        setLoading(false)
-        return
-      }
-
-      // Check admins table
-      const { data: admin, error: aError } = await supabase
-        .from('admins')
-        .select('id, first_name, last_name, admin_id, password')
-        .eq('admin_id', loginId.trim())
-        .maybeSingle()
-
-      if (!aError && admin && admin.password === password) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('reference_id', admin.id)
-          .eq('role', 'admin')
-          .maybeSingle()
-
-        onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, adminId: admin.admin_id })
-        setLoading(false)
-        return
-      }
-
-      // Check profiles table as fallback
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, login_id, password, role')
-        .eq('login_id', loginId.trim())
-        .maybeSingle()
-
-      if (profile && profile.password === password) {
-        onLogin(profile.role || 'teacher', { id: profile.id, name: `${profile.first_name} ${profile.last_name}`, loginId: profile.login_id })
-        setLoading(false)
-        return
-      }
-
-      setError('Invalid Login ID or password.')
-    } catch (err) {
-      console.error('Login error:', err)
-      setError('Connection error. Please try again.')
+    if (authError) {
+      setError(authError.message === 'Invalid login credentials'
+        ? 'Incorrect email or password.'
+        : authError.message)
+      setLoading(false)
+      return
     }
 
+    const userId = authData.user.id
+
+    // Check profiles table for admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, first_name, middle_name, last_name, school_id, role')
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle()
+
+    if (profile && profile.role === 'admin') {
+      onLogin('admin', {
+        id: profile.id,
+        name: `${profile.first_name} ${profile.last_name}`,
+        schoolId: profile.school_id
+      })
+      setLoading(false)
+      return
+    }
+
+    // Check teachers table
+    const { data: teacher } = await supabase
+      .from('teachers')
+      .select('id, first_name, middle_name, last_name, staff_id')
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle()
+
+    if (teacher) {
+      onLogin('teacher', {
+        id: teacher.id,
+        name: `${teacher.first_name} ${teacher.last_name}`,
+        staffId: teacher.staff_id
+      })
+      setLoading(false)
+      return
+    }
+
+    // Fallback: check user_roles
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (roleData) {
+      onLogin(roleData.role, { id: userId, name: email })
+      setLoading(false)
+      return
+    }
+
+    setError('Access Denied: No school role assigned to this account.')
     setLoading(false)
   }
 
@@ -107,10 +109,10 @@ function Login({ onLogin }) {
 
         <form onSubmit={handleLogin}>
           <input
-            type="text"
-            placeholder="Login ID (e.g. ADMIN-001 or TCH-001)"
-            value={loginId}
-            onChange={(e) => setLoginId(e.target.value)}
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
             style={{
               width: '100%',
@@ -172,7 +174,7 @@ function Login({ onLogin }) {
               transition: 'transform 0.2s ease'
             }}
           >
-            {loading ? 'Authenticating...' : 'Sign In to Portal'}
+            {loading ? 'Authenticating...' : 'Login'}
           </button>
         </form>
       </div>
