@@ -16,31 +16,44 @@ function AttendanceMarking({ showToast, teacherId }) {
 
   const fetchClasses = async () => {
     if (teacherId) {
-      const { data, error } = await supabase
-        .from('teacher_assignments')
-        .select('class_id, classes(id, class_name)')
-        .eq('teacher_id', teacherId)
+      // First, find the teacher record by matching the profile ID or email
+      const { data: teacherData } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('email', teacherId)
+        .maybeSingle()
 
-      if (error) {
-        showToast?.('Could not load assigned classes: ' + error.message, 'error')
-        setClasses([])
+      // If we found a teacher record, use their BIGINT id
+      const teacherBigIntId = teacherData?.id
+
+      if (teacherBigIntId) {
+        const { data, error } = await supabase
+          .from('teacher_assignments')
+          .select('class_id, classes(id, class_name)')
+          .eq('teacher_id', teacherBigIntId)
+
+        if (error) {
+          showToast?.('Could not load assigned classes: ' + error.message, 'error')
+          setClasses([])
+          return
+        }
+
+        const seen = new Set()
+        const assignedClasses = (data || [])
+          .filter((row) => row.classes?.id && !seen.has(row.classes.id) && seen.add(row.classes.id))
+          .map((row) => row.classes)
+          .sort((a, b) => a.class_name.localeCompare(b.class_name))
+
+        setScopeMessage('Showing only your assigned classes.')
+        setClasses(assignedClasses)
+        if (!assignedClasses.some((cls) => String(cls.id) === String(selectedClass))) {
+          setSelectedClass(assignedClasses[0]?.id || '')
+        }
         return
       }
-
-      const seen = new Set()
-      const assignedClasses = (data || [])
-        .filter((row) => row.classes?.id && !seen.has(row.classes.id) && seen.add(row.classes.id))
-        .map((row) => row.classes)
-        .sort((a, b) => a.class_name.localeCompare(b.class_name))
-
-      setScopeMessage('Showing only your assigned classes.')
-      setClasses(assignedClasses)
-      if (!assignedClasses.some((cls) => String(cls.id) === String(selectedClass))) {
-        setSelectedClass(assignedClasses[0]?.id || '')
-      }
-      return
     }
 
+    // Fallback: show all active classes
     const { data } = await supabase
       .from('classes')
       .select('*')
@@ -112,7 +125,7 @@ function AttendanceMarking({ showToast, teacherId }) {
         student_id: s.id,
         date: selectedDate,
         status: attendance[s.id],
-        marked_by: user.id
+        marked_by: user?.id || null
       }))
 
       const { error } = await supabase
