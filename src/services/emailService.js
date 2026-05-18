@@ -1,11 +1,11 @@
 const API_URL = 'http://localhost:3001';
 
-export async function sendWelcomeEmail(userEmail, uniqueId, password, accountType) {
+export async function sendWelcomeEmail(userEmail, uniqueId, password, accountType, parentName = null, studentName = null) {
   try {
     const response = await fetch(`${API_URL}/api/send-welcome-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userEmail, uniqueId, password, accountType }),
+      body: JSON.stringify({ userEmail, uniqueId, password, accountType, parentName, studentName }),
     });
 
     const data = await response.json();

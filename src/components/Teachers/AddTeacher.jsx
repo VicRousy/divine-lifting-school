@@ -9,17 +9,11 @@ function AddTeacher(props) {
   const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [accessKey, setAccessKey] = useState('')
   const [saving, setSaving] = useState(false)
 
   const generateStaffId = () => 'TCH-' + Math.floor(1000 + Math.random() * 9000)
-
-  const generatePassword = () => {
-    const chars = 'abcdefghijkmnpqrstuvwxyz23456789'
-    let pass = ''
-    for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length))
-    return pass
-  }
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -32,41 +26,22 @@ function AddTeacher(props) {
     }
 
     const staffId = generateStaffId()
-    const password = generatePassword()
 
     try {
-      // Create Supabase Auth account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            staff_id: staffId,
-            role: 'teacher'
-          }
-        }
-      })
-
-      if (authError) throw authError
-
-      // Insert into teachers table
-      const { error: teacherError } = await supabase
+      const { error: insertError } = await supabase
         .from('teachers')
         .insert([{
           first_name: firstName,
           middle_name: middleName || '-',
           last_name: lastName,
           staff_id: staffId,
-          email: email.trim().toLowerCase()
+          login_id: staffId,
+          email: email.trim().toLowerCase(),
+          password: password
         }])
 
-      if (teacherError) {
-        console.error('Teacher insert error:', teacherError)
-      }
+      if (insertError) throw insertError
 
-      // Send credentials email
       await sendWelcomeEmail(email.trim().toLowerCase(), staffId, password, 'teacher')
 
       props.showToast(`${firstName} ${lastName} registered! Credentials sent to ${email}`, 'success')
@@ -75,6 +50,7 @@ function AddTeacher(props) {
       setMiddleName('')
       setLastName('')
       setEmail('')
+      setPassword('')
       setAccessKey('')
 
       if (props.onAdd) props.onAdd()
@@ -128,7 +104,7 @@ function AddTeacher(props) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label className="text-dim" style={{ fontSize: '0.8rem' }}>Teacher Gmail Address</label>
+            <label className="text-dim" style={{ fontSize: '0.8rem' }}>Teacher Gmail</label>
             <input
               className="counter"
               type="email"
@@ -136,6 +112,19 @@ function AddTeacher(props) {
               placeholder="e.g. teacher@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label className="text-dim" style={{ fontSize: '0.8rem' }}>Temporary Password</label>
+            <input
+              className="counter"
+              type="password"
+              style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
+              placeholder="Set initial password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
