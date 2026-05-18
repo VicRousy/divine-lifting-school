@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "concurrently \"npm run dev\" \"npm run start --prefix server\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
