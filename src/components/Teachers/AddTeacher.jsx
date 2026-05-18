@@ -35,32 +35,39 @@ function AddTeacher(props) {
     const password = generatePassword()
 
     try {
-      const { data: teacher, error: insertError } = await supabase
+      // Create Supabase Auth account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            staff_id: staffId,
+            role: 'teacher'
+          }
+        }
+      })
+
+      if (authError) throw authError
+
+      // Insert into teachers table
+      const { error: teacherError } = await supabase
         .from('teachers')
         .insert([{
           first_name: firstName,
           middle_name: middleName || '-',
           last_name: lastName,
           staff_id: staffId,
-          email: email.toLowerCase(),
-          password: password
-        }])
-        .select()
-        .single()
-
-      if (insertError) throw insertError
-
-      const teacherId = teacher.id
-
-      await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: teacherId,
-          reference_id: teacherId,
-          role: 'teacher'
+          email: email.trim().toLowerCase()
         }])
 
-      await sendWelcomeEmail(email.toLowerCase(), staffId, password, 'teacher')
+      if (teacherError) {
+        console.error('Teacher insert error:', teacherError)
+      }
+
+      // Send credentials email
+      await sendWelcomeEmail(email.trim().toLowerCase(), staffId, password, 'teacher')
 
       props.showToast(`${firstName} ${lastName} registered! Credentials sent to ${email}`, 'success')
 
