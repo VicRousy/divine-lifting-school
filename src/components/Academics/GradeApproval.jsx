@@ -19,8 +19,7 @@ function GradeApproval({ showToast }) {
       .select(`
         *,
         students(first_name, last_name, class_name),
-        subjects(subject_name),
-        teachers(first_name, last_name)
+        subjects(subject_name)
       `)
       .order('created_at', { ascending: false })
 
