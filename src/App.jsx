@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import PortalLanding from './components/PortalLanding'
+import { supabase } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
@@ -32,8 +32,6 @@ import TeacherComms from './components/TeacherPortal/TeacherComms'
 import AttendanceMarking from './components/Academics/AttendanceMarking'
 
 function App() {
-  const [screen, setScreen] = useState('landing')
-  const [selectedPortal, setSelectedPortal] = useState(null)
   const [session, setSession] = useState(null)
   const [userRole, setUserRole] = useState(null)
   const [userInfo, setUserInfo] = useState(null)
@@ -63,7 +61,6 @@ function App() {
           setUserRole(parsed.role)
           setUserInfo(parsed.userInfo)
           setViewMode(parsed.role)
-          setScreen('dashboard')
         }
       } catch (error) {
         console.error('Initialization error:', error)
@@ -75,23 +72,13 @@ function App() {
     prepareApp()
   }, [])
 
-  const handleSelectPortal = (portal) => {
-    setSelectedPortal(portal)
-    setScreen('login')
-  }
-
-  const handleBackToPortals = () => {
-    setScreen('landing')
-    setSelectedPortal(null)
-  }
-
   const handleLogin = (role, userInfo) => {
     const sessionData = { role, userInfo, loginTime: new Date().toISOString() }
     setSession(sessionData)
     setUserRole(role)
     setUserInfo(userInfo)
     setViewMode(role)
-    setScreen('dashboard')
+    setLoading(false)
     localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Welcome back! Logged in as ${role}`, 'success')
   }
@@ -103,8 +90,6 @@ function App() {
     setUserInfo(null)
     setActiveTab('overview')
     setViewMode('admin')
-    setScreen('landing')
-    setSelectedPortal(null)
     localStorage.removeItem('dls_session')
     showToast('Logged out successfully', 'success')
   }
@@ -145,13 +130,7 @@ function App() {
     )
   }
 
-  if (screen === 'landing') {
-    return <PortalLanding onSelectPortal={handleSelectPortal} />
-  }
-
-  if (screen === 'login') {
-    return <Login portal={selectedPortal} onLogin={handleLogin} onBack={handleBackToPortals} />
-  }
+  if (!session) return <Login onLogin={handleLogin} />
 
   if (viewMode === 'teacher' || userRole === 'teacher') {
     return (
@@ -270,7 +249,7 @@ function TeacherPortalContent({ user, teacherId, activeTab, setActiveTab, showTo
   return (
     <div style={{ minHeight: '100vh', background: '#0f172a' }}>
       <nav style={{ background: '#1e293b', padding: '12px 20px', display: 'flex', gap: '10px', alignItems: 'center', borderBottom: '1px solid #334155', flexWrap: 'wrap' }}>
-        <span style={{ color: '#a855f7', fontWeight: 'bold', marginRight: '20px' }}>TEACHER PORTAL</span>
+        <span style={{ color: '#38bdf8', fontWeight: 'bold', marginRight: '20px' }}>TEACHER PORTAL</span>
         <button onClick={() => navigate('teacher-dashboard')} style={navBtnStyle(activeTab === 'teacher-dashboard')}>Dashboard</button>
         <button onClick={() => navigate('scores')} style={navBtnStyle(activeTab === 'scores')}>Gradebook</button>
         <button onClick={() => navigate('roster')} style={navBtnStyle(activeTab === 'roster')}>Class Roster</button>
@@ -292,7 +271,7 @@ function TeacherPortalContent({ user, teacherId, activeTab, setActiveTab, showTo
 
 function navBtnStyle(active) {
   return {
-    background: active ? '#a855f7' : 'transparent',
+    background: active ? '#38bdf8' : 'transparent',
     color: active ? '#020617' : '#94a3b8',
     border: 'none',
     padding: '8px 16px',
