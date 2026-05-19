@@ -1,209 +1,291 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import {
+  getPreferredTerm,
+  getTermAcademicYear,
+  getTermLabel,
+  normalizeTermRows,
+} from '../../utils/academicSession'
 
-function ScoreEntry({ showToast }) { // Destructured showToast from props
+function clampScore(value, max) {
+  if (value === '' || value === null || value === undefined) return ''
+  const num = Number(value)
+  if (Number.isNaN(num)) return ''
+  return Math.max(0, Math.min(max, num))
+}
+
+function getGradeInfo(total) {
+  const score = Number(total)
+  if (score >= 90) return { grade: 'A+', remark: 'Excellent', color: '#10b981' }
+  if (score >= 80) return { grade: 'A', remark: 'Very Good', color: '#34d399' }
+  if (score >= 70) return { grade: 'B+', remark: 'Good', color: '#38bdf8' }
+  if (score >= 60) return { grade: 'B', remark: 'Satisfactory', color: '#f59e0b' }
+  if (score >= 50) return { grade: 'C', remark: 'Pass', color: '#fbbf24' }
+  return { grade: 'F', remark: 'Fail', color: '#ef4444' }
+}
+
+export default function ScoreEntry({ showToast }) {
   const [classes, setClasses] = useState([])
   const [subjects, setSubjects] = useState([])
+  const [terms, setTerms] = useState([])
   const [students, setStudents] = useState([])
-  
+
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('')
-  const [term, setTerm] = useState('First Term 2026')
-  
-  const [scores, setScores] = useState({}) 
+  const [selectedTermId, setSelectedTermId] = useState('')
+
+  const [scores, setScores] = useState({})
   const [loading, setLoading] = useState(false)
 
-  // Divine Lifting Custom Grading Scale
-  const getGrade = (total) => {
-    const score = Number(total);
-    if (score >= 80) return { grade: 'A+', remark: 'Distinction', color: '#10b981' };
-    if (score >= 70) return { grade: 'A1', remark: 'Excellent', color: '#34d399' };
-    if (score >= 60) return { grade: 'B',  remark: 'Very Good', color: '#38bdf8' };
-    if (score >= 50) return { grade: 'C',  remark: 'Credit',     color: '#f59e0b' };
-    if (score >= 40) return { grade: 'D',  remark: 'Pass',       color: '#94a3b8' };
-    return { grade: 'F', remark: 'Fail', color: '#ef4444' };
-  };
+  const selectedTerm = terms.find((t) => String(t.id) === String(selectedTermId))
+  const selectedTermLabel = getTermLabel(selectedTerm)
+  const selectedAcademicYear = getTermAcademicYear(selectedTerm)
 
   useEffect(() => {
     const setup = async () => {
-      const { data: cls } = await supabase.from('classes').select('*')
-      const { data: sub } = await supabase.from('subjects').select('*')
+      const [{ data: cls }, { data: sub }, { data: termData }] = await Promise.all([
+        supabase.from('classes').select('*').order('class_name'),
+        supabase.from('subjects').select('*').order('subject_name'),
+        supabase.from('terms').select('*').order('id', { ascending: true }),
+      ])
       setClasses(cls || [])
       setSubjects(sub || [])
+      const normalizedTerms = normalizeTermRows(termData || [])
+      setTerms(normalizedTerms)
+      if (normalizedTerms.length > 0 && !selectedTermId) {
+        setSelectedTermId(String(getPreferredTerm(normalizedTerms).id))
+      }
     }
     setup()
   }, [])
 
   useEffect(() => {
-    if (selectedClass) {
-      const fetchStudents = async () => {
-        const { data } = await supabase
-          .from('students')
-          .select('id, first_name, last_name')
-          .eq('class_id', selectedClass)
-        setStudents(data || [])
-        
-        const initialScores = {}
-        data.forEach(s => {
-          initialScores[s.id] = { ca: '', exam: '' }
-        })
-        setScores(initialScores)
+    if (!selectedClass) return
+    const fetchStudents = async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, first_name, middle_name, last_name')
+        .eq('class_id', selectedClass)
+        .eq('is_active', true)
+        .order('last_name')
+      if (error) {
+        showToast?.('Failed to load students: ' + error.message, 'error')
+        setStudents([])
+        return
       }
-      fetchStudents()
+      const list = data || []
+      setStudents(list)
+      const initial = {}
+      for (const s of list) {
+        initial[s.id] = { ca1: '', ca2: '', exam: '' }
+      }
+      setScores(initial)
     }
+    fetchStudents()
   }, [selectedClass])
 
-  const handleScoreChange = (studentId, field, value) => {
-    setScores(prev => ({
+  const updateScore = (studentId, field, rawValue) => {
+    const max = field === 'exam' ? 60 : 20
+    const next = rawValue === '' ? '' : clampScore(rawValue, max)
+    setScores((prev) => ({
       ...prev,
-      [studentId]: { ...prev[studentId], [field]: value }
+      [studentId]: { ...(prev[studentId] || { ca1: '', ca2: '', exam: '' }), [field]: next },
     }))
   }
 
   const saveAllScores = async () => {
-    if (!selectedSubject || !selectedClass) {
-        showToast("Please select both a Class and a Subject first!", "error");
-        return;
+    if (!selectedSubject || !selectedClass || !selectedTermLabel || !selectedAcademicYear) {
+      showToast?.('Select class, subject, and term first.', 'error')
+      return
     }
-
-    // --- Validation Logic ---
-    let invalidEntry = false;
-    students.forEach(s => {
-      const ca = parseFloat(scores[s.id].ca || 0);
-      const exam = parseFloat(scores[s.id].exam || 0);
-      if (ca > 40 || exam > 60) invalidEntry = true;
-    });
-
-    if (invalidEntry) {
-      showToast("Validation Error: CA cannot exceed 40 and Exam cannot exceed 60.", "error");
-      return;
+    if (students.length === 0) {
+      showToast?.('No students in this class.', 'error')
+      return
     }
 
     setLoading(true)
-    const updates = students.map(s => ({
-      student_id: s.id,
-      subject_id: selectedSubject,
-      class_id: selectedClass,
-      ca_score: parseFloat(scores[s.id].ca || 0),
-      exam_score: parseFloat(scores[s.id].exam || 0),
-      term: term,
-      academic_year: '2025/2026'
-    }))
+    try {
+      const payload = students.map((s) => ({
+        student_id: s.id,
+        subject_id: selectedSubject,
+        class_id: selectedClass,
+        ca1_score: Number(scores[s.id]?.ca1 || 0),
+        ca2_score: Number(scores[s.id]?.ca2 || 0),
+        exam_score: Number(scores[s.id]?.exam || 0),
+        term: selectedTermLabel,
+        academic_year: selectedAcademicYear,
+      }))
 
-    const { error } = await supabase
-        .from('exam_scores')
-        .upsert(updates, { 
-            onConflict: 'student_id,subject_id,term,academic_year' 
-        })
+      const { error } = await supabase.from('exam_scores').upsert(payload, {
+        onConflict: 'student_id,subject_id,term,academic_year',
+      })
 
-    setLoading(false)
-    if (error) {
-        showToast("Error saving: " + error.message, "error")
-    } else {
-        showToast(`Successfully saved results for ${students.length} students!`, "success")
+      if (error) {
+        showToast?.('Save failed: ' + error.message, 'error')
+      } else {
+        showToast?.(`Saved results for ${students.length} students.`, 'success')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
+  const ready = selectedClass && selectedSubject && selectedTermId
+
   return (
-    <div className="admin-table-container">
-      <h2 style={{ color: '#f8fafc', marginBottom: '20px' }}>Academic Gradebook</h2>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '30px' }}>
-        <div className="form-group">
-          <label className="text-dim" style={{fontSize: '0.8rem'}}>Class</label>
-          <select className="counter" onChange={(e) => setSelectedClass(e.target.value)} style={{width: '100%', background: '#1e293b', color: 'white'}}>
-            <option value="">Select Class</option>
-            {classes.map(c => <option key={c.id} value={c.id}>{c.class_name}</option>)}
+    <div style={{ padding: 30 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <div>
+          <h2 style={{ margin: 0, color: '#f8fafc' }}>Academic Gradebook</h2>
+          <div style={{ marginTop: 6, color: '#94a3b8', fontSize: '0.9rem' }}>
+            CA1 (20) + CA2 (20) + Exam (60) = Total (100)
+          </div>
+        </div>
+        <button
+          onClick={saveAllScores}
+          disabled={loading || !ready || students.length === 0}
+          style={{
+            background: loading || !ready ? '#334155' : '#38bdf8',
+            color: loading || !ready ? '#94a3b8' : '#0f172a',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: 10,
+            fontWeight: 700,
+            cursor: loading || !ready ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {loading ? 'Saving...' : '💾 Save All'}
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 18 }}>
+        <div>
+          <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 6 }}>CLASS</div>
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            style={{ width: '100%', padding: 12, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}
+          >
+            <option value="">Select class</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>{c.class_name}</option>
+            ))}
           </select>
         </div>
-        <div className="form-group">
-          <label className="text-dim" style={{fontSize: '0.8rem'}}>Subject</label>
-          <select className="counter" onChange={(e) => setSelectedSubject(e.target.value)} style={{width: '100%', background: '#1e293b', color: 'white'}}>
-            <option value="">Select Subject</option>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.subject_name}</option>)}
+        <div>
+          <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 6 }}>SUBJECT</div>
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            style={{ width: '100%', padding: 12, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}
+          >
+            <option value="">Select subject</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>{s.subject_name}</option>
+            ))}
           </select>
         </div>
-        <div className="form-group">
-          <label className="text-dim" style={{fontSize: '0.8rem'}}>Term</label>
-          <select className="counter" value={term} onChange={(e) => setTerm(e.target.value)} style={{width: '100%', background: '#1e293b', color: 'white'}}>
-            <option>First Term 2026</option>
-            <option>Second Term 2026</option>
-            <option>Third Term 2026</option>
+        <div>
+          <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 6 }}>TERM</div>
+          <select
+            value={selectedTermId}
+            onChange={(e) => setSelectedTermId(e.target.value)}
+            style={{ width: '100%', padding: 12, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}
+          >
+            <option value="">Select term</option>
+            {terms.map((t) => (
+              <option key={t.id} value={String(t.id)}>
+                {t.__label || `Term ${t.id}`} ({t.__academicYear})
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      {selectedClass && selectedSubject && students.length > 0 ? (
-        <>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Student Name</th>
-                <th style={{ width: '120px' }}>CA (40)</th>
-                <th style={{ width: '120px' }}>Exam (60)</th>
-                <th style={{ width: '140px', textAlign: 'right' }}>Total & Grade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map(s => {
-                const total = (parseFloat(scores[s.id]?.ca || 0) + parseFloat(scores[s.id]?.exam || 0)) || 0;
-                const gradeInfo = getGrade(total);
-
-                return (
-                  <tr key={s.id}>
-                    <td style={{fontWeight: '500'}}>{s.first_name} {s.last_name}</td>
-                    <td>
-                      <input 
-                        type="number" 
-                        className="counter" 
-                        style={{background: '#0f172a', border: '1px solid #334155'}}
-                        placeholder="0"
-                        value={scores[s.id]?.ca || ''}
-                        onChange={(e) => handleScoreChange(s.id, 'ca', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input 
-                        type="number" 
-                        className="counter" 
-                        style={{background: '#0f172a', border: '1px solid #334155'}}
-                        placeholder="0"
-                        value={scores[s.id]?.exam || ''}
-                        onChange={(e) => handleScoreChange(s.id, 'exam', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 'bold', color: gradeInfo.color, fontSize: '1.1rem' }}>
-                        {total}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: gradeInfo.color }}>
-                        Grade: {gradeInfo.grade}
-                      </div>
-                    </td>
+      {ready ? (
+        students.length > 0 ? (
+          <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #334155' }}>
+                    {['STUDENT', 'CA1 (20)', 'CA2 (20)', 'EXAM (60)', 'TOTAL', 'GRADE', 'REMARK'].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: 14,
+                          textAlign: h === 'STUDENT' ? 'left' : 'center',
+                          color: '#94a3b8',
+                          fontSize: '0.8rem',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {students.map((s) => {
+                    const row = scores[s.id] || { ca1: '', ca2: '', exam: '' }
+                    const total = Number(row.ca1 || 0) + Number(row.ca2 || 0) + Number(row.exam || 0)
+                    const gradeInfo = getGradeInfo(total)
 
-          <button 
-            onClick={saveAllScores} 
-            disabled={loading}
-            className="btn-delete" 
-            style={{ background: '#38bdf8', marginTop: '20px', width: '200px' }}
-          >
-            {loading ? 'Saving...' : '💾 Save All Results'}
-          </button>
-        </>
-      ) : selectedClass && selectedSubject ? (
-        <p className="text-dim" style={{padding: '20px'}}>No students found in this class.</p>
+                    return (
+                      <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <td style={{ padding: 14, color: '#e2e8f0', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {s.first_name} {s.middle_name ? `${s.middle_name} ` : ''}{s.last_name}
+                        </td>
+                        {['ca1', 'ca2', 'exam'].map((field) => (
+                          <td key={field} style={{ padding: 14, textAlign: 'center' }}>
+                            <input
+                              type="number"
+                              min={0}
+                              max={field === 'exam' ? 60 : 20}
+                              value={row[field]}
+                              onChange={(e) => updateScore(s.id, field, e.target.value)}
+                              style={{
+                                width: 80,
+                                padding: '8px 10px',
+                                borderRadius: 8,
+                                border: '1px solid #334155',
+                                background: '#0f172a',
+                                color: '#e2e8f0',
+                                outline: 'none',
+                                textAlign: 'center',
+                              }}
+                            />
+                          </td>
+                        ))}
+                        <td style={{ padding: 14, textAlign: 'center', color: total >= 50 ? '#22c55e' : '#f59e0b', fontWeight: 800, fontSize: '1rem' }}>
+                          {total}
+                        </td>
+                        <td style={{ padding: 14, textAlign: 'center', color: gradeInfo.color, fontWeight: 800 }}>
+                          {gradeInfo.grade}
+                          <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
+                            {gradeInfo.remark}
+                          </div>
+                        </td>
+                        <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                          {gradeInfo.remark}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>
+            No active students found in this class.
+          </div>
+        )
       ) : (
-        <p className="text-dim" style={{padding: '20px', textAlign: 'center', border: '1px dashed #334155', borderRadius: '8px'}}>
-          Please select a class and subject to begin grading.
-        </p>
+        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>
+          Select a class, subject, and term to start entering grades.
+        </div>
       )}
     </div>
   )
 }
-
-export default ScoreEntry

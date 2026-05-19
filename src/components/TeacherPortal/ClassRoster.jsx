@@ -12,10 +12,24 @@ export default function ClassRoster({ teacherId, showToast }) {
     const load = async () => {
       if (!teacherId) { setLoading(false); return; }
       try {
+        let teacherBigIntId = null;
+        if (/^\d+$/.test(String(teacherId))) {
+          teacherBigIntId = Number(teacherId);
+        } else {
+          const { data: t } = await supabase
+            .from("teachers")
+            .select("id")
+            .or(`login_id.eq.${teacherId},email.eq.${teacherId}`)
+            .maybeSingle();
+          teacherBigIntId = t?.id;
+        }
+
+        if (!teacherBigIntId) { setLoading(false); return; }
+
         const { data } = await supabase
           .from("teacher_assignments")
           .select(`class_id, classes (id, class_name)`)
-          .eq("teacher_id", teacherId);
+          .eq("teacher_id", teacherBigIntId);
 
         // Deduplicate classes
         const seen = new Set();

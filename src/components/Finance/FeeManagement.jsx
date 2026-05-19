@@ -1,172 +1,240 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
-function FeeManagement({ showToast }) {
-  const [activeTab, setActiveTab] = useState('status')
+export default function FeeManagement({ showToast }) {
   const [classes, setClasses] = useState([])
   const [students, setStudents] = useState([])
-  const [fees, setFees] = useState([])
+  const [selectedClass, setSelectedClass] = useState('')
+  const [selectedStudent, setSelectedStudent] = useState('')
+  const [feeType, setFeeType] = useState('Tuition')
+  const [amount, setAmount] = useState('')
+  const [status, setStatus] = useState('pending')
+  const [dueDate, setDueDate] = useState('')
   const [payments, setPayments] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  const [newFee, setNewFee] = useState({ class_id: '', term: 'First Term', fee_type: 'Tuition', amount: '' })
-  const [newPayment, setNewPayment] = useState({ student_id: '', amount: '', method: 'Cash', reference: '' })
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [view, setView] = useState('record') // 'record' or 'history'
 
   useEffect(() => {
-    loadData()
+    const setup = async () => {
+      const { data: cls } = await supabase.from('classes').select('id, class_name').order('class_name')
+      setClasses(cls || [])
+    }
+    setup()
   }, [])
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (selectedClass) {
+      const fetchStudents = async () => {
+        const { data } = await supabase.from('students').select('id, first_name, middle_name, last_name, student_id').eq('class_id', selectedClass).eq('is_active', true).order('last_name')
+        setStudents(data || [])
+      }
+      fetchStudents()
+    }
+  }, [selectedClass])
+
+  useEffect(() => {
+    if (view === 'history') {
+      fetchPayments()
+    }
+  }, [view])
+
+  const fetchPayments = async () => {
     setLoading(true)
-    const { data: classesData } = await supabase.from('classes').select('id, class_name')
-    setClasses(classesData || [])
-
-    const { data: studentsData } = await supabase.from('students').select('id, first_name, last_name, class_name, class_id')
-    setStudents(studentsData || [])
-
-    const { data: feesData } = await supabase.from('fees').select('*, classes(class_name)')
-    setFees(feesData || [])
-
-    const { data: paymentsData } = await supabase.from('payments').select('*, students(first_name, last_name), fees(fee_type)')
-    setPayments(paymentsData || [])
-
+    const { data } = await supabase.from('payments').select('*, students(first_name, last_name, student_id), classes(class_name)').order('created_at', { ascending: false })
+    setPayments(data || [])
     setLoading(false)
   }
 
-  const handleSetFee = async (e) => {
+  const recordPayment = async (e) => {
     e.preventDefault()
-    const { error } = await supabase.from('fees').insert([newFee])
+    if (!selectedStudent || !amount || !dueDate) {
+      showToast?.('Please fill in all required fields', 'error')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('payments').insert({
+        student_id: Number(selectedStudent),
+        class_id: Number(selectedClass),
+        fee_type: feeType,
+        amount: Number(amount),
+        status,
+        due_date: dueDate,
+        paid_at: status === 'paid' ? new Date().toISOString() : null,
+        created_at: new Date().toISOString(),
+      })
+
+      if (error) throw error
+
+      showToast?.('Payment record saved successfully!', 'success')
+      setAmount('')
+      setDueDate('')
+      setStatus('pending')
+    } catch (err) {
+      showToast?.('Failed to save payment: ' + err.message, 'error')
+    }
+    setSaving(false)
+  }
+
+  const markAsPaid = async (paymentId) => {
+    const { error } = await supabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', paymentId)
     if (error) {
-      showToast('Error setting fee: ' + error.message, 'error')
+      showToast?.('Failed to update payment', 'error')
     } else {
-      showToast('Fee set successfully!', 'success')
-      setNewFee({ class_id: '', term: 'First Term', fee_type: 'Tuition', amount: '' })
-      loadData()
+      showToast?.('Payment marked as paid', 'success')
+      fetchPayments()
     }
   }
 
-  const handleRecordPayment = async (e) => {
-    e.preventDefault()
-    const { error } = await supabase.from('payments').insert([newPayment])
+  const deletePayment = async (paymentId) => {
+    const { error } = await supabase.from('payments').delete().eq('id', paymentId)
     if (error) {
-      showToast('Error recording payment: ' + error.message, 'error')
+      showToast?.('Failed to delete payment', 'error')
     } else {
-      showToast('Payment recorded successfully!', 'success')
-      setNewPayment({ student_id: '', amount: '', method: 'Cash', reference: '' })
-      loadData()
+      showToast?.('Payment record deleted', 'success')
+      fetchPayments()
     }
   }
 
-  const getStudentBalance = (studentId) => {
-    const student = students.find(s => s.id === studentId)
-    if (!student) return { totalFees: 0, totalPaid: 0, balance: 0 }
-    
-    const studentFees = fees.filter(f => f.class_id === student.class_id)
-    const totalFees = studentFees.reduce((sum, f) => sum + Number(f.amount), 0)
-    const totalPaid = payments
-      .filter(p => p.student_id === studentId)
-      .reduce((sum, p) => sum + Number(p.amount_paid), 0)
-    return { totalFees, totalPaid, balance: totalFees - totalPaid }
-  }
+  const selectedStudentName = students.find((s) => String(s.id) === String(selectedStudent))
+    ? `${students.find((s) => String(s.id) === String(selectedStudent)).first_name} ${students.find((s) => String(s.id) === String(selectedStudent)).last_name}`
+    : ''
 
-  if (loading) return <div className="dashboard-card">Loading Fee Data...</div>
+  const totalPending = payments.filter((p) => p.status === 'pending').reduce((sum, p) => sum + (p.amount || 0), 0)
+  const totalPaid = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0)
 
   return (
-    <div className="dashboard-card">
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
-        <button onClick={() => setActiveTab('status')} style={{ padding: '8px 16px', background: activeTab === 'status' ? '#38bdf8' : 'transparent', color: activeTab === 'status' ? '#0f172a' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Fee Status</button>
-        <button onClick={() => setActiveTab('set')} style={{ padding: '8px 16px', background: activeTab === 'set' ? '#38bdf8' : 'transparent', color: activeTab === 'set' ? '#0f172a' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Set Fees</button>
-        <button onClick={() => setActiveTab('record')} style={{ padding: '8px 16px', background: activeTab === 'record' ? '#38bdf8' : 'transparent', color: activeTab === 'record' ? '#0f172a' : '#94a3b8', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Record Payment</button>
+    <div style={{ padding: 30 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h2 style={{ margin: 0, color: '#f8fafc' }}>Fee Management</h2>
+          <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Record payments and track fee status</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={() => setView('record')} style={{ padding: '8px 16px', background: view === 'record' ? '#38bdf8' : '#1e293b', color: view === 'record' ? '#0f172a' : '#94a3b8', border: '1px solid #334155', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Record Payment</button>
+          <button onClick={() => setView('history')} style={{ padding: '8px 16px', background: view === 'history' ? '#38bdf8' : '#1e293b', color: view === 'history' ? '#0f172a' : '#94a3b8', border: '1px solid #334155', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Payment History</button>
+        </div>
       </div>
 
-      {activeTab === 'status' && (
-        <div>
-          <h3>Student Fee Status</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #334155', textAlign: 'left' }}>
-                <th style={{ padding: '10px', color: '#94a3b8' }}>Student</th>
-                <th style={{ padding: '10px', color: '#94a3b8' }}>Class</th>
-                <th style={{ padding: '10px', color: '#94a3b8' }}>Total Fees</th>
-                <th style={{ padding: '10px', color: '#94a3b8' }}>Paid</th>
-                <th style={{ padding: '10px', color: '#94a3b8' }}>Balance</th>
-                <th style={{ padding: '10px', color: '#94a3b8' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map(student => {
-                const { totalFees, totalPaid, balance } = getStudentBalance(student.id)
-                return (
-                  <tr key={student.id} style={{ borderBottom: '1px solid #334155' }}>
-                    <td style={{ padding: '10px' }}>{student.first_name} {student.last_name}</td>
-                    <td style={{ padding: '10px' }}>{student.class_name}</td>
-                    <td style={{ padding: '10px' }}>₦{totalFees.toLocaleString()}</td>
-                    <td style={{ padding: '10px' }}>₦{totalPaid.toLocaleString()}</td>
-                    <td style={{ padding: '10px', color: balance > 0 ? '#ef4444' : '#10b981' }}>₦{balance.toLocaleString()}</td>
-                    <td style={{ padding: '10px' }}>
-                      <span style={{ padding: '4px 8px', borderRadius: '4px', background: balance > 0 ? '#ef444422' : '#10b98122', color: balance > 0 ? '#ef4444' : '#10b981', fontSize: '0.8rem' }}>
-                        {balance > 0 ? 'Owing' : 'Paid'}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+      {view === 'record' && (
+        <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, padding: 24 }}>
+          <h3 style={{ margin: '0 0 20px', color: '#38bdf8' }}>Record New Payment</h3>
+          <form onSubmit={recordPayment} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Class</label>
+                <select value={selectedClass} onChange={(e) => { setSelectedClass(e.target.value); setSelectedStudent('') }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                  <option value="">Select class</option>
+                  {classes.map((c) => (<option key={c.id} value={c.id}>{c.class_name}</option>))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Student</label>
+                <select value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                  <option value="">Select student</option>
+                  {students.map((s) => (<option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Fee Type</label>
+                <select value={feeType} onChange={(e) => setFeeType(e.target.value)} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                  <option>Tuition</option>
+                  <option>Development</option>
+                  <option>Uniform</option>
+                  <option>Books</option>
+                  <option>Transport</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Amount (₦)</label>
+                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required placeholder="0.00" style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Due Date</label>
+                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="partial">Partial</option>
+              </select>
+            </div>
+            <button type="submit" disabled={saving} style={{ padding: '12px 24px', background: saving ? '#334155' : '#10b981', color: saving ? '#94a3b8' : '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
+              {saving ? 'Saving...' : '💾 Record Payment'}
+            </button>
+          </form>
         </div>
       )}
 
-      {activeTab === 'set' && (
-        <form onSubmit={handleSetFee} style={{ maxWidth: '500px' }}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Class</label>
-            <select value={newFee.class_id} onChange={e => setNewFee({...newFee, class_id: e.target.value})} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }} required>
-              <option value="">Select Class</option>
-              {classes.map(c => <option key={c.id} value={c.id}>{c.class_name}</option>)}
-            </select>
+      {view === 'history' && (
+        <>
+          <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+            <div style={{ flex: 1, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 10, padding: '16px 20px' }}>
+              <div style={{ fontSize: '0.85rem', color: '#ef4444', marginBottom: 4 }}>Total Pending</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>₦{totalPending.toLocaleString()}</div>
+            </div>
+            <div style={{ flex: 1, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: 10, padding: '16px 20px' }}>
+              <div style={{ fontSize: '0.85rem', color: '#10b981', marginBottom: 4 }}>Total Paid</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#10b981' }}>₦{totalPaid.toLocaleString()}</div>
+            </div>
           </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Fee Type</label>
-            <input type="text" value={newFee.fee_type} onChange={e => setNewFee({...newFee, fee_type: e.target.value})} placeholder="e.g. Tuition, Books" style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }} required />
-          </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Amount (₦)</label>
-            <input type="number" value={newFee.amount} onChange={e => setNewFee({...newFee, amount: e.target.value})} placeholder="0.00" style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }} required />
-          </div>
-          <button type="submit" style={{ padding: '10px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Set Fee</button>
-        </form>
-      )}
 
-      {activeTab === 'record' && (
-        <form onSubmit={handleRecordPayment} style={{ maxWidth: '500px' }}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Student</label>
-            <select value={newPayment.student_id} onChange={e => setNewPayment({...newPayment, student_id: e.target.value})} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }} required>
-              <option value="">Select Student</option>
-              {students.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Amount Paid (₦)</label>
-            <input type="number" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} placeholder="0.00" style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }} required />
-          </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Payment Method</label>
-            <select value={newPayment.method} onChange={e => setNewPayment({...newPayment, method: e.target.value})} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }}>
-              <option value="Cash">Cash</option>
-              <option value="Transfer">Transfer</option>
-              <option value="POS">POS</option>
-            </select>
-          </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8' }}>Reference (Optional)</label>
-            <input type="text" value={newPayment.reference} onChange={e => setNewPayment({...newPayment, reference: e.target.value})} placeholder="Transaction ID" style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: 'white', borderRadius: '6px' }} />
-          </div>
-          <button type="submit" style={{ padding: '10px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Record Payment</button>
-        </form>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading payments...</div>
+          ) : payments.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>No payment records found.</div>
+          ) : (
+            <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #334155' }}>
+                      {['STUDENT', 'CLASS', 'FEE TYPE', 'AMOUNT', 'DUE DATE', 'STATUS', 'ACTION'].map((h) => (
+                        <th key={h} style={{ padding: 14, textAlign: h === 'STUDENT' || h === 'FEE TYPE' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p) => (
+                      <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <td style={{ padding: 14, color: '#e2e8f0', fontWeight: 600 }}>{p.students?.first_name} {p.students?.last_name}</td>
+                        <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{p.classes?.class_name}</td>
+                        <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{p.fee_type}</td>
+                        <td style={{ padding: 14, textAlign: 'center', color: '#e2e8f0', fontWeight: 700 }}>₦{p.amount?.toLocaleString()}</td>
+                        <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{new Date(p.due_date).toLocaleDateString()}</td>
+                        <td style={{ padding: 14, textAlign: 'center' }}>
+                          <span style={{
+                            padding: '4px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
+                            background: p.status === 'paid' ? 'rgba(16,185,129,0.15)' : p.status === 'overdue' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                            color: p.status === 'paid' ? '#10b981' : p.status === 'overdue' ? '#ef4444' : '#f59e0b',
+                          }}>
+                            {p.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: 14, textAlign: 'center', display: 'flex', gap: 8, justifyContent: 'center' }}>
+                          {p.status !== 'paid' && (
+                            <button onClick={() => markAsPaid(p.id)} style={{ padding: '6px 12px', background: '#10b981', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>Mark Paid</button>
+                          )}
+                          <button onClick={() => deletePayment(p.id)} style={{ padding: '6px 12px', background: '#ef4444', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
 }
-
-export default FeeManagement

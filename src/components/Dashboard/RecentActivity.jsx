@@ -8,19 +8,11 @@ function RecentActivity({ refreshTrigger }) {
   const fetchGlobalActivity = async () => {
     setLoading(true)
     try {
-      // Fetch latest students
-      const { data: students } = await supabase
-        .from('students')
-        .select('first_name, last_name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      // Fetch latest teachers
-      const { data: teachers } = await supabase
-        .from('teachers')
-        .select('first_name, last_name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(2)
+      // Parallel queries with minimal columns for speed
+      const [{ data: students }, { data: teachers }] = await Promise.all([
+        supabase.from('students').select('first_name, last_name, created_at').order('created_at', { ascending: false }).limit(3),
+        supabase.from('teachers').select('first_name, last_name, created_at').order('created_at', { ascending: false }).limit(2)
+      ])
 
       // Merge and sort them by date
       const combined = [

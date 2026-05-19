@@ -29,6 +29,7 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
   const [setupLoading, setSetupLoading] = useState(true);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [resolvedTeacherId, setResolvedTeacherId] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [terms, setTerms] = useState([]);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
@@ -74,16 +75,33 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
       setSetupLoading(true);
       setLoadError("");
       try {
+        // Resolve BIGINT teacher id from teachers table (teacherId may be UUID or email)
+        let teacherBigIntId = null;
+        if (/^\d+$/.test(String(teacherId))) {
+          teacherBigIntId = Number(teacherId);
+        } else {
+          const { data: t } = await supabase
+            .from("teachers")
+            .select("id")
+            .or(`login_id.eq.${teacherId},email.eq.${teacherId}`)
+            .maybeSingle();
+          teacherBigIntId = t?.id ?? null;
+        }
+        setResolvedTeacherId(teacherBigIntId);
+
+        // Parallel queries with minimal columns
         const [{ data: termData, error: termError }, { data: assignmentData, error: assignmentError }] =
           await withTimeout(
             Promise.all([
-              supabase.from("terms").select("*").order("id", { ascending: true }),
-              supabase
-                .from("teacher_assignments")
-                .select(`id, class_id, subject_id,
-                  classes (id, class_name),
-                  subjects (id, subject_name)`)
-                .eq("teacher_id", teacherId),
+              supabase.from("terms").select("id, academic_year, is_active").order("id", { ascending: true }),
+              teacherBigIntId
+                ? supabase
+                    .from("teacher_assignments")
+                    .select(`id, class_id, subject_id,
+                      classes (id, class_name),
+                      subjects (id, subject_name)`)
+                    .eq("teacher_id", teacherBigIntId)
+                : Promise.resolve({ data: [], error: null }),
             ]),
             "Gradebook setup"
           );
@@ -110,7 +128,7 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacherId]);
 
-  // ── Load roster, scores, and submission status ──────────────────────────
+  // ─ Load roster, scores, and submission status ──────────────────────────
   useEffect(() => {
     const loadRosterAndScores = async () => {
       if (!selectedAssignment || !selectedTermLabel || !selectedAcademicYear) {
@@ -149,9 +167,9 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
             supabase
               .from("grade_submissions")
               .select("status, rejection_reason")
-              .eq("teacher_id", String(teacherId))
-              .eq("class_id", String(classId))
-              .eq("subject_id", String(subjectId))
+              .eq("teacher_id", resolvedTeacherId)
+              .eq("class_id", classId)
+              .eq("subject_id", subjectId)
               .eq("term", selectedTermLabel)
               .eq("academic_year", selectedAcademicYear)
               .maybeSingle(),
@@ -195,7 +213,7 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
       }
     };
     loadRosterAndScores();
-  }, [selectedAssignment, selectedTermLabel, selectedAcademicYear, teacherId, showToast]);
+  }, [selectedAssignment, selectedTermLabel, selectedAcademicYear, resolvedTeacherId, showToast]);
 
   const updateScore = (studentId, field, rawValue) => {
     if (isLocked) return;
@@ -292,9 +310,9 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
       const { error: subError } = await supabase
         .from("grade_submissions")
         .upsert({
-          teacher_id: String(teacherId),
-          class_id: String(classId),
-          subject_id: String(subjectId),
+          teacher_id: resolvedTeacherId,
+          class_id: classId,
+          subject_id: subjectId,
           term: selectedTermLabel,
           academic_year: selectedAcademicYear,
           status: "submitted",

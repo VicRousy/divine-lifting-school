@@ -7,6 +7,7 @@ import Toast from './components/Toast'
 // Core Dashboard Components
 import DashboardStats from './components/Dashboard/DashboardStats'
 import RecentActivity from './components/Dashboard/RecentActivity'
+import AdminAnnouncements from './components/Admin/Announcements'
 
 // Registration Components
 import AddTeacher from './components/Teachers/AddTeacher'
@@ -26,6 +27,8 @@ import StudentProfile from './components/Students/StudentProfile'
 import ScoreEntry from './components/Academics/ScoreEntry'
 import GradeApproval from './components/Academics/GradeApproval'
 import ReportCards from './components/Academics/ReportCards'
+import ClassPromotion from './components/Academics/ClassPromotion'
+import GradeScale from './components/Academics/GradeScale'
 
 // Finance Components
 import FeeManagement from './components/Finance/FeeManagement'
@@ -36,9 +39,17 @@ import TeacherGradebook from './components/TeacherPortal/TeacherGradebook'
 import ClassRoster from './components/TeacherPortal/ClassRoster'
 import TeacherComms from './components/TeacherPortal/TeacherComms'
 import AttendanceMarking from './components/Academics/AttendanceMarking'
+import QuickAttendance from './components/TeacherPortal/QuickAttendance'
+import HomeworkManager from './components/TeacherPortal/HomeworkManager'
 
 // Parent Portal
 import ParentDashboard from './components/ParentPortal/ParentDashboard'
+
+// Student Portal
+import StudentPortal from './components/StudentPortal/StudentPortal'
+
+// Settings
+import SchoolSettings from './components/Settings/SchoolSettings'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -164,12 +175,12 @@ function App() {
     )
   }
 
-  // Student Portal (simplified version of parent portal for now)
+  // Student Portal
   if (userRole === 'student') {
     return (
       <>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-        <ParentDashboard userInfo={{ ...userInfo, name: userInfo?.name || 'Student', parentId: userInfo?.studentId }} onLogout={() => setShowLogoutConfirm(true)} />
+        <StudentPortal userInfo={userInfo} onLogout={() => setShowLogoutConfirm(true)} />
         <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
       </>
     )
@@ -244,6 +255,14 @@ function App() {
               <SidebarGroup title="Finance">
                 <SidebarItem icon="💰" label="Fee Management" active={activeTab === 'fees'} onClick={() => setActiveTab('fees')} />
               </SidebarGroup>
+
+              <SidebarGroup title="System">
+                <SidebarItem icon="⚙️" label="School Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+              </SidebarGroup>
+
+              <SidebarGroup title="Communication">
+                <SidebarItem icon="📢" label="Announcements" active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} />
+              </SidebarGroup>
             </>
           )}
 
@@ -256,8 +275,13 @@ function App() {
               
               <SidebarGroup title="Academics">
                 <SidebarItem icon="📝" label="Gradebook" active={activeTab === 'scores'} onClick={() => setActiveTab('scores')} />
+                <SidebarItem icon="✅" label="Quick Attendance" active={activeTab === 'quick-attendance'} onClick={() => setActiveTab('quick-attendance')} />
                 <SidebarItem icon="👥" label="Class Roster" active={activeTab === 'roster'} onClick={() => setActiveTab('roster')} />
                 <SidebarItem icon="📋" label="Attendance" active={activeTab === 'teacher-attendance'} onClick={() => setActiveTab('teacher-attendance')} />
+              </SidebarGroup>
+              
+              <SidebarGroup title="Assignments">
+                <SidebarItem icon="📚" label="Homework Manager" active={activeTab === 'homework'} onClick={() => setActiveTab('homework')} />
               </SidebarGroup>
               
               <SidebarGroup title="Communication">
@@ -314,7 +338,7 @@ function App() {
               {activeTab === 'overview' && (
                 <div>
                   <p className="text-dim" style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
-                  <DashboardStats refreshTrigger={refreshTrigger} />
+                  <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActiveTab} />
                   <RecentActivity refreshTrigger={refreshTrigger} />
                 </div>
               )}
@@ -337,10 +361,12 @@ function App() {
               {activeTab === 'approval' && <GradeApproval showToast={showToast} />}
               {activeTab === 'reports' && <ReportCards showToast={showToast} />}
               {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
+              {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
+              {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
               
               {/* Placeholders */}
-              {activeTab === 'promote' && <div className="dashboard-card"><h2>Promote Students</h2><p>Bulk promotion feature coming soon.</p></div>}
-              {activeTab === 'scale' && <div className="dashboard-card"><h2>Grade Scale</h2><p>Configure grading boundaries.</p></div>}
+              {activeTab === 'promote' && <ClassPromotion showToast={showToast} />}
+              {activeTab === 'scale' && <GradeScale showToast={showToast} />}
             </>
           )}
 
@@ -348,8 +374,10 @@ function App() {
             <>
               {activeTab === 'teacher-dashboard' && <TeacherDashboard user={userInfo} teacherId={userInfo?.id} onNavigate={setActiveTab} />}
               {activeTab === 'scores' && <TeacherGradebook teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'quick-attendance' && <QuickAttendance teacherId={userInfo?.id} showToast={showToast} />}
               {activeTab === 'roster' && <ClassRoster teacherId={userInfo?.id} />}
               {activeTab === 'teacher-attendance' && <AttendanceMarking teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'homework' && <HomeworkManager teacherId={userInfo?.id} showToast={showToast} />}
               {activeTab === 'teacher-comms' && <TeacherComms />}
             </>
           )}
