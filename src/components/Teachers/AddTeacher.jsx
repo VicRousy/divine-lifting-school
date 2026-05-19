@@ -37,7 +37,8 @@ function AddTeacher(props) {
           staff_id: staffId,
           login_id: staffId,
           email: email.trim().toLowerCase(),
-          password: password
+          password: password,
+          is_first_login: true
         }])
 
       if (insertError) throw insertError

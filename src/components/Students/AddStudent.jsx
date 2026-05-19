@@ -1,18 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { sendWelcomeEmail } from '../../services/emailService'
 
 const STUDENT_ACCESS_KEY = 'DLS-STUDENT-2026'
 
-function AddStudent(props) {
-  // Student State
+export default function AddStudent(props) {
+  const [classes, setClasses] = useState([])
+
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [className, setClassName] = useState('')
+  const [selectedClassId, setSelectedClassId] = useState('')
   const [studentPassword, setStudentPassword] = useState('')
 
-  // Parent State
   const [parentFirstName, setParentFirstName] = useState('')
   const [parentMiddleName, setParentMiddleName] = useState('')
   const [parentLastName, setParentLastName] = useState('')
@@ -23,8 +23,31 @@ function AddStudent(props) {
   const [accessKey, setAccessKey] = useState('')
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const { data } = await supabase.from('classes').select('id, class_name').order('class_name')
+      setClasses(data || [])
+    }
+    fetchClasses()
+  }, [])
+
   const generateStudentId = () => 'STU-' + Math.floor(1000 + Math.random() * 9000)
   const generateParentId = () => 'PAR-' + Math.floor(1000 + Math.random() * 9000)
+
+  const resetForm = () => {
+    setFirstName('')
+    setMiddleName('')
+    setLastName('')
+    setSelectedClassId('')
+    setStudentPassword('')
+    setParentFirstName('')
+    setParentMiddleName('')
+    setParentLastName('')
+    setParentEmail('')
+    setParentPhone('')
+    setParentPassword('')
+    setAccessKey('')
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -36,6 +59,12 @@ function AddStudent(props) {
       return
     }
 
+    if (!selectedClassId) {
+      props.showToast('Please select a class', 'error')
+      setSaving(false)
+      return
+    }
+
     const studentId = generateStudentId()
     const parentId = generateParentId()
 
@@ -43,7 +72,6 @@ function AddStudent(props) {
     const fullStudentName = `${firstName} ${middleName} ${lastName}`.trim()
 
     try {
-      // 1. Create Parent Record First
       const { data: parentData, error: parentError } = await supabase
         .from('parents')
         .insert([{
@@ -53,14 +81,13 @@ function AddStudent(props) {
           last_name: parentLastName,
           email: parentEmail.trim().toLowerCase(),
           phone: parentPhone,
-          password: parentPassword
+          password: parentPassword,
         }])
         .select()
         .single()
 
       if (parentError) throw parentError
 
-      // 2. Create Student Record Linked to Parent
       const { error: studentError } = await supabase
         .from('students')
         .insert([{
@@ -69,50 +96,34 @@ function AddStudent(props) {
           last_name: lastName,
           student_id: studentId,
           login_id: studentId,
-          class_name: className,
+          class_id: Number(selectedClassId),
           parent_id: parentData.id,
-          password: studentPassword
+          password: studentPassword,
+          is_active: true,
         }])
 
       if (studentError) throw studentError
 
-      // 3. Send Emails
-      // Email to Parent with their credentials + Student info
       await sendWelcomeEmail(
-        parentEmail.trim().toLowerCase(), 
-        parentId, 
-        parentPassword, 
-        'parent', 
-        fullParentName, 
-        fullStudentName
+        parentEmail.trim().toLowerCase(),
+        parentId,
+        parentPassword,
+        'parent',
+        fullParentName,
+        fullStudentName,
       )
-      
-      // Email to Parent with Student's credentials
+
       await sendWelcomeEmail(
-        parentEmail.trim().toLowerCase(), 
-        studentId, 
-        studentPassword, 
-        'student', 
-        null, 
-        fullStudentName
+        parentEmail.trim().toLowerCase(),
+        studentId,
+        studentPassword,
+        'student',
+        null,
+        fullStudentName,
       )
 
       props.showToast(`${firstName} ${lastName} registered! Credentials sent to ${parentEmail}`, 'success')
-
-      // Clear Form
-      setFirstName('')
-      setMiddleName('')
-      setLastName('')
-      setClassName('')
-      setStudentPassword('')
-      setParentFirstName('')
-      setParentMiddleName('')
-      setParentLastName('')
-      setParentEmail('')
-      setParentPhone('')
-      setParentPassword('')
-      setAccessKey('')
-
+      resetForm()
       if (props.onAdd) props.onAdd()
     } catch (err) {
       console.error('Registration error:', err)
@@ -123,79 +134,161 @@ function AddStudent(props) {
   }
 
   return (
-    <div className="admin-table-container" style={{ maxWidth: '700px' }}>
-      <div className="modal-content" style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none' }}>
-        <h3 style={{ color: '#f8fafc', marginBottom: '20px' }}>Register New Student</h3>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px' }}>
+      <h2 style={{ margin: '0 0 30px', color: '#f8fafc', textAlign: 'center' }}>Register New Student</h2>
 
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* SECTION 1: STUDENT INFO */}
-          <div style={{ background: '#1e293b', padding: '15px', borderRadius: '8px', border: '1px solid #334155' }}>
-            <h4 style={{ color: '#38bdf8', margin: '0 0 15px 0' }}>Student Information</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>First Name</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Middle Name</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Last Name</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Class</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={className} onChange={(e) => setClassName(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Student Password</label>
-                <input className="counter" type="password" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={studentPassword} onChange={(e) => setStudentPassword(e.target.value)} required />
-              </div>
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+        <div style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
+          <h4 style={{ margin: '0 0 20px', color: '#38bdf8' }}>Student Information</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>First Name</label>
+              <input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Middle Name</label>
+              <input
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Last Name</label>
+              <input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
             </div>
           </div>
-
-          {/* SECTION 2: PARENT INFO */}
-          <div style={{ background: '#1e293b', padding: '15px', borderRadius: '8px', border: '1px solid #334155' }}>
-            <h4 style={{ color: '#a855f7', margin: '0 0 15px 0' }}>Primary Guardian / Parent</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Parent First Name</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={parentFirstName} onChange={(e) => setParentFirstName(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Parent Middle Name</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={parentMiddleName} onChange={(e) => setParentMiddleName(e.target.value)} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Parent Last Name</label>
-                <input className="counter" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={parentLastName} onChange={(e) => setParentLastName(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Parent Gmail</label>
-                <input className="counter" type="email" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} required />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="text-dim" style={{ fontSize: '0.8rem' }}>Parent Password</label>
-                <input className="counter" type="password" style={{ background: '#0f172a', padding: '10px', color: 'white', width: '100%' }} value={parentPassword} onChange={(e) => setParentPassword(e.target.value)} required />
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15, marginTop: 15 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Class</label>
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              >
+                <option value="">Select class</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>{c.class_name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Student Password</label>
+              <input
+                type="password"
+                value={studentPassword}
+                onChange={(e) => setStudentPassword(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
             </div>
           </div>
+        </div>
 
-          {/* ACCESS KEY */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label className="text-dim" style={{ fontSize: '0.8rem' }}>Student Access Key</label>
-            <input className="counter" type="password" style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }} value={accessKey} onChange={(e) => setAccessKey(e.target.value)} required />
+        <div style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
+          <h4 style={{ margin: '0 0 20px', color: '#a855f7' }}>Primary Guardian / Parent</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent First Name</label>
+              <input
+                value={parentFirstName}
+                onChange={(e) => setParentFirstName(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Middle Name</label>
+              <input
+                value={parentMiddleName}
+                onChange={(e) => setParentMiddleName(e.target.value)}
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Last Name</label>
+              <input
+                value={parentLastName}
+                onChange={(e) => setParentLastName(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Email</label>
+              <input
+                type="email"
+                value={parentEmail}
+                onChange={(e) => setParentEmail(e.target.value)}
+                required
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Phone</label>
+              <input
+                value={parentPhone}
+                onChange={(e) => setParentPhone(e.target.value)}
+                style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+              />
+            </div>
+          </div>
+          <div style={{ marginTop: 15 }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Password</label>
+            <input
+              type="password"
+              value={parentPassword}
+              onChange={(e) => setParentPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
+            />
+          </div>
+        </div>
 
-          <button type="submit" className="btn-delete" style={{ background: saving ? '#64748b' : '#10b981', marginTop: '10px', height: '45px' }} disabled={saving}>
-            {saving ? 'Registering...' : 'Confirm Registration'}
-          </button>
-        </form>
-      </div>
+        <div style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 10, fontWeight: 600 }}>Student Access Key</label>
+          <input
+            type="password"
+            value={accessKey}
+            onChange={(e) => setAccessKey(e.target.value)}
+            required
+            style={{ width: '100%', padding: 14, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none', fontSize: '1rem' }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving}
+          style={{
+            padding: 16,
+            background: saving ? '#334155' : '#10b981',
+            color: saving ? '#94a3b8' : '#fff',
+            border: 'none',
+            borderRadius: 12,
+            fontWeight: 700,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            fontSize: '1.1rem',
+            marginTop: 10,
+            letterSpacing: '0.5px',
+          }}
+        >
+          {saving ? 'Registering...' : 'Confirm Registration'}
+        </button>
+      </form>
     </div>
   )
 }
-
-export default AddStudent

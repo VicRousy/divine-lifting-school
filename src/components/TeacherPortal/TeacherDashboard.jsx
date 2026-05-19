@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
 import { formatDisplayName } from "../../utils/nameUtils";
 import { withTimeout } from "../../utils/asyncUtils";
+import AnnouncementsWidget from "../Common/AnnouncementsWidget";
 
 function TeacherDashboard({ user, teacherId, onNavigate }) {
   const [teacherInfo, setTeacherInfo] = useState(null);
@@ -9,7 +10,6 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
   const [loading, setLoading] = useState(true);
 
   const fetchTeacherData = useCallback(async () => {
-    // If no ID yet, we stop loading immediately to prevent the "stuck" screen
     if (!teacherId) {
       setLoading(false);
       return;
@@ -18,38 +18,37 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
     setLoading(true);
 
     try {
-      // Get teacher info
-      const { data: teacher, error: tError } = await withTimeout(
-        supabase
+      let teacherBigIntId = null;
+      if (/^\d+$/.test(String(teacherId))) {
+        teacherBigIntId = Number(teacherId);
+      } else {
+        const { data: t } = await supabase
           .from("teachers")
-          .select("*")
-          .eq("id", teacherId)
-          .single(),
-        "Teacher profile"
-      );
+          .select("id")
+          .or(`login_id.eq.${teacherId},email.eq.${teacherId}`)
+          .maybeSingle();
+        teacherBigIntId = t?.id;
+      }
+
+      if (!teacherBigIntId) {
+        setLoading(false);
+        return;
+      }
+
+      // Parallel queries with minimal columns
+      const [{ data: teacher, error: tError }, { data: assignmentData, error: aError }] = await Promise.all([
+        supabase.from("teachers").select("first_name, middle_name, last_name, staff_id, email").eq("id", teacherBigIntId).single(),
+        supabase.from("teacher_assignments").select(`id, class_id, subject_id, classes (id, class_name), subjects (id, subject_name)`).eq("teacher_id", teacherBigIntId),
+      ]);
 
       if (tError) throw tError;
       setTeacherInfo(teacher);
-
-      // Get teacher's assignments
-      const { data: assignmentData, error: aError } = await withTimeout(
-        supabase
-          .from("teacher_assignments")
-          .select(`
-            id,
-            classes (id, class_name),
-            subjects (id, subject_name)
-          `)
-          .eq("teacher_id", teacherId),
-        "Teacher assignments"
-      );
 
       if (aError) throw aError;
       setAssignments(assignmentData || []);
       
     } catch (err) {
       console.error("Dashboard Fetch Error:", err.message);
-      // Even on error, we stop loading so the user can see the dashboard (even if empty)
     } finally {
       setLoading(false);
     }
@@ -223,6 +222,9 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
           </div>
         )}
       </div>
+
+      {/* Announcements */}
+      <AnnouncementsWidget role="teachers" />
     </div>
   );
 }

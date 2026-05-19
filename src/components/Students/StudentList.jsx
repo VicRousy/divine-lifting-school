@@ -15,11 +15,12 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
     const { data } = await supabase
       .from('students')
       .select(`id, first_name, middle_name, last_name, admission_number, class_id, created_at, classes (class_name)`)
+      .order('created_at', { ascending: false })
     setStudents(data || [])
   }
 
   const fetchClasses = async () => {
-    const { data } = await supabase.from('classes').select('id, class_name')
+    const { data } = await supabase.from('classes').select('id, class_name').order('class_name')
     setClasses(data || [])
   }
 

@@ -16,15 +16,17 @@ function AttendanceMarking({ showToast, teacherId }) {
 
   const fetchClasses = async () => {
     if (teacherId) {
-      // First, find the teacher record by matching the profile ID or email
-      const { data: teacherData } = await supabase
-        .from('teachers')
-        .select('id')
-        .eq('email', teacherId)
-        .maybeSingle()
-
-      // If we found a teacher record, use their BIGINT id
-      const teacherBigIntId = teacherData?.id
+      let teacherBigIntId = null;
+      if (/^\d+$/.test(String(teacherId))) {
+        teacherBigIntId = Number(teacherId);
+      } else {
+        const { data: teacherData } = await supabase
+          .from('teachers')
+          .select('id')
+          .or(`login_id.eq.${teacherId},email.eq.${teacherId}`)
+          .maybeSingle();
+        teacherBigIntId = teacherData?.id;
+      }
 
       if (teacherBigIntId) {
         const { data, error } = await supabase
