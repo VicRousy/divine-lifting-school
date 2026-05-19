@@ -204,17 +204,27 @@ function App() {
           overflow-x: hidden;
         }
         
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-          .mobile-close-btn {
-            display: block !important;
+        /* Desktop/Laptop: Sidebar always visible, no hamburger */
+        .sidebar {
+          display: flex !important;
+          position: sticky !important;
+          transform: none !important;
+          width: 260px !important;
+        }
+        .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
+          display: none !important;
+        }
+        
+        /* Mobile/Tablet: Sidebar hidden by default, hamburger visible */
+        @media (max-width: 1024px) {
+          .admin-layout {
+            flex-direction: column !important;
           }
           .hamburger-btn {
             display: block !important;
           }
-        }
-          .admin-layout {
-            flex-direction: column !important;
+          .mobile-close-btn {
+            display: block !important;
           }
           .sidebar {
             position: fixed !important;
@@ -230,6 +240,7 @@ function App() {
             transform: translateX(0) !important;
           }
           .sidebar-overlay {
+            display: block !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
