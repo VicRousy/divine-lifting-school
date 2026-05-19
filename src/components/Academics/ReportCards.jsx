@@ -6,6 +6,7 @@ import {
   getTermLabel,
   normalizeTermRows,
 } from '../../utils/academicSession'
+import { generateReportCardPDF } from '../../utils/pdfGenerator'
 
 function getGradeInfo(total) {
   const score = Number(total)
@@ -124,6 +125,11 @@ export default function ReportCards({ showToast }) {
     }, 100)
   }
 
+  const handleDownloadPDF = (student) => {
+    generateReportCardPDF(student, selectedClassName, termLabel, academicYear, students.length)
+    showToast?.('PDF downloaded successfully!', 'success')
+  }
+
   const selectedClassName = classes.find((c) => String(c.id) === String(selectedClass))?.class_name || ''
   const selectedTerm = terms.find((t) => String(t.id) === String(selectedTermId))
   const termLabel = getTermLabel(selectedTerm)
@@ -206,7 +212,13 @@ export default function ReportCards({ showToast }) {
                     <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{s.average}</td>
                     <td style={{ padding: 14, textAlign: 'center', color: getGradeInfo(s.average).color, fontWeight: 700 }}>{s.overallGrade}</td>
                     <td style={{ padding: 14, textAlign: 'center', color: '#38bdf8', fontWeight: 700 }}>{s.position}{s.position === 1 ? 'st' : s.position === 2 ? 'nd' : s.position === 3 ? 'rd' : 'th'}</td>
-                    <td style={{ padding: 14, textAlign: 'center' }}>
+                    <td style={{ padding: 14, textAlign: 'center', display: 'flex', gap: 8, justifyContent: 'center' }}>
+                      <button
+                        onClick={() => handleDownloadPDF(s)}
+                        style={{ padding: '6px 14px', background: '#a855f7', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+                      >
+                        📥 PDF
+                      </button>
                       <button
                         onClick={() => handlePrint(s)}
                         style={{ padding: '6px 14px', background: '#10b981', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
