@@ -262,6 +262,83 @@ app.post('/api/send-announcement-email', async (req, res) => {
   }
 });
 
+// Send fee invoice email endpoint
+app.post('/api/send-fee-invoice', async (req, res) => {
+  const { recipient, studentName, feeType, amount, dueDate } = req.body;
+
+  if (!recipient || !studentName || !amount || !dueDate) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
+
+  const mailOptions = {
+    from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
+    to: recipient,
+    subject: `Fee Invoice: ${feeType} for ${studentName}`,
+    html: `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f9fafb; }
+        .container { max-width: 600px; margin: 0 auto; padding: 0; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #38bdf8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { background: white; padding: 30px; border-radius: 0 0 10px 10px; }
+        .invoice-box { background: #f1f5f9; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #10b981; }
+        .invoice-row { display: flex; justify-content: space-between; margin: 10px 0; }
+        .invoice-label { font-weight: bold; color: #64748b; }
+        .invoice-value { color: #0f172a; font-weight: 600; }
+        .amount { font-size: 24px; color: #10b981; font-weight: bold; text-align: center; margin: 20px 0; }
+        .due-date { background: #fef3c7; padding: 10px; border-radius: 6px; text-align: center; color: #92400e; font-weight: bold; }
+        .footer { text-align: center; color: #94a3b8; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Divine Lifting School</h1>
+          <p>Fee Invoice</p>
+        </div>
+        <div class="content">
+          <p>Dear Parent/Guardian,</p>
+          <p>This is an invoice for <strong>${studentName}</strong>.</p>
+          
+          <div class="invoice-box">
+            <div class="invoice-row">
+              <span class="invoice-label">Fee Type:</span>
+              <span class="invoice-value">${feeType}</span>
+            </div>
+            <div class="invoice-row">
+              <span class="invoice-label">Student:</span>
+              <span class="invoice-value">${studentName}</span>
+            </div>
+            <div class="amount">₦${Number(amount).toLocaleString()}</div>
+            <div class="due-date">Due Date: ${new Date(dueDate).toLocaleDateString()}</div>
+          </div>
+          
+          <p>Please ensure payment is made before the due date to avoid any inconvenience.</p>
+          
+          <div class="footer">
+            <p><strong>Divine Lifting School</strong></p>
+            <p>Ikorodu, Lagos, Nigeria</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Fee invoice sent to: ${recipient}`);
+    res.status(200).json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error('❌ Fee invoice error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n🚀 Backend server running on http://localhost:${PORT}`);
