@@ -228,7 +228,7 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
   return (
     <>
       {/* Stats Grid - All Clickable */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
         <StatCard title="Total Students" value={stats.students} color="#38bdf8" icon="🎓" onClick={() => handleCardClick('student-list')} />
         <StatCard title="Staff Members" value={stats.teachers} color="#a855f7" icon="💼" onClick={() => handleCardClick('teacher-list')} />
         <StatCard title="Classrooms" value={stats.classes} color="#fbbf24" icon="🏫" onClick={() => handleCardClick('class-list')} />
@@ -271,7 +271,7 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
             </div>
           </>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 30, marginTop: 20 }}>
+          <div className="chart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 30, marginTop: 20 }}>
             {/* Students per Classroom */}
             <div>
               <h4 style={{ margin: '0 0 15px', color: '#38bdf8', fontSize: '0.9rem' }}>Students per Classroom</h4>
@@ -330,7 +330,7 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
         {academicLoading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading academic data...</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30 }}>
+          <div className="chart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30 }}>
             {/* Performance Gauge */}
             <div>
               <h4 style={{ margin: '0 0 15px', color: '#94a3b8', fontSize: '0.85rem' }}>ACADEMIC PERFORMANCE TREND</h4>

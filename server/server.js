@@ -200,6 +200,68 @@ app.post('/api/send-verification-email', async (req, res) => {
   }
 });
 
+// Send announcement email endpoint
+app.post('/api/send-announcement-email', async (req, res) => {
+  const { recipients, title, body, audience } = req.body;
+
+  if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+    return res.status(400).json({ success: false, error: 'Missing recipients' });
+  }
+  if (!title || !body) {
+    return res.status(400).json({ success: false, error: 'Missing title or body' });
+  }
+
+  const mailOptions = {
+    from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
+    to: recipients.join(', '),
+    subject: `📢 New Announcement: ${title}`,
+    html: `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f9fafb; }
+        .container { max-width: 600px; margin: 0 auto; padding: 0; }
+        .header { background: linear-gradient(135deg, #a855f7 0%, #38bdf8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { background: white; padding: 30px; border-radius: 0 0 10px 10px; }
+        .content h2 { color: #0f172a; margin-top: 0; }
+        .message { background: #f1f5f9; padding: 20px; margin: 20px 0; border-radius: 8px; white-space: pre-wrap; }
+        .audience-badge { display: inline-block; padding: 4px 12px; background: #e0e7ff; color: #4338ca; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; }
+        .footer { text-align: center; color: #94a3b8; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Divine Lifting School</h1>
+          <p>New Announcement</p>
+        </div>
+        <div class="content">
+          <span class="audience-badge">For: ${audience}</span>
+          <h2>${title}</h2>
+          <div class="message">${body}</div>
+          <div class="footer">
+            <p><strong>Divine Lifting School</strong></p>
+            <p>Ikorodu, Lagos, Nigeria</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Announcement email sent to ${recipients.length} recipients`);
+    res.status(200).json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error('❌ Announcement email error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`\n🚀 Backend server running on http://localhost:${PORT}`);
