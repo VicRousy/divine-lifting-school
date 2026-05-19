@@ -21,6 +21,7 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
     teacherDistribution: [],
     assignmentCompletion: 0,
     performanceTrend: [],
+    performanceLabels: [],
   })
   const [academicLoading, setAcademicLoading] = useState(true)
 
@@ -123,8 +124,36 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
       // Assignment completion (simplified: approved scores / total possible)
       const assignmentCompletion = stats.assignments > 0 ? Math.min(100, Math.round((totalScores.length / (stats.assignments * stats.students)) * 100)) : 0
 
-      // Performance trend (last 6 months simplified)
-      const performanceTrend = [65, 68, 72, 70, 75, avgTotal > 0 ? Math.round(avgTotal) : 70]
+      // Performance trend (last 6 terms dynamically)
+      const termMap = {}
+      totalScores.forEach(s => {
+        const key = `${s.academic_year} - ${s.term}`
+        if (!termMap[key]) termMap[key] = { total: 0, count: 0 }
+        termMap[key].total += (Number(s.ca1_score || 0) + Number(s.ca2_score || 0) + Number(s.exam_score || 0))
+        termMap[key].count++
+      })
+
+      const termAverages = Object.entries(termMap)
+        .map(([key, val]) => ({
+          term: key,
+          avg: val.count > 0 ? val.total / val.count : 0
+        }))
+        .sort((a, b) => {
+          // Sort by academic year then term
+          const yearA = a.term.split(' - ')[0]
+          const yearB = b.term.split(' - ')[0]
+          if (yearA !== yearB) return yearA.localeCompare(yearB)
+          return a.term.localeCompare(b.term)
+        })
+        .slice(-6) // Last 6 terms
+
+      const performanceTrend = termAverages.length > 0
+        ? termAverages.map(t => Math.round(t.avg))
+        : [0, 0, 0, 0, 0, avgTotal > 0 ? Math.round(avgTotal) : 0]
+      
+      const performanceLabels = termAverages.length > 0
+        ? termAverages.map(t => t.term)
+        : ['T-5', 'T-4', 'T-3', 'T-2', 'T-1', 'Current']
 
       setAcademicData({
         averageGrade,
@@ -134,6 +163,7 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
         teacherDistribution,
         assignmentCompletion,
         performanceTrend,
+        performanceLabels,
       })
     } catch (err) {
       console.error('Academic data fetch error:', err)
@@ -335,10 +365,13 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
                     <circle key={i} cx={(i / (academicData.performanceTrend.length - 1)) * 400} cy={150 - (v / 100) * 150} r="4" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" />
                   ))}
                 </svg>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontSize: '0.75rem', color: '#64748b' }}>
-                  <span>6 months ago</span>
-                  <span>Current</span>
-                </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontSize: '0.75rem', color: '#64748b' }}>
+                    {academicData.performanceLabels.map((label, i) => (
+                      <span key={i} style={{ flex: 1, textAlign: 'center', maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={label}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
               </div>
             </div>
 
