@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import AnnouncementsWidget from '../Common/AnnouncementsWidget'
+import { generateReportCardPDF } from '../../utils/pdfGenerator'
 
 export default function StudentPortal({ userInfo, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -8,6 +9,8 @@ export default function StudentPortal({ userInfo, onLogout }) {
   const [grades, setGrades] = useState([])
   const [attendance, setAttendance] = useState([])
   const [homework, setHomework] = useState([])
+  const [fees, setFees] = useState([])
+  const [terms, setTerms] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,17 +23,21 @@ export default function StudentPortal({ userInfo, onLogout }) {
     setLoading(true)
     try {
       const studentId = userInfo.studentId || userInfo.id
-      const [{ data: student }, { data: gradesData }, { data: attendanceData }, { data: homeworkData }] = await Promise.all([
+      const [{ data: student }, { data: gradesData }, { data: attendanceData }, { data: homeworkData }, { data: feesData }, { data: termsData }] = await Promise.all([
         supabase.from('students').select('*, classes(class_name)').eq('id', studentId).single(),
         supabase.from('exam_scores').select('*, subjects(subject_name)').eq('student_id', studentId).eq('approval_status', 'approved').order('created_at', { ascending: false }),
         supabase.from('attendance').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(30),
         supabase.from('homeworks').select('*').order('created_at', { ascending: false }),
+        supabase.from('payments').select('*').eq('student_id', studentId).order('created_at', { ascending: false }),
+        supabase.from('terms').select('id, academic_year, is_active').order('id', { ascending: true }),
       ])
 
       setStudentData(student)
       setGrades(gradesData || [])
       setAttendance(attendanceData || [])
       setHomework(homeworkData || [])
+      setFees(feesData || [])
+      setTerms(termsData || [])
     } catch (err) {
       console.error('Failed to fetch student data:', err)
     }
@@ -45,6 +52,54 @@ export default function StudentPortal({ userInfo, onLogout }) {
     if (score >= 60) return { grade: 'B', color: '#f59e0b' }
     if (score >= 50) return { grade: 'C', color: '#fbbf24' }
     return { grade: 'F', color: '#ef4444' }
+  }
+
+  const totalFees = fees.reduce((sum, f) => sum + (f.amount || 0), 0)
+  const paidFees = fees.filter((f) => f.status === 'paid').reduce((sum, f) => sum + (f.amount || 0), 0)
+  const pendingFees = totalFees - paidFees
+
+  const handleDownloadReportCard = async (term) => {
+    if (!studentData) return
+    
+    const { data: termGrades } = await supabase
+      .from('exam_scores')
+      .select('*, subjects(subject_name)')
+      .eq('student_id', studentData.id)
+      .eq('term', term.label)
+      .eq('academic_year', term.year)
+      .eq('approval_status', 'approved')
+
+    if (!termGrades || termGrades.length === 0) {
+      alert('No grades available for this term.')
+      return
+    }
+
+    let totalScore = 0
+    const subjects = termGrades.map((s) => {
+      const total = Number(s.ca1_score || 0) + Number(s.ca2_score || 0) + Number(s.exam_score || 0)
+      totalScore += total
+      return {
+        name: s.subjects?.subject_name || 'Unknown',
+        ca1: s.ca1_score,
+        ca2: s.ca2_score,
+        exam: s.exam_score,
+        total,
+        grade: getGradeInfo(total).grade,
+        remark: getGradeInfo(total).remark,
+      }
+    })
+
+    const reportData = {
+      ...studentData,
+      subjects,
+      totalScore,
+      average: subjects.length > 0 ? (totalScore / subjects.length).toFixed(1) : 0,
+      overallGrade: getGradeInfo(subjects.length > 0 ? totalScore / subjects.length : 0).grade,
+      overallRemark: getGradeInfo(subjects.length > 0 ? totalScore / subjects.length : 0).remark,
+      position: 1,
+    }
+
+    generateReportCardPDF(reportData, studentData.classes?.class_name || '', term.label, term.year, 1)
   }
 
   const presentDays = attendance.filter((a) => a.status === 'present').length
@@ -84,7 +139,9 @@ export default function StudentPortal({ userInfo, onLogout }) {
             { key: 'overview', icon: '📊', label: 'Overview' },
             { key: 'grades', icon: '', label: 'My Grades' },
             { key: 'attendance', icon: '', label: 'Attendance' },
+            { key: 'fees', icon: '💰', label: 'Fees' },
             { key: 'homework', icon: '', label: 'Homework' },
+            { key: 'reports', icon: '', label: 'Report Cards' },
           ].map((item) => (
             <div
               key={item.key}
@@ -295,7 +352,7 @@ export default function StudentPortal({ userInfo, onLogout }) {
                           <h4 style={{ margin: '0 0 8px', color: '#e2e8f0' }}>{hw.title}</h4>
                           <p style={{ margin: '0 0 12px', color: '#94a3b8', fontSize: '0.9rem' }}>{hw.description}</p>
                           <div style={{ display: 'flex', gap: 16, fontSize: '0.8rem', color: '#64748b' }}>
-                            <span>📅 Due: {new Date(hw.due_date).toLocaleDateString()}</span>
+                            <span> Due: {new Date(hw.due_date).toLocaleDateString()}</span>
                           </div>
                         </div>
                         <span style={{
@@ -308,6 +365,92 @@ export default function StudentPortal({ userInfo, onLogout }) {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fees Tab */}
+          {activeTab === 'fees' && (
+            <div>
+              <h2 style={{ margin: '0 0 20px', color: '#f8fafc' }}>Fee Status</h2>
+              <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+                <div style={{ flex: 1, background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', borderRadius: 10, padding: '16px 20px' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#ef4444', marginBottom: 4 }}>Total Pending</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>₦{pendingFees.toLocaleString()}</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(16,185,129,0.1)', border: '1px solid #10b981', borderRadius: 10, padding: '16px 20px' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#10b981', marginBottom: 4 }}>Total Paid</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#10b981' }}>₦{paidFees.toLocaleString()}</div>
+                </div>
+              </div>
+
+              {fees.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>No fee records found.</div>
+              ) : (
+                <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #334155' }}>
+                        {['FEE TYPE', 'AMOUNT', 'DUE DATE', 'STATUS', 'PAID DATE'].map((h) => (
+                          <th key={h} style={{ padding: 14, textAlign: h === 'FEE TYPE' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fees.map((f) => (
+                        <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                          <td style={{ padding: 14, color: '#e2e8f0', fontWeight: 600 }}>{f.fee_type}</td>
+                          <td style={{ padding: 14, textAlign: 'center', color: '#e2e8f0', fontWeight: 700 }}>₦{f.amount?.toLocaleString()}</td>
+                          <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{new Date(f.due_date).toLocaleDateString()}</td>
+                          <td style={{ padding: 14, textAlign: 'center' }}>
+                            <span style={{
+                              padding: '4px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
+                              background: f.status === 'paid' ? 'rgba(16,185,129,0.15)' : f.status === 'overdue' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                              color: f.status === 'paid' ? '#10b981' : f.status === 'overdue' ? '#ef4444' : '#f59e0b',
+                            }}>
+                              {f.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>
+                            {f.paid_at ? new Date(f.paid_at).toLocaleDateString() : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Report Cards Tab */}
+          {activeTab === 'reports' && (
+            <div>
+              <h2 style={{ margin: '0 0 20px', color: '#f8fafc' }}>My Report Cards</h2>
+              {terms.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>No terms available.</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+                  {terms.map((term) => {
+                    const termLabel = term.academic_year ? `${term.academic_year} - Term ${term.id}` : `Term ${term.id}`
+                    return (
+                      <div key={term.id} style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px', color: '#e2e8f0' }}>{termLabel}</h4>
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                            {term.is_active ? '🟢 Current Term' : '⚪ Past Term'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadReportCard({ label: termLabel.split(' - ')[1] || `Term ${term.id}`, year: term.academic_year || '' })}
+                          style={{ padding: '10px', background: '#10b981', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+                        >
+                          📥 Download PDF
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>

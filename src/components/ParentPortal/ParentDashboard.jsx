@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import AnnouncementsWidget from '../Common/AnnouncementsWidget'
+import { generateReportCardPDF } from '../../utils/pdfGenerator'
 
 export default function ParentDashboard({ userInfo, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -10,6 +11,8 @@ export default function ParentDashboard({ userInfo, onLogout }) {
   const [attendance, setAttendance] = useState([])
   const [fees, setFees] = useState([])
   const [homework, setHomework] = useState([])
+  const [reportCards, setReportCards] = useState([])
+  const [terms, setTerms] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -48,17 +51,19 @@ export default function ParentDashboard({ userInfo, onLogout }) {
   const fetchChildData = async (childId) => {
     setLoading(true)
     try {
-      const [{ data: gradesData }, { data: attendanceData }, { data: feesData }, { data: homeworkData }] = await Promise.all([
+      const [{ data: gradesData }, { data: attendanceData }, { data: feesData }, { data: homeworkData }, { data: termsData }] = await Promise.all([
         supabase.from('exam_scores').select('*, subjects(subject_name)').eq('student_id', childId).eq('approval_status', 'approved').order('created_at', { ascending: false }),
         supabase.from('attendance').select('*').eq('student_id', childId).order('date', { ascending: false }).limit(30),
         supabase.from('payments').select('*').eq('student_id', childId).order('created_at', { ascending: false }),
         supabase.from('homeworks').select('*').order('created_at', { ascending: false }),
+        supabase.from('terms').select('id, academic_year, is_active').order('id', { ascending: true }),
       ])
 
       setGrades(gradesData || [])
       setAttendance(attendanceData || [])
       setFees(feesData || [])
       setHomework(homeworkData || [])
+      setTerms(termsData || [])
     } catch (err) {
       console.error('Failed to fetch child data:', err)
     }
@@ -73,6 +78,52 @@ export default function ParentDashboard({ userInfo, onLogout }) {
     if (score >= 60) return { grade: 'B', color: '#f59e0b' }
     if (score >= 50) return { grade: 'C', color: '#fbbf24' }
     return { grade: 'F', color: '#ef4444' }
+  }
+
+  const handleDownloadReportCard = async (term) => {
+    if (!selectedChild) return
+    
+    // Fetch grades for the specific term
+    const { data: termGrades } = await supabase
+      .from('exam_scores')
+      .select('*, subjects(subject_name)')
+      .eq('student_id', selectedChild.id)
+      .eq('term', term.label)
+      .eq('academic_year', term.year)
+      .eq('approval_status', 'approved')
+
+    if (!termGrades || termGrades.length === 0) {
+      alert('No grades available for this term.')
+      return
+    }
+
+    // Calculate report card data
+    let totalScore = 0
+    const subjects = termGrades.map((s) => {
+      const total = Number(s.ca1_score || 0) + Number(s.ca2_score || 0) + Number(s.exam_score || 0)
+      totalScore += total
+      return {
+        name: s.subjects?.subject_name || 'Unknown',
+        ca1: s.ca1_score,
+        ca2: s.ca2_score,
+        exam: s.exam_score,
+        total,
+        grade: getGradeInfo(total).grade,
+        remark: getGradeInfo(total).remark,
+      }
+    })
+
+    const reportData = {
+      ...selectedChild,
+      subjects,
+      totalScore,
+      average: subjects.length > 0 ? (totalScore / subjects.length).toFixed(1) : 0,
+      overallGrade: getGradeInfo(subjects.length > 0 ? totalScore / subjects.length : 0).grade,
+      overallRemark: getGradeInfo(subjects.length > 0 ? totalScore / subjects.length : 0).remark,
+      position: 1, // Position is not available in parent portal without class context
+    }
+
+    generateReportCardPDF(reportData, selectedChild.classes?.class_name || '', term.label, term.year, 1)
   }
 
   const totalFees = fees.reduce((sum, f) => sum + (f.amount || 0), 0)
@@ -118,6 +169,7 @@ export default function ParentDashboard({ userInfo, onLogout }) {
             { key: 'attendance', icon: '', label: 'Attendance' },
             { key: 'fees', icon: '💰', label: 'Fees' },
             { key: 'homework', icon: '', label: 'Homework' },
+            { key: 'reports', icon: '📄', label: 'Report Cards' },
           ].map((item) => (
             <div
               key={item.key}
@@ -416,6 +468,38 @@ export default function ParentDashboard({ userInfo, onLogout }) {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Report Cards Tab */}
+              {activeTab === 'reports' && (
+                <div>
+                  <h2 style={{ margin: '0 0 20px', color: '#f8fafc' }}>Report Cards</h2>
+                  {terms.length === 0 ? (
+                    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>No terms available.</div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+                      {terms.map((term) => {
+                        const termLabel = term.academic_year ? `${term.academic_year} - Term ${term.id}` : `Term ${term.id}`
+                        return (
+                          <div key={term.id} style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 4px', color: '#e2e8f0' }}>{termLabel}</h4>
+                              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                                {term.is_active ? '🟢 Current Term' : '⚪ Past Term'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDownloadReportCard({ label: termLabel.split(' - ')[1] || `Term ${term.id}`, year: term.academic_year || '' })}
+                              style={{ padding: '10px', background: '#a855f7', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+                            >
+                              📥 Download PDF
+                            </button>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>

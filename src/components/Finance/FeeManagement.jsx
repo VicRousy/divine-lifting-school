@@ -10,6 +10,7 @@ export default function FeeManagement({ showToast }) {
   const [amount, setAmount] = useState('')
   const [status, setStatus] = useState('pending')
   const [dueDate, setDueDate] = useState('')
+  const [sendInvoice, setSendInvoice] = useState(false)
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -68,12 +69,45 @@ export default function FeeManagement({ showToast }) {
 
       if (error) throw error
 
-      showToast?.('Payment record saved successfully!', 'success')
+      // Send Invoice Email if requested
+      if (sendInvoice && status === 'pending') {
+        showToast?.('Sending invoice email...', 'info')
+        
+        // Fetch parent email
+        const { data: studentData } = await supabase.from('students').select('parent_id').eq('id', Number(selectedStudent)).single()
+        let parentEmail = null
+        if (studentData?.parent_id) {
+          const { data: parentData } = await supabase.from('parents').select('email').eq('id', studentData.parent_id).single()
+          parentEmail = parentData?.email
+        }
+
+        if (parentEmail) {
+          const response = await fetch('http://localhost:3001/api/send-fee-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: parentEmail,
+              studentName: selectedStudentName,
+              feeType,
+              amount: Number(amount),
+              dueDate,
+            })
+          })
+          if (!response.ok) throw new Error('Failed to send invoice email')
+          showToast?.('Invoice email sent to parent!', 'success')
+        } else {
+          showToast?.('Payment recorded, but no parent email found for invoice.', 'warning')
+        }
+      } else {
+        showToast?.('Payment record saved successfully!', 'success')
+      }
+
       setAmount('')
       setDueDate('')
       setStatus('pending')
+      setSendInvoice(false)
     } catch (err) {
-      showToast?.('Failed to save payment: ' + err.message, 'error')
+      showToast?.('Failed: ' + err.message, 'error')
     }
     setSaving(false)
   }
@@ -168,6 +202,12 @@ export default function FeeManagement({ showToast }) {
                 <option value="partial">Partial</option>
               </select>
             </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <input type="checkbox" id="sendInvoice" checked={sendInvoice} onChange={(e) => setSendInvoice(e.target.checked)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+              <label htmlFor="sendInvoice" style={{ color: '#e2e8f0', cursor: 'pointer', fontSize: '0.9rem' }}>📧 Send Invoice Email to Parent</label>
+            </div>
+
             <button type="submit" disabled={saving} style={{ padding: '12px 24px', background: saving ? '#334155' : '#10b981', color: saving ? '#94a3b8' : '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
               {saving ? 'Saving...' : '💾 Record Payment'}
             </button>
