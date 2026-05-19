@@ -61,6 +61,7 @@ function App() {
   const [selectedStudentProfile, setSelectedStudentProfile] = useState(null)
   const [toast, setToast] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const initialized = useRef(false)
 
   const showToast = (message, type = 'success') => {
@@ -189,7 +190,7 @@ function App() {
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
       
-      {/* Global Style to Hide Scrollbars Completely */}
+      {/* Global Style to Hide Scrollbars Completely & Mobile Responsiveness */}
       <style>{`
         ::-webkit-scrollbar {
           display: none;
@@ -202,13 +203,69 @@ function App() {
           margin: 0;
           overflow-x: hidden;
         }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+          .mobile-close-btn {
+            display: block !important;
+          }
+          .hamburger-btn {
+            display: block !important;
+          }
+        }
+          .admin-layout {
+            flex-direction: column !important;
+          }
+          .sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            height: 100vh !important;
+            z-index: 1000 !important;
+            transform: translateX(-100%) !important;
+            transition: transform 0.3s ease !important;
+            width: 280px !important;
+          }
+          .sidebar.open {
+            transform: translateX(0) !important;
+          }
+          .sidebar-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(0,0,0,0.5) !important;
+            z-index: 999 !important;
+          }
+          .main-content {
+            padding: 15px !important;
+          }
+          .header-bar {
+            padding: 10px 15px !important;
+          }
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .chart-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .table-container {
+            overflow-x: auto !important;
+          }
+        }
       `}</style>
 
       {/* SIDEBAR */}
-      <aside style={{ width: '260px', background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
-        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#38bdf8' }}>DLS Admin</h2>
-          <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Management Portal</p>
+      {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
+      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ width: '260px', background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#38bdf8' }}>DLS Admin</h2>
+            <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Management Portal</p>
+          </div>
+          <button onClick={() => setMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }} className="mobile-close-btn">✕</button>
+        </div>
           
           {/* Admin/Teacher Toggle */}
           <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
@@ -300,10 +357,13 @@ function App() {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* TOP HEADER BAR */}
-        <header style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
-            <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+        <header className="header-bar" style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)} style={{ background: 'none', border: 'none', color: '#f8fafc', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }}>☰</button>
+            <div>
+              <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
+              <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+            </div>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -321,7 +381,7 @@ function App() {
         </header>
 
         {/* CONTENT AREA */}
-        <div style={{ flex: 1, padding: '30px' }}>
+        <div className="main-content" style={{ flex: 1, padding: '30px' }}>
           
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
           {activeTab === 'overview' && userRole === 'admin' && (
