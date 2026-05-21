@@ -1,6 +1,11 @@
 -- Divine Lifting School - Schema Consistency Migration
 -- Run this in Supabase Dashboard > SQL Editor
 
+-- Ensure email columns exist for auth lookup
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+
 -- Ensure exam_scores has the correct columns for CA1/CA2/Exam scoring
 ALTER TABLE public.exam_scores
 ADD COLUMN IF NOT EXISTS ca1_score INTEGER DEFAULT 0,

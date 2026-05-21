@@ -40,73 +40,88 @@ function Login({ onLogin }) {
     const input = loginId.trim().toUpperCase()
 
     try {
+      let userRecord = null
+      let userRole = ''
+
+      // Check profiles (Admin)
       const { data: admin } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, school_id, role, login_id, password, is_verified')
+        .select('id, first_name, last_name, school_id, role, login_id, email')
         .eq('login_id', input)
         .maybeSingle()
 
       if (admin) {
-        if (!admin.is_verified) {
-          setError('Account not verified. Please check your email.')
-          setLoading(false)
-          return
-        }
-        if (admin.password === password) {
-          onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id })
-          setLoading(false)
-          return
+        userRecord = admin
+        userRole = 'admin'
+      } else {
+        // Check teachers
+        const { data: teacher } = await supabase
+          .from('teachers')
+          .select('id, first_name, last_name, staff_id, login_id, email')
+          .eq('login_id', input)
+          .maybeSingle()
+
+        if (teacher) {
+          userRecord = teacher
+          userRole = 'teacher'
+        } else {
+          // Check students
+          const { data: student } = await supabase
+            .from('students')
+            .select('id, first_name, last_name, student_id, login_id, email')
+            .eq('login_id', input)
+            .maybeSingle()
+
+          if (student) {
+            userRecord = student
+            userRole = 'student'
+          } else {
+            // Check parents
+            const { data: parent } = await supabase
+              .from('parents')
+              .select('id, first_name, last_name, parent_id, login_id, email')
+              .eq('login_id', input)
+              .maybeSingle()
+
+            if (parent) {
+              userRecord = parent
+              userRole = 'parent'
+            }
+          }
         }
       }
 
-      const { data: teacher } = await supabase
-        .from('teachers')
-        .select('id, first_name, last_name, staff_id, login_id, password, is_first_login')
-        .eq('login_id', input)
-        .maybeSingle()
-
-      if (teacher && teacher.password === password) {
-        if (teacher.is_first_login) {
-          setFirstLoginUser({ ...teacher, role: 'teacher' })
-          setLoading(false)
-          return
-        }
-        onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id })
+      if (!userRecord || !userRecord.email) {
+        setError('Invalid Login ID. Please ensure your account is fully set up.')
         setLoading(false)
         return
       }
 
-      const { data: student } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, student_id, login_id, password')
-        .eq('login_id', input)
-        .maybeSingle()
+      // Use Supabase Auth to sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: userRecord.email,
+        password: password,
+      })
 
-      if (student && student.password === password) {
-        onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id })
-        setLoading(false)
-        return
+      if (authError) throw authError
+
+      // Success! Call onLogin with original format
+      if (userRole === 'admin') {
+        onLogin('admin', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, schoolId: userRecord.school_id })
+      } else if (userRole === 'teacher') {
+        onLogin('teacher', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, staffId: userRecord.staff_id })
+      } else if (userRole === 'student') {
+        onLogin('student', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, studentId: userRecord.student_id })
+      } else if (userRole === 'parent') {
+        onLogin('parent', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, parentId: userRecord.parent_id })
       }
-
-      const { data: parent } = await supabase
-        .from('parents')
-        .select('id, first_name, last_name, parent_id, login_id, password')
-        .eq('login_id', input)
-        .maybeSingle()
-
-      if (parent && parent.password === password) {
-        onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id })
-        setLoading(false)
-        return
-      }
-
-      setError('Invalid Login ID or Password.')
+      
+      setLoading(false)
     } catch (err) {
       console.error('Login error:', err)
-      setError('Connection error. Please try again.')
+      setError('Invalid Login ID or Password. (Note: You may need to re-register to enable secure login)')
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleSignupSubmit = async (e) => {
@@ -120,37 +135,53 @@ function Login({ onLogin }) {
       return
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
     const newLoginId = 'ADM-' + Math.floor(1000 + Math.random() * 9000)
 
     try {
+      // 1. Sign up in Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password: signupPassword,
+        options: {
+          data: {
+            first_name: firstName,
+            middle_name: middleName || '-',
+            last_name: lastName,
+            login_id: newLoginId,
+            role: 'admin'
+          }
+        }
+      })
+
+      if (signUpError) throw signUpError
+      
+      const userId = authData.user?.id
+
+      // 2. Create the profile in our profiles table (assuming a trigger handles this, 
+      // but if not, we do it manually here without the password as Supabase handles it)
       const { error: insertError } = await supabase
         .from('profiles')
         .insert([{
+          id: userId,
           first_name: firstName,
           middle_name: middleName || '-',
           last_name: lastName,
           email: email.trim().toLowerCase(),
           login_id: newLoginId,
-          password: signupPassword,
           role: 'admin',
-          verification_code: code,
-          is_verified: false,
           created_at: new Date().toISOString()
         }])
 
       if (insertError) throw insertError
 
-      await sendVerificationEmail(email.trim().toLowerCase(), code, newLoginId)
-
       setPendingLoginId(newLoginId)
-      setStep('verify')
+      setStep('success') 
     } catch (err) {
       console.error('Signup error:', err)
       setError('Failed to create account: ' + err.message)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleVerifyCode = async (e) => {
