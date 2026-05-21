@@ -74,6 +74,12 @@ function App() {
 
     const prepareApp = async () => {
       try {
+        // Check for force_login parameter to clear session (useful for testing)
+        const urlParams = new URLSearchParams(window.location.search)
+        if (urlParams.get('force_login') === 'true') {
+          localStorage.removeItem('dls_session')
+        }
+
         const storedSession = localStorage.getItem('dls_session')
         if (storedSession) {
           const parsed = JSON.parse(storedSession)
@@ -278,6 +284,14 @@ function App() {
             </div>
             <button onClick={() => setMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }} className="mobile-close-btn">✕</button>
           </div>
+          
+          {/* Back to Website Button */}
+          <a 
+            href="http://localhost:5173" 
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '15px', padding: '8px', borderRadius: '6px', background: '#334155', color: '#f8fafc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', transition: 'background 0.2s' }}
+          >
+             Back to Website
+          </a>
           
           {/* Admin/Teacher Toggle */}
           <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
