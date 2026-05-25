@@ -15,6 +15,24 @@ body {
   background-color: var(--body-bg);
   color: var(--text-main);
   background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+}
+
+input, select, textarea, button {
+  font: inherit;
+  max-width: 100%;
 }
 
 .admin-layout {
@@ -99,4 +117,49 @@ button {
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+}
+
+.table-container,
+table {
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 20px !important;
+  }
+
+  .dashboard-card,
+  .stat-box {
+    padding: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    background-image: radial-gradient(circle at top, #1e1b4b, transparent 55%);
+  }
+
+  .main-content {
+    padding: 14px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dashboard-card,
+  .stat-box {
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  button {
+    padding: 10px 14px;
+  }
 }

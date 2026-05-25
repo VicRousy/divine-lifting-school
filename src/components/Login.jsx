@@ -259,10 +259,11 @@ function Login({ onLogin }) {
     }}>
       <div style={{
         background: 'rgba(30, 41, 59, 0.8)',
-        padding: '40px',
+        padding: 'clamp(24px, 5vw, 40px)',
         borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.1)',
-        width: '420px',
+        width: 'min(420px, calc(100vw - 32px))',
+        maxWidth: '100%',
         backdropFilter: 'blur(10px)'
       }}>
         <h2 style={{
@@ -312,7 +313,7 @@ function Login({ onLogin }) {
         {/* SIGNUP FORM */}
         {isSignup && step === 'form' && (
           <form onSubmit={handleSignupSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '15px' }}>
               <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
               <input type="text" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={inputStyle} />
               <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
