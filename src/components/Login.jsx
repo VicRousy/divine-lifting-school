@@ -31,7 +31,7 @@ function Login({ onLogin }) {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
+  
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -40,53 +40,66 @@ function Login({ onLogin }) {
     const input = loginId.trim().toUpperCase()
 
     try {
-      let userRecord = null
-      let userRole = ''
-
       // Check profiles (Admin)
       const { data: admin } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, school_id, role, login_id, email')
+        .select('id, first_name, last_name, school_id, role, login_id, password, is_verified')
         .eq('login_id', input)
         .maybeSingle()
 
-      if (admin) {
-        userRecord = admin
-        userRole = 'admin'
-      } else {
-        // Check teachers
-        const { data: teacher } = await supabase
-          .from('teachers')
-          .select('id, first_name, last_name, staff_id, login_id, email')
-          .eq('login_id', input)
-          .maybeSingle()
+      if (admin && admin.password === password) {
+        onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id })
+        setLoading(false)
+        return
+      }
 
-        if (teacher) {
-          userRecord = teacher
-          userRole = 'teacher'
-        } else {
-          // Check students
-          const { data: student } = await supabase
-            .from('students')
-            .select('id, first_name, last_name, student_id, login_id, email')
-            .eq('login_id', input)
-            .maybeSingle()
+      // Check teachers
+      const { data: teacher } = await supabase
+        .from('teachers')
+        .select('id, first_name, last_name, staff_id, login_id, password')
+        .eq('login_id', input)
+        .maybeSingle()
 
-          if (student) {
-            userRecord = student
-            userRole = 'student'
-          } else {
-            // Check parents
-            const { data: parent } = await supabase
-              .from('parents')
-              .select('id, first_name, last_name, parent_id, login_id, email')
-              .eq('login_id', input)
-              .maybeSingle()
+      if (teacher && teacher.password === password) {
+        onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id })
+        setLoading(false)
+        return
+      }
 
-            if (parent) {
-              userRecord = parent
-              userRole = 'parent'
-            }
+      // Check students
+      const { data: student } = await supabase
+        .from('students')
+        .select('id, first_name, last_name, student_id, login_id, password')
+        .eq('login_id', input)
+        .maybeSingle()
+
+      if (student && student.password === password) {
+        onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id })
+        setLoading(false)
+        return
+      }
+
+      // Check parents
+      const { data: parent } = await supabase
+        .from('parents')
+        .select('id, first_name, last_name, parent_id, login_id, password')
+        .eq('login_id', input)
+        .maybeSingle()
+
+      if (parent && parent.password === password) {
+        onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id })
+        setLoading(false)
+        return
+      }
+
+      setError('Invalid Login ID or Password.')
+      setLoading(false)
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Connection error. Please try again.')
+      setLoading(false)
+    }
+  }
           }
         }
       }
@@ -135,6 +148,7 @@ function Login({ onLogin }) {
       return
     }
 
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
     const newLoginId = 'ADM-' + Math.floor(1000 + Math.random() * 9000)
 
     try {
@@ -142,23 +156,13 @@ function Login({ onLogin }) {
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: signupPassword,
-        options: {
-          data: {
-            first_name: firstName,
-            middle_name: middleName || '-',
-            last_name: lastName,
-            login_id: newLoginId,
-            role: 'admin'
-          }
-        }
       })
 
       if (signUpError) throw signUpError
       
       const userId = authData.user?.id
 
-      // 2. Create the profile in our profiles table (assuming a trigger handles this, 
-      // but if not, we do it manually here without the password as Supabase handles it)
+      // 2. Create the profile in our profiles table
       const { error: insertError } = await supabase
         .from('profiles')
         .insert([{
@@ -169,13 +173,17 @@ function Login({ onLogin }) {
           email: email.trim().toLowerCase(),
           login_id: newLoginId,
           role: 'admin',
+          verification_code: code,
+          is_verified: false,
           created_at: new Date().toISOString()
         }])
 
       if (insertError) throw insertError
 
+      await sendVerificationEmail(email.trim().toLowerCase(), code, newLoginId)
+
       setPendingLoginId(newLoginId)
-      setStep('success') 
+      setStep('verify')
     } catch (err) {
       console.error('Signup error:', err)
       setError('Failed to create account: ' + err.message)
@@ -266,6 +274,17 @@ function Login({ onLogin }) {
     setError('')
   }
 
+  const inputStyle = {
+    width: '100%',
+    padding: '12px',
+    marginBottom: '15px',
+    borderRadius: '8px',
+    border: '1px solid #334155',
+    background: '#0f172a',
+    color: 'white',
+    boxSizing: 'border-box'
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -304,7 +323,7 @@ function Login({ onLogin }) {
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }}
+              style={inputStyle}
             />
             <input
               type="password"
@@ -312,7 +331,7 @@ function Login({ onLogin }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }}
+              style={inputStyle}
             />
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
@@ -330,13 +349,13 @@ function Login({ onLogin }) {
         {isSignup && step === 'form' && (
           <form onSubmit={handleSignupSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '15px' }}>
-              <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
-              <input type="text" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
-              <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
+              <input type="text" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={inputStyle} />
+              <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
             </div>
-            <input type="email" placeholder="Gmail Address" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
-            <input type="password" placeholder="Create Password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
-            <input type="password" placeholder="Master Access Key" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} required style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+            <input type="email" placeholder="Gmail Address" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
+            <input type="password" placeholder="Create Password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required style={inputStyle} />
+            <input type="password" placeholder="Master Access Key" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} required style={inputStyle} />
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
@@ -388,7 +407,7 @@ function Login({ onLogin }) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }}
+              style={inputStyle}
             />
             <input
               type="password"
@@ -396,7 +415,7 @@ function Login({ onLogin }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }}
+              style={inputStyle}
             />
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
@@ -411,9 +430,9 @@ function Login({ onLogin }) {
         {step === 'success' && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '3rem', marginBottom: '15px' }}>✅</div>
-            <h3 style={{ color: '#10b981', margin: '0 0 10px' }}>Account Activated!</h3>
+            <h3 style={{ color: '#10b981', margin: '0 0 10px' }}>Account Created!</h3>
             <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
-              Your Admin ID is: <strong style={{ color: '#38bdf8' }}>{pendingLoginId}</strong>
+              Please check your email to verify your account. Your Admin ID is: <strong style={{ color: '#38bdf8' }}>{pendingLoginId}</strong>
             </p>
             <button onClick={resetToLogin} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', color: '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem' }}>
               Go to Login
