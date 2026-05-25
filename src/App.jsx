@@ -287,7 +287,7 @@ function App() {
           
           {/* Back to Website Button */}
           <a 
-            href="http://localhost:5173" 
+            href="https://divine-lifting-website.vercel.app" 
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '15px', padding: '8px', borderRadius: '6px', background: '#334155', color: '#f8fafc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', transition: 'background 0.2s' }}
           >
              Back to Website
