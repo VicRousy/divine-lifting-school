@@ -100,42 +100,6 @@ function Login({ onLogin }) {
       setLoading(false)
     }
   }
-          }
-        }
-      }
-
-      if (!userRecord || !userRecord.email) {
-        setError('Invalid Login ID. Please ensure your account is fully set up.')
-        setLoading(false)
-        return
-      }
-
-      // Use Supabase Auth to sign in
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: userRecord.email,
-        password: password,
-      })
-
-      if (authError) throw authError
-
-      // Success! Call onLogin with original format
-      if (userRole === 'admin') {
-        onLogin('admin', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, schoolId: userRecord.school_id })
-      } else if (userRole === 'teacher') {
-        onLogin('teacher', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, staffId: userRecord.staff_id })
-      } else if (userRole === 'student') {
-        onLogin('student', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, studentId: userRecord.student_id })
-      } else if (userRole === 'parent') {
-        onLogin('parent', { id: userRecord.id, name: `${userRecord.first_name} ${userRecord.last_name}`, parentId: userRecord.parent_id })
-      }
-      
-      setLoading(false)
-    } catch (err) {
-      console.error('Login error:', err)
-      setError('Invalid Login ID or Password. (Note: You may need to re-register to enable secure login)')
-      setLoading(false)
-    }
-  }
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault()
