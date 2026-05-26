@@ -266,15 +266,9 @@ function App() {
          @media (min-width: 1025px) {
            .sidebar {
              display: flex !important;
-             position: fixed !important;
-             top: 0 !important;
-             bottom: 0 !important;
-             left: 0 !important;
+             position: sticky !important;
              transform: none !important;
              width: 260px !important;
-           }
-           .main-layout {
-             margin-left: 260px !important;
            }
            .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
              display: none !important;
@@ -284,7 +278,7 @@ function App() {
 
        {/* SIDEBAR */}
        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
-       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, overflowY: 'auto', alignSelf: 'flex-start' }}>
+       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -388,8 +382,8 @@ function App() {
         </div>
       </aside>
 
-       {/* MAIN CONTENT */}
-       <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* MAIN CONTENT */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* TOP HEADER BAR */}
         <header className="header-bar" style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
