@@ -1,8 +1,28 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { sendVerificationEmail } from '../services/emailService'
+import bcrypt from 'bcryptjs'
 
 const MASTER_ACCESS_KEY = 'DLS-MASTER-2026'
+
+const verifyPassword = async (inputPassword, dbPassword, userId, tableName) => {
+  if (dbPassword === inputPassword) {
+    // Plain text match - auto-migrate
+    try {
+      const hashedPassword = await bcrypt.hash(inputPassword, 10);
+      await supabase.from(tableName).update({ password: hashedPassword }).eq('id', userId);
+    } catch (e) {
+      console.error('Auto-migration error:', e);
+    }
+    return true;
+  }
+  // Check hash
+  try {
+    return await bcrypt.compare(inputPassword, dbPassword);
+  } catch (e) {
+    return false;
+  }
+};
 
 function Login({ onLogin }) {
   const [isSignup, setIsSignup] = useState(false)
@@ -47,7 +67,7 @@ function Login({ onLogin }) {
         .eq('login_id', input)
         .maybeSingle()
 
-      if (admin && admin.password === password) {
+      if (admin && await verifyPassword(password, admin.password, admin.id, 'profiles')) {
         onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id })
         setLoading(false)
         return
@@ -60,7 +80,7 @@ function Login({ onLogin }) {
         .eq('login_id', input)
         .maybeSingle()
 
-      if (teacher && teacher.password === password) {
+      if (teacher && await verifyPassword(password, teacher.password, teacher.id, 'teachers')) {
         onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id })
         setLoading(false)
         return
@@ -73,7 +93,7 @@ function Login({ onLogin }) {
         .eq('login_id', input)
         .maybeSingle()
 
-      if (student && student.password === password) {
+      if (student && await verifyPassword(password, student.password, student.id, 'students')) {
         onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id })
         setLoading(false)
         return
@@ -86,7 +106,7 @@ function Login({ onLogin }) {
         .eq('login_id', input)
         .maybeSingle()
 
-      if (parent && parent.password === password) {
+      if (parent && await verifyPassword(password, parent.password, parent.id, 'parents')) {
         onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id })
         setLoading(false)
         return
@@ -203,10 +223,11 @@ function Login({ onLogin }) {
     }
 
     try {
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
       const table = firstLoginUser.role === 'teacher' ? 'teachers' : 'profiles'
       const { error: updateError } = await supabase
         .from(table)
-        .update({ password: newPassword, is_first_login: false })
+        .update({ password: hashedPassword, is_first_login: false })
         .eq('id', firstLoginUser.id)
 
       if (updateError) throw updateError

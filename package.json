@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
+    "bcryptjs": "^3.0.3",
     "canvg": "^4.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
