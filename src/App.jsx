@@ -268,8 +268,8 @@ function App() {
              display: flex !important;
              position: fixed !important;
              top: 0 !important;
+             bottom: 0 !important;
              left: 0 !important;
-             height: 100vh !important;
              transform: none !important;
              width: 260px !important;
            }
@@ -284,7 +284,7 @@ function App() {
 
        {/* SIDEBAR */}
        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
-       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', alignSelf: 'flex-start' }}>
+       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, overflowY: 'auto', alignSelf: 'flex-start' }}>
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
