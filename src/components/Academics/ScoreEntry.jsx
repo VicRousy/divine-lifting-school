@@ -133,8 +133,8 @@ export default function ScoreEntry({ showToast }) {
   const ready = selectedClass && selectedSubject && selectedTermId
 
   return (
-    <div style={{ padding: 30 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+    <div style={{ padding: 'clamp(0px, 3vw, 30px)' }}>
+      <div className="responsive-header-row" style={{ marginBottom: 18 }}>
         <div>
           <h2 style={{ margin: 0, color: '#f8fafc' }}>Academic Gradebook</h2>
           <div style={{ marginTop: 6, color: '#94a3b8', fontSize: '0.9rem' }}>
@@ -158,7 +158,7 @@ export default function ScoreEntry({ showToast }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 18 }}>
+      <div className="responsive-grid-3" style={{ gap: 14, marginBottom: 18 }}>
         <div>
           <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 6 }}>CLASS</div>
           <select
@@ -205,7 +205,7 @@ export default function ScoreEntry({ showToast }) {
       {ready ? (
         students.length > 0 ? (
           <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="responsive-table-wrap">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #334155' }}>

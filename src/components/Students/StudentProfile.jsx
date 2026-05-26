@@ -194,7 +194,7 @@ function StudentProfile({ student, onBack }) {
   return (
     <div className="profile-view" style={{ animation: 'fadeIn 0.4s ease-out' }}>
       {/* Header with Back Button and Balance */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div className="responsive-header-row" style={{ marginBottom: '30px' }}>
         <button onClick={onBack} className="btn-cancel" style={{ padding: '10px 20px' }}>← Back to Master List</button>
         <div style={{ textAlign: 'right' }}>
           <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Financial Status:</span>
@@ -212,7 +212,7 @@ function StudentProfile({ student, onBack }) {
       <div style={{ 
         background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))', 
         padding: '30px', borderRadius: '20px', border: '1px solid rgba(56, 189, 248, 0.2)',
-        display: 'flex', gap: '30px', alignItems: 'center', marginBottom: '20px'
+        display: 'flex', gap: '30px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap'
       }}>
         <div style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, #38bdf8, #a855f7)', borderRadius: '18px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2rem', color: '#fff' }}>
           {student.first_name[0]}{student.last_name[0]}
@@ -224,7 +224,7 @@ function StudentProfile({ student, onBack }) {
       </div>
 
       {/* NEW: TAB NAVIGATION */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: '1px solid #334155' }}>
+      <div className="responsive-tabs" style={{ marginBottom: '30px', borderBottom: '1px solid #334155' }}>
         <button 
           onClick={() => setActiveTab('finance')}
           style={{ padding: '12px 24px', background: 'transparent', border: 'none', borderBottom: activeTab === 'finance' ? '3px solid #38bdf8' : 'none', color: activeTab === 'finance' ? '#38bdf8' : '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}
@@ -241,10 +241,11 @@ function StudentProfile({ student, onBack }) {
 
       {/* TAB CONTENT: FINANCE */}
       {activeTab === 'finance' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px' }}>
+        <div className="responsive-grid-2" style={{ gap: '30px' }}>
           <div>
             <h3 style={{ color: '#f8fafc', marginBottom: '15px' }}>Payment History</h3>
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
+              <div className="responsive-table-wrap">
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <tr>
@@ -269,6 +270,7 @@ function StudentProfile({ student, onBack }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
           <div>
@@ -289,7 +291,7 @@ function StudentProfile({ student, onBack }) {
       {/* TAB CONTENT: REPORT CARD */}
       {activeTab === 'report' && (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div className="responsive-header-row" style={{ marginBottom: '20px' }}>
             <h3 style={{ color: '#f8fafc' }}>Academic Performance (2025/2026)</h3>
             <button 
               onClick={handlePrintReport}
@@ -300,6 +302,7 @@ function StudentProfile({ student, onBack }) {
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
+            <div className="responsive-table-wrap">
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'rgba(168, 85, 247, 0.1)' }}>
                 <tr>
@@ -329,6 +332,7 @@ function StudentProfile({ student, onBack }) {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -336,7 +340,7 @@ function StudentProfile({ student, onBack }) {
       {/* Payment Modal remains the same */}
       {showPaymentModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '400px' }}>
+          <div className="modal-content" style={{ maxWidth: '400px', width: 'min(400px, calc(100vw - 32px))' }}>
             <h3>Record Payment</h3>
             <div className="form-group">
               <label>Amount (₦)</label>
