@@ -266,10 +266,17 @@ function App() {
          @media (min-width: 1025px) {
            .sidebar {
              display: flex !important;
-             position: sticky !important;
              transform: none !important;
              width: 260px !important;
            }
+           .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
+             display: none !important;
+           }
+         }
+           .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
+             display: none !important;
+           }
+         }
            .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
              display: none !important;
            }
@@ -278,7 +285,7 @@ function App() {
 
        {/* SIDEBAR */}
        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
-       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, overflowY: 'auto' }}>
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
