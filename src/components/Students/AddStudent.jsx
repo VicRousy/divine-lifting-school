@@ -134,14 +134,14 @@ export default function AddStudent(props) {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 clamp(0px, 3vw, 20px)' }}>
       <h2 style={{ margin: '0 0 30px', color: '#f8fafc', textAlign: 'center' }}>Register New Student</h2>
 
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-        <div style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
+        <div className="responsive-card" style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
           <h4 style={{ margin: '0 0 20px', color: '#38bdf8' }}>Student Information</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+          <div className="responsive-grid-3" style={{ gap: 20 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>First Name</label>
               <input
@@ -169,7 +169,7 @@ export default function AddStudent(props) {
               />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15, marginTop: 15 }}>
+          <div className="responsive-grid-2" style={{ gap: 15, marginTop: 15 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Class</label>
               <select
@@ -197,9 +197,9 @@ export default function AddStudent(props) {
           </div>
         </div>
 
-        <div style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
+        <div className="responsive-card" style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
           <h4 style={{ margin: '0 0 20px', color: '#a855f7' }}>Primary Guardian / Parent</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+          <div className="responsive-grid-3" style={{ gap: 20 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent First Name</label>
               <input
@@ -227,7 +227,7 @@ export default function AddStudent(props) {
               />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+          <div className="responsive-grid-2" style={{ gap: 20, marginTop: 20 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Email</label>
               <input
@@ -259,7 +259,7 @@ export default function AddStudent(props) {
           </div>
         </div>
 
-        <div style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
+        <div className="responsive-card" style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
           <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 10, fontWeight: 600 }}>Student Access Key</label>
           <input
             type="password"

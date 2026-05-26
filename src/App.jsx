@@ -196,86 +196,89 @@ function App() {
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
       
-      {/* Global Style to Hide Scrollbars Completely & Mobile Responsiveness */}
-      <style>{`
-        ::-webkit-scrollbar {
-          display: none;
-        }
-        * {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        body {
-          margin: 0;
-          overflow-x: hidden;
-        }
-        
-        /* Desktop/Laptop: Sidebar always visible, no hamburger */
-        .sidebar {
-          display: flex !important;
-          position: sticky !important;
-          transform: none !important;
-          width: 260px !important;
-        }
-        .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
-          display: none !important;
-        }
-        
-        /* Mobile/Tablet: Sidebar hidden by default, hamburger visible */
-        @media (max-width: 1024px) {
-          .admin-layout {
-            flex-direction: column !important;
-          }
-          .hamburger-btn {
-            display: block !important;
-          }
-          .mobile-close-btn {
-            display: block !important;
-          }
-          .sidebar {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            height: 100vh !important;
-            z-index: 1000 !important;
-            transform: translateX(-100%) !important;
-            transition: transform 0.3s ease !important;
-            width: 280px !important;
-          }
-          .sidebar.open {
-            transform: translateX(0) !important;
-          }
-          .sidebar-overlay {
-            display: block !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: rgba(0,0,0,0.5) !important;
-            z-index: 999 !important;
-          }
-          .main-content {
-            padding: 15px !important;
-          }
-          .header-bar {
-            padding: 10px 15px !important;
-          }
-          .stats-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .chart-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .table-container {
-            overflow-x: auto !important;
-          }
-        }
-      `}</style>
+       {/* Global Style to Hide Scrollbars Completely & Mobile Responsiveness */}
+       <style>{`
+         ::-webkit-scrollbar {
+           display: none;
+         }
+         * {
+           -ms-overflow-style: none;
+           scrollbar-width: none;
+         }
+         body {
+           margin: 0;
+           overflow-x: hidden;
+         }
+         
+         /* Mobile/Tablet: Sidebar hidden by default, hamburger visible */
+         @media (max-width: 1024px) {
+           .admin-layout {
+             display: flex !important;
+             flex-direction: column !important;
+           }
+           .hamburger-btn {
+             display: block !important;
+           }
+           .mobile-close-btn {
+             display: block !important;
+           }
+           .sidebar {
+             position: fixed !important;
+             top: 0 !important;
+             left: 0 !important;
+             height: 100vh !important;
+             z-index: 1000 !important;
+             transform: translateX(-100%) !important;
+             transition: transform 0.3s ease !important;
+             width: 280px !important;
+           }
+           .sidebar.open {
+             transform: translateX(0) !important;
+           }
+           .sidebar-overlay {
+             display: block !important;
+             position: fixed !important;
+             top: 0 !important;
+             left: 0 !important;
+             right: 0 !important;
+             bottom: 0 !important;
+             background: rgba(0,0,0,0.5) !important;
+             z-index: 999 !important;
+           }
+           .main-content {
+             padding: 15px !important;
+           }
+           .header-bar {
+             padding: 10px 15px !important;
+           }
+           .stats-grid {
+             grid-template-columns: 1fr !important;
+           }
+           .chart-grid {
+             grid-template-columns: 1fr !important;
+           }
+           .table-container {
+             overflow-x: auto !important;
+           }
+         }
+         
+         /* Desktop/Laptop: Sidebar always visible, no hamburger */
+         @media (min-width: 1025px) {
+           .sidebar {
+             display: flex !important;
+             position: sticky !important;
+             transform: none !important;
+             width: 260px !important;
+           }
+           .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
+             display: none !important;
+           }
+         }
+       `}</style>
 
-      {/* SIDEBAR */}
-      {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
-      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ width: '260px', background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+       {/* SIDEBAR */}
+       {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
+       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -384,13 +387,13 @@ function App() {
         
         {/* TOP HEADER BAR */}
         <header className="header-bar" style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)} style={{ background: 'none', border: 'none', color: '#f8fafc', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }}>☰</button>
-            <div>
-              <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
-              <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
-            </div>
-          </div>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+             <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)} style={{ background: 'none', border: 'none', color: '#f8fafc', fontSize: '1.5rem', cursor: 'pointer' }}>☰</button>
+             <div>
+               <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
+               <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+             </div>
+           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             {/* User Profile Card */}
@@ -411,7 +414,7 @@ function App() {
           
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
           {activeTab === 'overview' && userRole === 'admin' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', gap: '15px' }}>
+            <div className="responsive-actions" style={{ marginBottom: '30px' }}>
               <input type="text" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }} />
               <button style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
               <button style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>

@@ -140,23 +140,23 @@ export default function FeeManagement({ showToast }) {
   const totalPaid = payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0)
 
   return (
-    <div style={{ padding: 30 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+    <div style={{ padding: 'clamp(0px, 3vw, 30px)' }}>
+      <div className="responsive-header-row" style={{ marginBottom: 20 }}>
         <div>
           <h2 style={{ margin: 0, color: '#f8fafc' }}>Fee Management</h2>
           <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Record payments and track fee status</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="responsive-actions" style={{ gap: 10 }}>
           <button onClick={() => setView('record')} style={{ padding: '8px 16px', background: view === 'record' ? '#38bdf8' : '#1e293b', color: view === 'record' ? '#0f172a' : '#94a3b8', border: '1px solid #334155', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Record Payment</button>
           <button onClick={() => setView('history')} style={{ padding: '8px 16px', background: view === 'history' ? '#38bdf8' : '#1e293b', color: view === 'history' ? '#0f172a' : '#94a3b8', border: '1px solid #334155', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Payment History</button>
         </div>
       </div>
 
       {view === 'record' && (
-        <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, padding: 24 }}>
+        <div className="responsive-card" style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, padding: 24 }}>
           <h3 style={{ margin: '0 0 20px', color: '#38bdf8' }}>Record New Payment</h3>
           <form onSubmit={recordPayment} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="responsive-grid-2" style={{ gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Class</label>
                 <select value={selectedClass} onChange={(e) => { setSelectedClass(e.target.value); setSelectedStudent('') }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
@@ -172,7 +172,7 @@ export default function FeeManagement({ showToast }) {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            <div className="responsive-grid-3" style={{ gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Fee Type</label>
                 <select value={feeType} onChange={(e) => setFeeType(e.target.value)} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
@@ -217,7 +217,7 @@ export default function FeeManagement({ showToast }) {
 
       {view === 'history' && (
         <>
-          <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+          <div className="responsive-grid-2" style={{ gap: 20, marginBottom: 20 }}>
             <div style={{ flex: 1, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 10, padding: '16px 20px' }}>
               <div style={{ fontSize: '0.85rem', color: '#ef4444', marginBottom: 4 }}>Total Pending</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>₦{totalPending.toLocaleString()}</div>
@@ -234,7 +234,7 @@ export default function FeeManagement({ showToast }) {
             <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>No payment records found.</div>
           ) : (
             <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ overflowX: 'auto' }}>
+              <div className="responsive-table-wrap">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #334155' }}>
