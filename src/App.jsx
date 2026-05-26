@@ -266,9 +266,15 @@ function App() {
          @media (min-width: 1025px) {
            .sidebar {
              display: flex !important;
-             position: sticky !important;
+             position: fixed !important;
+             top: 0 !important;
+             left: 0 !important;
+             height: 100vh !important;
              transform: none !important;
              width: 260px !important;
+           }
+           .main-layout {
+             margin-left: 260px !important;
            }
            .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
              display: none !important;
@@ -382,8 +388,8 @@ function App() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+       {/* MAIN CONTENT */}
+       <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* TOP HEADER BAR */}
         <header className="header-bar" style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
