@@ -32,6 +32,7 @@ import GradeScale from './components/Academics/GradeScale'
 
 // Finance Components
 import FeeManagement from './components/Finance/FeeManagement'
+import ContactMessages from './components/Admin/ContactMessages'
 
 // Teacher Portal Components
 import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
@@ -363,6 +364,7 @@ function App() {
 
               <SidebarGroup title="Communication">
                 <SidebarItem icon="📢" label="Announcements" active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} />
+                <SidebarItem icon="📬" label="Contact Messages" active={activeTab === 'contact-messages'} onClick={() => setActiveTab('contact-messages')} />
               </SidebarGroup>
             </>
           )}
@@ -467,6 +469,7 @@ function App() {
               {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
               {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
               {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
+              {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
               
               {/* Placeholders */}
               {activeTab === 'promote' && <ClassPromotion showToast={showToast} />}
