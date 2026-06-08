@@ -56,6 +56,7 @@ import StudentPortal from './components/StudentPortal/StudentPortal'
 
 // Settings
 import SchoolSettings from './components/Settings/SchoolSettings'
+import ResetPassword from './components/Admin/ResetPassword'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -375,6 +376,7 @@ function App() {
 
               <SidebarGroup title="System">
                 <SidebarItem icon="⚙️" label="School Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                <SidebarItem icon="🔑" label="Reset Password" active={activeTab === 'reset-password'} onClick={() => setActiveTab('reset-password')} />
               </SidebarGroup>
 
               <SidebarGroup title="Communication">
@@ -489,6 +491,7 @@ function App() {
               {activeTab === 'reports' && <ReportCards showToast={showToast} />}
               {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
               {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
+              {activeTab === 'reset-password' && <ResetPassword showToast={showToast} />}
               {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
               {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
               {activeTab === 'post-news' && <PostNews showToast={showToast} />}
