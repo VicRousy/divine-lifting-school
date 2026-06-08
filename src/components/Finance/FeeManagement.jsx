@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { API_URL } from '../../config/api'
 
 export default function FeeManagement({ showToast }) {
   const [classes, setClasses] = useState([])
@@ -82,7 +83,7 @@ export default function FeeManagement({ showToast }) {
         }
 
         if (parentEmail) {
-          const response = await fetch('http://localhost:3001/api/send-fee-invoice', {
+           const response = await fetch(`${API_URL}/api/send-fee-invoice`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
