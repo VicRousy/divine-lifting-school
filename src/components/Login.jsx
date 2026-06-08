@@ -51,6 +51,9 @@ function Login({ onLogin }) {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [showNewPw, setShowNewPw] = useState(false)
+  const [showSignupPw, setShowSignupPw] = useState(false)
   
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -265,17 +268,20 @@ function Login({ onLogin }) {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10)
       const table = firstLoginUser.role === 'teacher' ? 'teachers' : 'profiles'
-      const { error: updateError } = await supabase
+      const { error: updateError, data: updateData } = await supabase
         .from(table)
         .update({ password: hashedPassword, is_first_login: false })
         .eq('id', firstLoginUser.id)
+        .select()
 
-      if (updateError) throw updateError
+      if (updateError || !updateData || updateData.length === 0) throw new Error('Password update failed')
 
       onLogin(firstLoginUser.role, {
         id: firstLoginUser.id,
         name: `${firstLoginUser.first_name} ${firstLoginUser.last_name}`,
-        staffId: firstLoginUser.staff_id
+        staffId: firstLoginUser.staff_id,
+        schoolId: firstLoginUser.school_id,
+        loginId: firstLoginUser.login_id
       })
     } catch (err) {
       console.error('Password update error:', err)
@@ -351,14 +357,17 @@ function Login({ onLogin }) {
               required
               style={inputStyle}
             />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPw ? 'text' : 'password'}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+              <span onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 12, top: 12, cursor: 'pointer', color: '#64748b', fontSize: '0.85rem', userSelect: 'none' }}>{showPw ? 'Hide' : 'Show'}</span>
+            </div>
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
@@ -380,7 +389,10 @@ function Login({ onLogin }) {
               <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
             </div>
             <input type="email" placeholder="Gmail Address" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
-            <input type="password" placeholder="Create Password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required style={inputStyle} />
+            <div style={{ position: 'relative' }}>
+              <input type={showSignupPw ? 'text' : 'password'} placeholder="Create Password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required style={inputStyle} />
+              <span onClick={() => setShowSignupPw(!showSignupPw)} style={{ position: 'absolute', right: 12, top: 12, cursor: 'pointer', color: '#64748b', fontSize: '0.85rem', userSelect: 'none' }}>{showSignupPw ? 'Hide' : 'Show'}</span>
+            </div>
             <input type="password" placeholder="Master Access Key" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} required style={inputStyle} />
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
@@ -427,22 +439,27 @@ function Login({ onLogin }) {
             <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px', fontSize: '0.9rem' }}>
               Welcome <strong style={{ color: '#38bdf8' }}>{firstLoginUser.first_name}</strong>! Please set your new password.
             </p>
-            <input
-              type="password"
-              placeholder="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              style={inputStyle}
-            />
-            <input
-              type="password"
-              placeholder="Confirm New Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showNewPw ? 'text' : 'password'}
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+              <span onClick={() => setShowNewPw(!showNewPw)} style={{ position: 'absolute', right: 12, top: 12, cursor: 'pointer', color: '#64748b', fontSize: '0.85rem', userSelect: 'none' }}>{showNewPw ? 'Hide' : 'Show'}</span>
+            </div>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showNewPw ? 'text' : 'password'}
+                placeholder="Confirm New Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </div>
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}

@@ -54,12 +54,13 @@ export default function ResetPassword({ showToast }) {
       if (role.table === 'profiles' || role.table === 'teachers') {
         updateData.is_first_login = true
       }
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from(role.table)
         .update(updateData)
         .eq(role.idField, user.id)
+        .select()
 
-      if (error) throw error
+      if (error || !data || data.length === 0) throw new Error('Update failed')
 
       const name = role.nameField.map(f => user[f]).filter(Boolean).join(' ')
       setResetResult({ name, loginId: user.login_id || user.school_id || user.student_id || user.staff_id || user.parent_id || user.id, tempPassword })
