@@ -72,10 +72,10 @@ export default function AdminAnnouncements({ showToast }) {
         emails = [...new Set(emails)]
 
         if (emails.length > 0) {
-          const response = await fetch(`${API_URL}/api/send-announcement-email`, {
+          const response = await fetch(`${API_URL}/api/email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ recipients: emails, title, body, audience })
+            body: JSON.stringify({ type: 'announcement', recipients: emails, title, body, audience })
           })
           if (!response.ok) throw new Error('Failed to send emails')
         }

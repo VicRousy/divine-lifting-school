@@ -2,10 +2,10 @@ import { API_URL } from '../config/api';
 
 export async function sendWelcomeEmail(userEmail, uniqueId, password, accountType, parentName = null, studentName = null) {
   try {
-    const response = await fetch(`${API_URL}/api/send-welcome-email`, {
+    const response = await fetch(`${API_URL}/api/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userEmail, uniqueId, password, accountType, parentName, studentName }),
+      body: JSON.stringify({ type: 'welcome', userEmail, uniqueId, password, accountType, parentName, studentName }),
     });
 
     const data = await response.json();
@@ -21,10 +21,10 @@ export async function sendWelcomeEmail(userEmail, uniqueId, password, accountTyp
 
 export async function sendVerificationEmail(userEmail, code, loginId) {
   try {
-    const response = await fetch(`${API_URL}/api/send-verification-email`, {
+    const response = await fetch(`${API_URL}/api/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userEmail, code, loginId }),
+      body: JSON.stringify({ type: 'verification', userEmail, code, loginId }),
     });
 
     const data = await response.json();
