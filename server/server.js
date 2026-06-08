@@ -24,6 +24,21 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Unified email endpoint (mirrors Vercel serverless function at api/email.js)
+app.post('/api/email', async (req, res) => {
+  const { type } = req.body;
+  const routes = {
+    welcome: '/api/send-welcome-email',
+    verification: '/api/send-verification-email',
+    announcement: '/api/send-announcement-email',
+    'fee-invoice': '/api/send-fee-invoice',
+  };
+  const target = routes[type];
+  if (!target) return res.status(400).json({ error: 'Invalid email type' });
+  req.url = target;
+  app(req, res);
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
