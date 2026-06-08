@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../../supabaseClient'
 
 const DEFAULT_SCALE = [
   { min: 90, max: 100, grade: 'A+', remark: 'Excellent', color: '#10b981' },
@@ -12,6 +13,33 @@ const DEFAULT_SCALE = [
 export default function GradeScale({ showToast }) {
   const [scale, setScale] = useState(DEFAULT_SCALE)
   const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const loadScale = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('grade_scale')
+          .select('scale')
+          .eq('id', 1)
+          .single()
+
+        if (error && error.code !== 'PGRST116') throw error
+
+        if (data?.scale) {
+          setScale(data.scale)
+          return
+        }
+      } catch {}
+
+      const local = localStorage.getItem('dls_grade_scale')
+      if (local) {
+        try { setScale(JSON.parse(local)); return } catch {}
+      }
+      setScale(DEFAULT_SCALE)
+    }
+    loadScale()
+  }, [])
 
   const updateRow = (index, field, value) => {
     setScale((prev) => {
@@ -21,21 +49,39 @@ export default function GradeScale({ showToast }) {
     })
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     for (const row of scale) {
       if (row.min > row.max) {
         showToast?.(`Invalid range: ${row.grade} min (${row.min}) exceeds max (${row.max})`, 'error')
         return
       }
     }
-    localStorage.setItem('dls_grade_scale', JSON.stringify(scale))
-    showToast?.('Grade scale saved locally.', 'success')
-    setEditing(null)
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('grade_scale')
+        .upsert({ id: 1, scale, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+
+      if (error) throw error
+
+      localStorage.setItem('dls_grade_scale', JSON.stringify(scale))
+      showToast?.('Grade scale saved to database.', 'success')
+      setEditing(null)
+    } catch (err) {
+      console.error('Grade scale save failed:', err)
+      localStorage.setItem('dls_grade_scale', JSON.stringify(scale))
+      showToast?.('Saved locally only. Database sync failed.', 'warning')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setScale(DEFAULT_SCALE)
     localStorage.removeItem('dls_grade_scale')
+    try {
+      await supabase.from('grade_scale').upsert({ id: 1, scale: DEFAULT_SCALE, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+    } catch {}
     showToast?.('Grade scale reset to defaults.', 'success')
   }
 
@@ -75,7 +121,7 @@ export default function GradeScale({ showToast }) {
               fontWeight: 700,
             }}
           >
-            💾 Save Scale
+            {saving ? 'Saving...' : '💾 Save Scale'}
           </button>
         </div>
       </div>
@@ -207,8 +253,8 @@ export default function GradeScale({ showToast }) {
         </div>
       </div>
 
-      <div style={{ marginTop: 20, padding: 16, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, color: '#fbbf24', fontSize: '0.85rem' }}>
-        Note: Grade scale is saved to browser localStorage. For multi-device sync, store in Supabase database.
+      <div style={{ marginTop: 20, padding: 16, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, color: '#34d399', fontSize: '0.85rem' }}>
+        Grade scale is saved to the database and synced across all devices.
       </div>
     </div>
   )
