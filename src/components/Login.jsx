@@ -63,11 +63,16 @@ function Login({ onLogin }) {
       // Check profiles (Admin)
       const { data: admin } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, school_id, role, login_id, password, is_verified')
+        .select('id, first_name, last_name, school_id, role, login_id, password, is_verified, is_first_login')
         .eq('login_id', input)
         .maybeSingle()
 
       if (admin && await verifyPassword(password, admin.password, admin.id, 'profiles')) {
+        if (admin.is_first_login) {
+          setFirstLoginUser({ ...admin, role: 'admin' })
+          setLoading(false)
+          return
+        }
         onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id })
         setLoading(false)
         return
@@ -76,11 +81,16 @@ function Login({ onLogin }) {
       // Check teachers
       const { data: teacher } = await supabase
         .from('teachers')
-        .select('id, first_name, last_name, staff_id, login_id, password')
+        .select('id, first_name, last_name, staff_id, login_id, password, is_first_login')
         .eq('login_id', input)
         .maybeSingle()
 
       if (teacher && await verifyPassword(password, teacher.password, teacher.id, 'teachers')) {
+        if (teacher.is_first_login) {
+          setFirstLoginUser({ ...teacher, role: 'teacher' })
+          setLoading(false)
+          return
+        }
         onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id })
         setLoading(false)
         return

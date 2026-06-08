@@ -137,7 +137,7 @@ export default function ResetPassword({ showToast }) {
             <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>Temporary Password</div>
             <div style={{ fontSize: '1.3rem', fontFamily: 'monospace', fontWeight: 'bold', color: '#fbbf24', letterSpacing: '2px' }}>{resetResult.tempPassword}</div>
           </div>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '12px' }}>Share this password with the user. They'll be asked to set a new one on next login.</p>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '12px' }}>Share this password with the user. {role.table === 'profiles' || role.table === 'teachers' ? 'They\'ll be forced to set a new password on next login.' : 'They can change it anytime from their portal.'}</p>
         </div>
       )}
 
