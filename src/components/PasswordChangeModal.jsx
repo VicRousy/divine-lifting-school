@@ -30,8 +30,23 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
       return
     }
 
-    if (newPassword.length < 6) {
-      showToast('New password must be at least 6 characters', 'error')
+    if (newPassword.length < 8) {
+      showToast('Password must be at least 8 characters', 'error')
+      return
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      showToast('Password must contain an uppercase letter', 'error')
+      return
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      showToast('Password must contain a lowercase letter', 'error')
+      return
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      showToast('Password must contain a number', 'error')
       return
     }
 
