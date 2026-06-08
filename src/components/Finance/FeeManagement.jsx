@@ -83,11 +83,12 @@ export default function FeeManagement({ showToast }) {
         }
 
         if (parentEmail) {
-           const response = await fetch(`${API_URL}/api/send-fee-invoice`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              recipient: parentEmail,
+           const response = await fetch(`${API_URL}/api/email`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               type: 'fee-invoice',
+               recipient: parentEmail,
               studentName: selectedStudentName,
               feeType,
               amount: Number(amount),
