@@ -286,33 +286,35 @@ function App() {
          }
          
          /* Desktop/Laptop: Sidebar always visible, no hamburger */
-         @media (min-width: 1025px) {
-           .sidebar {
-             display: flex !important;
-             position: fixed !important;
-             top: 0 !important;
-             bottom: 0 !important;
-             left: 0 !important;
-             width: 260px !important;
-             z-index: 10;
-             transform: none !important;
-           }
-           .main-layout {
-             margin-left: 260px !important;
-           }
-           .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
-             display: none !important;
-           }
-         }
-           .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
-             display: none !important;
-           }
-         }
-           .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
-             display: none !important;
-           }
-         }
-       `}</style>
+          @media (min-width: 1025px) {
+            .sidebar {
+              display: flex !important;
+              position: fixed !important;
+              top: 0 !important;
+              bottom: 0 !important;
+              left: 0 !important;
+              width: 260px !important;
+              z-index: 10;
+              transform: none !important;
+            }
+            .main-layout {
+              margin-left: 260px !important;
+            }
+            .hamburger-btn, .mobile-close-btn, .sidebar-overlay {
+              display: none !important;
+            }
+          }
+
+          @media (max-width: 768px) {
+            .responsive-actions {
+              flex-direction: column !important;
+            }
+            .responsive-actions input,
+            .responsive-actions button {
+              width: 100% !important;
+            }
+          }
+        `}</style>
 
        {/* SIDEBAR */}
        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
