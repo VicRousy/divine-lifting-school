@@ -33,6 +33,8 @@ import GradeScale from './components/Academics/GradeScale'
 // Finance Components
 import FeeManagement from './components/Finance/FeeManagement'
 import ContactMessages from './components/Admin/ContactMessages'
+import ManageNews from './components/Admin/ManageNews'
+import PostNews from './components/Admin/PostNews'
 
 // Teacher Portal Components
 import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
@@ -154,7 +156,10 @@ function App() {
       'approval': 'Grade Approval',
       'reports': 'Report Cards',
       'scale': 'Grade Scale',
-      'fees': 'Fee Management'
+      'fees': 'Fee Management',
+      'post-news': 'Post News',
+      'manage-news': 'Manage News',
+      'contact-messages': 'Contact Messages'
     }
     return titles[activeTab] || activeTab.toUpperCase()
   }
@@ -366,6 +371,11 @@ function App() {
                 <SidebarItem icon="📢" label="Announcements" active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} />
                 <SidebarItem icon="📬" label="Contact Messages" active={activeTab === 'contact-messages'} onClick={() => setActiveTab('contact-messages')} />
               </SidebarGroup>
+
+              <SidebarGroup title="Website News">
+                <SidebarItem icon="📰" label="Post News" active={activeTab === 'post-news'} onClick={() => setActiveTab('post-news')} />
+                <SidebarItem icon="📁" label="Manage News" active={activeTab === 'manage-news'} onClick={() => setActiveTab('manage-news')} />
+              </SidebarGroup>
             </>
           )}
 
@@ -470,6 +480,8 @@ function App() {
               {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
               {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
               {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
+              {activeTab === 'post-news' && <PostNews showToast={showToast} />}
+              {activeTab === 'manage-news' && <ManageNews showToast={showToast} />}
               
               {/* Placeholders */}
               {activeTab === 'promote' && <ClassPromotion showToast={showToast} />}
