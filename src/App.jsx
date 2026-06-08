@@ -470,9 +470,11 @@ function App() {
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
           {activeTab === 'overview' && userRole === 'admin' && (
             <div className="responsive-actions" style={{ marginBottom: '30px' }}>
-              <input type="text" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }} />
-              <button style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
-              <button style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
+              <input type="text" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
+                onKeyDown={(e) => { if (e.key === 'Enter') setActiveTab('student-list') }}
+              />
+              <button onClick={() => setActiveTab('students')} style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+              <button onClick={() => setActiveTab('fees')} style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
             </div>
           )}
 
