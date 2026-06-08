@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { API_URL } from '../../config/api'
 
 export default function AdminAnnouncements({ showToast }) {
   const [title, setTitle] = useState('')
@@ -71,7 +72,7 @@ export default function AdminAnnouncements({ showToast }) {
         emails = [...new Set(emails)]
 
         if (emails.length > 0) {
-          const response = await fetch('http://localhost:3001/api/send-announcement-email', {
+          const response = await fetch(`${API_URL}/api/send-announcement-email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ recipients: emails, title, body, audience })

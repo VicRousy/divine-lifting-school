@@ -6,17 +6,20 @@ import {
   getTermLabel,
   normalizeTermRows,
 } from '../../utils/academicSession'
-import { generateReportCardPDF } from '../../utils/pdfGenerator'
+// Removed static import of generateReportCardPDF
 
-function getGradeInfo(total) {
-  const score = Number(total)
-  if (score >= 90) return { grade: 'A+', remark: 'Excellent', color: '#10b981' }
-  if (score >= 80) return { grade: 'A', remark: 'Very Good', color: '#34d399' }
-  if (score >= 70) return { grade: 'B+', remark: 'Good', color: '#38bdf8' }
-  if (score >= 60) return { grade: 'B', remark: 'Satisfactory', color: '#f59e0b' }
-  if (score >= 50) return { grade: 'C', remark: 'Pass', color: '#fbbf24' }
-  return { grade: 'F', remark: 'Fail', color: '#ef4444' }
-}
+// ... (existing code)
+
+  const handleDownloadPDF = async (student) => {
+    try {
+      const { generateReportCardPDF } = await import('../../utils/pdfGenerator')
+      generateReportCardPDF(student, selectedClassName, termLabel, academicYear, students.length)
+      showToast?.('PDF downloaded successfully!', 'success')
+    } catch (error) {
+      showToast?.('Failed to generate PDF', 'error')
+      console.error('PDF generation error:', error)
+    }
+  }
 
 export default function ReportCards({ showToast }) {
   const [classes, setClasses] = useState([])
