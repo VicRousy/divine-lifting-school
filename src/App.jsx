@@ -70,6 +70,7 @@ function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
 
   const showToast = (message, type = 'success') => {
@@ -444,15 +445,21 @@ function App() {
            </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* User Profile Card */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#0f172a', padding: '8px 15px', borderRadius: '10px', border: '1px solid #334155' }}>
-              <div style={{ width: '35px', height: '35px', background: '#38bdf8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#0f172a' }}>
+            <div style={{ position: 'relative' }}>
+              <div onClick={() => setShowProfileMenu(!showProfileMenu)} style={{ width: 40, height: 40, background: '#38bdf8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#0f172a', cursor: 'pointer', fontSize: '1.1rem' }}>
                 {userInfo?.name?.charAt(0) || 'U'}
               </div>
-              <div>
-                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{userInfo?.name || 'User'}</div>
-                <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{userInfo?.staffId || userInfo?.loginId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
-              </div>
+              {showProfileMenu && (
+                <div style={{ position: 'absolute', right: 0, top: 48, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: 16, minWidth: 200, boxShadow: '0 10px 40px rgba(0,0,0,0.4)', zIndex: 100 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#f8fafc', marginBottom: 4 }}>{userInfo?.name || 'User'}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#38bdf8', marginBottom: 12 }}>{userInfo?.staffId || userInfo?.loginId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
+                  <div style={{ borderTop: '1px solid #334155', paddingTop: 10 }}>
+                    <button onClick={() => { setShowProfileMenu(false); setShowPasswordChange(true) }} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => e.currentTarget.style.background = '#334155'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>Change Password</button>
+                    <button onClick={() => { setShowProfileMenu(false); setShowLogoutConfirm(true) }} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => e.currentTarget.style.background = '#334155'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>Logout</button>
+                  </div>
+                </div>
+              )}
+              {showProfileMenu && <div onClick={() => setShowProfileMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />}
             </div>
           </div>
         </header>
