@@ -62,7 +62,7 @@ export default function ResetPassword({ showToast }) {
       if (error) throw error
 
       const name = role.nameField.map(f => user[f]).filter(Boolean).join(' ')
-      setResetResult({ name, loginId: user.login_id || user.student_id || user.staff_id || user.parent_id, tempPassword })
+      setResetResult({ name, loginId: user.login_id || user.school_id || user.student_id || user.staff_id || user.parent_id, tempPassword })
       setUsers([])
       setSearch('')
     } catch (err) {
@@ -109,7 +109,7 @@ export default function ResetPassword({ showToast }) {
             <tbody>
               {users.map((user) => {
                 const name = role.nameField.map(f => user[f]).filter(Boolean).join(' ')
-                const loginId = user.login_id || user.student_id || user.staff_id || user.parent_id
+                const loginId = user.login_id || user.school_id || user.student_id || user.staff_id || user.parent_id
                 return (
                   <tr key={user.id} style={{ borderTop: '1px solid #334155' }}>
                     <td style={{ padding: '12px 16px', color: '#f8fafc' }}>{name}</td>
