@@ -246,6 +246,12 @@ function Login({ onLogin }) {
       return
     }
 
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      setError('Password must contain a special character.')
+      setLoading(false)
+      return
+    }
+
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10)
       const table = firstLoginUser.role === 'teacher' ? 'teachers' : 'profiles'

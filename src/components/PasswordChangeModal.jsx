@@ -50,6 +50,11 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
       return
     }
 
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      showToast('Password must contain a special character', 'error')
+      return
+    }
+
     if (newPassword !== confirmPassword) {
       showToast('New passwords do not match', 'error')
       return
