@@ -109,11 +109,12 @@ export default function ResetPassword({ showToast }) {
             <tbody>
               {users.map((user) => {
                 const name = role.nameField.map(f => user[f]).filter(Boolean).join(' ')
-                const loginId = user.login_id || user.school_id || user.student_id || user.staff_id || user.parent_id || user.id
+                const fields = [user.login_id, user.school_id, user.student_id, user.staff_id, user.parent_id].filter(Boolean)
+                const loginId = fields.length > 0 ? fields[0] : user.id
                 return (
                   <tr key={user.id} style={{ borderTop: '1px solid #334155' }}>
                     <td style={{ padding: '12px 16px', color: '#f8fafc' }}>{name}</td>
-                    <td style={{ padding: '12px 16px', color: '#94a3b8', fontFamily: 'monospace' }}>{loginId}</td>
+                    <td style={{ padding: '12px 16px', color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.8rem' }}>{loginId}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <button onClick={() => handleReset(user)} disabled={loading}
                         style={{ padding: '6px 14px', background: '#f59e0b', color: '#0f172a', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
