@@ -451,7 +451,7 @@ function App() {
               </div>
               <div>
                 <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{userInfo?.name || 'User'}</div>
-                <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{userInfo?.staffId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
+                <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{userInfo?.staffId || userInfo?.loginId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
               </div>
             </div>
           </div>
