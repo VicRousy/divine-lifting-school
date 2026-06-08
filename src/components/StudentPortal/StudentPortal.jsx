@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import AnnouncementsWidget from '../Common/AnnouncementsWidget'
 import { generateReportCardPDF } from '../../utils/pdfGenerator'
+import PasswordChangeModal from '../PasswordChangeModal'
 
 export default function StudentPortal({ userInfo, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [toast, setToast] = useState(null)
   const [studentData, setStudentData] = useState(null)
   const [grades, setGrades] = useState([])
   const [attendance, setAttendance] = useState([])
@@ -162,7 +165,8 @@ export default function StudentPortal({ userInfo, onLogout }) {
           ))}
         </nav>
 
-        <div style={{ padding: '20px', borderTop: '1px solid #334155' }}>
+        <div style={{ padding: '20px', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={() => setShowPasswordModal(true)} style={{ width: '100%', padding: 10, background: '#475569', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold' }}>Change Password</button>
           <button onClick={onLogout} style={{ width: '100%', padding: 10, background: '#ef4444', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold' }}>Logout</button>
         </div>
       </aside>
@@ -457,6 +461,25 @@ export default function StudentPortal({ userInfo, onLogout }) {
           )}
         </div>
       </main>
+
+      {showPasswordModal && (
+        <PasswordChangeModal
+          userInfo={userInfo}
+          userRole="student"
+          onClose={() => setShowPasswordModal(false)}
+          showToast={(msg, type) => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }}
+        />
+      )}
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, padding: '12px 24px', borderRadius: 8, zIndex: 1001,
+          background: toast.type === 'success' ? '#10b981' : '#ef4444', color: 'white', fontWeight: 600, fontSize: '0.9rem',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   )
 }
