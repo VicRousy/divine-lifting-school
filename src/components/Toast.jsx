@@ -14,7 +14,7 @@ const Toast = ({ message, type = 'success', onClose }) => {
     right: '20px',
     padding: '12px 24px',
     borderRadius: '8px',
-    backgroundColor: type === 'success' ? '#10b981' : '#ef4444',
+    backgroundColor: type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#ef4444',
     color: 'white',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
     display: 'flex',

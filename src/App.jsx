@@ -3,6 +3,9 @@ import { supabase } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
+import PasswordChangeModal from './components/PasswordChangeModal'
+
+const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 // Core Dashboard Components
 import DashboardStats from './components/Dashboard/DashboardStats'
@@ -64,6 +67,7 @@ function App() {
   const [selectedStudentProfile, setSelectedStudentProfile] = useState(null)
   const [toast, setToast] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const initialized = useRef(false)
 
@@ -86,10 +90,16 @@ function App() {
         const storedSession = localStorage.getItem('dls_session')
         if (storedSession) {
           const parsed = JSON.parse(storedSession)
-          setSession(parsed)
-          setUserRole(parsed.role)
-          setUserInfo(parsed.userInfo)
-          setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
+          const elapsed = Date.now() - new Date(parsed.loginTime).getTime()
+          if (elapsed > SESSION_DURATION_MS) {
+            localStorage.removeItem('dls_session')
+            showToast('Session expired. Please login again.', 'warning')
+          } else {
+            setSession(parsed)
+            setUserRole(parsed.role)
+            setUserInfo(parsed.userInfo)
+            setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
+          }
         }
       } catch (error) {
         console.error('Initialization error:', error)
@@ -404,7 +414,8 @@ function App() {
           )}
         </nav>
 
-        <div style={{ padding: '20px', borderTop: '1px solid #334155' }}>
+        <div style={{ padding: '20px', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button onClick={() => setShowPasswordChange(true)} style={{ width: '100%', padding: '10px', background: '#475569', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Change Password</button>
           <button onClick={() => setShowLogoutConfirm(true)} style={{ width: '100%', padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Logout</button>
         </div>
       </aside>
@@ -504,6 +515,7 @@ function App() {
       </main>
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+      {showPasswordChange && <PasswordChangeModal userInfo={userInfo} userRole={userRole} onClose={() => setShowPasswordChange(false)} showToast={showToast} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
