@@ -37,3 +37,41 @@ export async function sendVerificationEmail(userEmail, code, loginId) {
     return { success: false, error: error.message };
   }
 }
+
+export async function sendAnnouncementEmail(recipients, title, body, audience) {
+  try {
+    const response = await fetch(`${API_URL}/api/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'announcement', recipients, title, body, audience }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || 'Announcement email failed');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Announcement email error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendFeeInvoice(recipient, studentName, feeType, amount, dueDate) {
+  try {
+    const response = await fetch(`${API_URL}/api/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'fee-invoice', recipient, studentName, feeType, amount, dueDate }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || 'Fee invoice email failed');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Fee invoice error:', error);
+    return { success: false, error: error.message };
+  }
+}
