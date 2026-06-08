@@ -73,7 +73,7 @@ function Login({ onLogin }) {
           setLoading(false)
           return
         }
-        onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id })
+        onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id, loginId: admin.login_id })
         setLoading(false)
         return
       }
@@ -91,7 +91,7 @@ function Login({ onLogin }) {
           setLoading(false)
           return
         }
-        onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id })
+        onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id, loginId: teacher.login_id })
         setLoading(false)
         return
       }
@@ -104,7 +104,7 @@ function Login({ onLogin }) {
         .maybeSingle()
 
       if (student && await verifyPassword(password, student.password, student.id, 'students')) {
-        onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id })
+        onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id, loginId: student.login_id })
         setLoading(false)
         return
       }
@@ -117,7 +117,7 @@ function Login({ onLogin }) {
         .maybeSingle()
 
       if (parent && await verifyPassword(password, parent.password, parent.id, 'parents')) {
-        onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id })
+        onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id, loginId: parent.login_id })
         setLoading(false)
         return
       }

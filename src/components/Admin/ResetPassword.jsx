@@ -98,6 +98,11 @@ export default function ResetPassword({ showToast }) {
 
       {users.length > 0 && (
         <div style={{ background: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #334155' }}>
+            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{users.length} result(s) found</span>
+            <button onClick={() => { setUsers([]); setSearch(''); setResetResult(null) }}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.2rem', padding: '4px 8px', lineHeight: 1 }}>✕</button>
+          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#334155' }}>
