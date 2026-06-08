@@ -222,6 +222,30 @@ function Login({ onLogin }) {
       return
     }
 
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters.')
+      setLoading(false)
+      return
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      setError('Password must contain an uppercase letter.')
+      setLoading(false)
+      return
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      setError('Password must contain a lowercase letter.')
+      setLoading(false)
+      return
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      setError('Password must contain a number.')
+      setLoading(false)
+      return
+    }
+
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10)
       const table = firstLoginUser.role === 'teacher' ? 'teachers' : 'profiles'
