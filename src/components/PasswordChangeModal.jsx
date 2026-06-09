@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import bcrypt from 'bcryptjs'
 
@@ -24,6 +24,12 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const el = dialogRef.current
+    if (el) el.focus()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -110,7 +116,7 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+    <div ref={dialogRef} tabIndex={-1} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
       <div style={{ background: '#1e293b', borderRadius: '12px', padding: '32px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
         <h2 style={{ color: '#f8fafc', margin: '0 0 24px', fontSize: '1.25rem' }}>Change Password</h2>
 

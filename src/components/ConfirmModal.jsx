@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Delete", type = "danger" }) => {
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const prev = document.activeElement
+    const el = dialogRef.current
+    if (el) el.focus()
+    return () => { if (prev && prev.focus) prev.focus() }
+  }, [isOpen])
+
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(4px)',
-      display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
-    }}>
+    <div role="dialog" aria-modal="true" aria-label={title}
+      ref={dialogRef}
+      tabIndex={-1}
+      style={{
+        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(4px)',
+        display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
+      }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }}
+    >
       <div style={{
         backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px',
         border: '1px solid #1e293b', width: '90%', maxWidth: '400px', textAlign: 'center'

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { getGradeInfo } from '../../utils/gradeUtils'
@@ -28,6 +29,8 @@ export default function ScoreEntry({ showToast }) {
 
   const [scores, setScores] = useState({})
   const [loading, setLoading] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  useUnsavedChanges(dirty)
 
   const selectedTerm = terms.find((t) => String(t.id) === String(selectedTermId))
   const selectedTermLabel = getTermLabel(selectedTerm)
@@ -78,6 +81,7 @@ export default function ScoreEntry({ showToast }) {
       ...prev,
       [studentId]: { ...(prev[studentId] || { ca1: '', ca2: '', exam: '' }), [field]: next },
     }))
+    setDirty(true)
   }
 
   const saveAllScores = async () => {
@@ -111,6 +115,7 @@ export default function ScoreEntry({ showToast }) {
         showToast?.('Save failed: ' + error.message, 'error')
       } else {
         showToast?.(`Saved results for ${students.length} students.`, 'success')
+        setDirty(false)
       }
     } finally {
       setLoading(false)

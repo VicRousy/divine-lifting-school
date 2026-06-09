@@ -15,6 +15,10 @@ const ALLOWED = [
   'http://localhost:3001',
 ]
 
+const RATE_LIMIT = {}
+const RATE_WINDOW = 60000
+const MAX_PER_WINDOW = 20
+
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
 }
@@ -28,6 +32,15 @@ export default async function handler(req, res) {
   if (origin && !ALLOWED.some(a => origin.startsWith(a))) {
     return res.status(403).json({ error: 'Forbidden' })
   }
+
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
+  const now = Date.now()
+  if (RATE_LIMIT[ip] && RATE_LIMIT[ip].length >= MAX_PER_WINDOW && RATE_LIMIT[ip][0] > now - RATE_WINDOW) {
+    return res.status(429).json({ error: 'Too many requests' })
+  }
+  if (!RATE_LIMIT[ip]) RATE_LIMIT[ip] = []
+  RATE_LIMIT[ip].push(now)
+  RATE_LIMIT[ip] = RATE_LIMIT[ip].filter(t => t > now - RATE_WINDOW)
 
   const { type } = req.body;
 

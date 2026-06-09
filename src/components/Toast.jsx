@@ -26,7 +26,7 @@ const Toast = ({ message, type = 'success', onClose }) => {
   };
 
   return (
-    <div style={styles}>
+    <div role="status" aria-live="polite" aria-atomic="true" style={styles}>
       <span>{type === 'success' ? '✅' : '❌'}</span>
       {message}
       <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', marginLeft: '10px', fontSize: '1.2rem' }}>&times;</button>

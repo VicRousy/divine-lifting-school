@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import ConfirmModal from '../ConfirmModal' // Import shared component
 
-function TeacherList({ refreshTrigger }) {
+function TeacherList({ refreshTrigger, showToast }) {
   const [teachers, setTeachers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -36,7 +36,7 @@ function TeacherList({ refreshTrigger }) {
       setShowModal(false)
       fetchTeachers()
     } catch (err) {
-      alert("Error deleting staff: " + err.message)
+      showToast("Error deleting staff: " + err.message, 'error')
     }
   }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { CardSkeleton } from '../Common/Skeleton'
 import { supabase } from '../../supabaseClient'
 import { Trash2, RefreshCw, Newspaper, Calendar, Image } from 'lucide-react'
@@ -6,6 +7,8 @@ import { Trash2, RefreshCw, Newspaper, Calendar, Image } from 'lucide-react'
 export default function ManageNews({ showToast }) {
   const [news, setNews] = useState([])
   const [loading, setLoading] = useState(true)
+  const [dirty, setDirty] = useState(false)
+  useUnsavedChanges(dirty)
 
   const fetchNews = async () => {
     setLoading(true)
