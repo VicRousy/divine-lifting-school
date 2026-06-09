@@ -24,6 +24,8 @@ export default function StudentPortal({ userInfo, onLogout }) {
     }
   }, [userInfo])
 
+  useEffect(() => { window.scrollTo(0, 0) }, [activeTab])
+
   const fetchStudentData = async () => {
     setLoading(true)
     try {
