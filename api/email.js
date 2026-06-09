@@ -25,6 +25,8 @@ export default async function handler(req, res) {
         return await sendAnnouncement(req, res);
       case 'fee-invoice':
         return await sendFeeInvoice(req, res);
+      case 'application-decision':
+        return await sendApplicationDecision(req, res);
       default:
         return res.status(400).json({ error: 'Invalid email type' });
     }
@@ -211,5 +213,80 @@ async function sendFeeInvoice(req, res) {
   });
 
   console.log(`Fee invoice sent to: ${recipient}`);
+  res.json({ success: true, messageId: info.messageId });
+}
+
+async function sendApplicationDecision(req, res) {
+  const { recipient, studentName, applicationNumber, decision, className } = req.body;
+  if (!recipient || !studentName || !applicationNumber || !decision) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
+
+  const isAccepted = decision === 'accepted';
+  const schoolEmail = process.env.GMAIL_USER || 'info@divineliftingschool.com';
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const subject = isAccepted
+    ? `Admission Accepted - ${studentName} - Divine Lifting School`
+    : `Application Update - ${studentName} - Divine Lifting School`;
+
+  const bodyContent = isAccepted ? `
+    <p>We are pleased to inform you that <strong>${studentName}</strong> has been <span style="color:#10b981;font-weight:700;">accepted</span> into <strong>${className || 'our school'}</strong> at <strong>Divine Lifting International School</strong>.</p>
+    <p>Application Number: <strong>${applicationNumber}</strong></p>
+    <div class="info-box">
+      <p style="margin:0;font-weight:700;color:#1e293b;">Next Steps:</p>
+      <ol style="margin:8px 0 0;padding-left:20px;color:#475569;">
+        <li>Visit the school office with your child's documents for verification.</li>
+        <li>Complete the enrollment registration at the administration block.</li>
+        <li>Pay the required fees and obtain the official acceptance letter.</li>
+        <li>Collect the school uniform and supply list.</li>
+      </ol>
+    </div>
+    <p>For any questions regarding the admission process, please contact the school office.</p>
+  ` : `
+    <p>Thank you for your interest in <strong>Divine Lifting International School</strong>.</p>
+    <p>After careful review of the application for <strong>${studentName}</strong> (Application #${applicationNumber}) for <strong>${className || 'admission'}</strong>, we regret to inform you that your application has <span style="color:#ef4444;font-weight:700;">not been successful</span> at this time.</p>
+    <p>We appreciate the time you took to apply and encourage you to consider applying again in the future.</p>
+  `;
+
+  const info = await transporter.sendMail({
+    from: `Divine Lifting International School <${schoolEmail}>`,
+    to: recipient,
+    subject,
+    html: `<!DOCTYPE html><html><head><style>
+      body{font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background:#f9fafb}
+      .container{max-width:600px;margin:0 auto}
+      .header{background:${isAccepted ? 'linear-gradient(135deg,#10b981,#38bdf8)' : 'linear-gradient(135deg,#64748b,#94a3b8)'};color:#fff;padding:32px 30px;text-align:center;border-radius:10px 10px 0 0}
+      .header h1{margin:0;font-size:22px}
+      .header p{margin:6px 0 0;font-size:14px;opacity:0.9}
+      .content{background:#fff;padding:30px;border-radius:0 0 10px 10px}
+      .info-box{background:#f1f5f9;padding:16px 20px;margin:16px 0;border-radius:8px;border-left:4px solid ${isAccepted ? '#10b981' : '#94a3b8'}}
+      .stamp{text-align:center;margin:24px 0 8px;font-size:13px;color:#64748b}
+      .footer{text-align:center;color:#94a3b8;font-size:13px;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0}
+    </style></head><body>
+      <div class="container">
+        <div class="header">
+          <h1>Divine Lifting International School</h1>
+          <p>${isAccepted ? 'Admission Accepted' : 'Application Decision'}</p>
+        </div>
+        <div class="content">
+          <p style="color:#64748b;font-size:13px;">Date: ${date}</p>
+          <p>Dear Parent/Guardian,</p>
+          ${bodyContent}
+          <p>Yours sincerely,</p>
+          <p style="font-weight:700;margin:0;">The Admissions Office</p>
+          <p style="color:#64748b;font-size:13px;margin:4px 0 0;">Divine Lifting International School</p>
+          <div class="stamp">━━━ Official Notice ━━━</div>
+          <div class="footer">
+            <p style="margin:0 0 4px;"><strong>Divine Lifting International School</strong></p>
+            <p style="margin:0 0 2px;">Ikorodu, Lagos, Nigeria</p>
+            <p style="margin:0;">Email: ${schoolEmail}</p>
+          </div>
+        </div>
+      </div>
+    </body></html>`,
+  });
+
+  console.log(`Application decision email sent to: ${recipient} (${decision})`);
   res.json({ success: true, messageId: info.messageId });
 }
