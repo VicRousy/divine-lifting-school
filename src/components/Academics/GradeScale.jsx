@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
 const DEFAULT_SCALE = [
-  { min: 90, max: 100, grade: 'A+', remark: 'Excellent', color: '#10b981' },
-  { min: 80, max: 89, grade: 'A', remark: 'Very Good', color: '#34d399' },
-  { min: 70, max: 79, grade: 'B+', remark: 'Good', color: '#38bdf8' },
-  { min: 60, max: 69, grade: 'B', remark: 'Satisfactory', color: '#f59e0b' },
-  { min: 50, max: 59, grade: 'C', remark: 'Pass', color: '#fbbf24' },
-  { min: 0, max: 49, grade: 'F', remark: 'Fail', color: '#ef4444' },
+  { min: 80, max: 100, grade: 'A+', remark: 'Excellent', color: '#10b981' },
+  { min: 70, max: 79, grade: 'A', remark: 'Very Good', color: '#34d399' },
+  { min: 60, max: 69, grade: 'B', remark: 'Good', color: '#38bdf8' },
+  { min: 50, max: 59, grade: 'C', remark: 'Satisfactory', color: '#f59e0b' },
+  { min: 40, max: 49, grade: 'D', remark: 'Pass', color: '#fbbf24' },
+  { min: 0, max: 39, grade: 'F', remark: 'Fail', color: '#ef4444' },
 ]
 
 export default function GradeScale({ showToast }) {
