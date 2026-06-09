@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import { API_URL } from '../../config/api'
 
 export default function FeeManagement({ showToast }) {
@@ -19,7 +20,7 @@ export default function FeeManagement({ showToast }) {
 
   useEffect(() => {
     const setup = async () => {
-      const { data: cls } = await supabase.from('classes').select('id, class_name').order('class_name')
+      const { data: cls } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
       setClasses(cls || [])
     }
     setup()
@@ -28,7 +29,7 @@ export default function FeeManagement({ showToast }) {
   useEffect(() => {
     if (selectedClass) {
       const fetchStudents = async () => {
-        const { data } = await supabase.from('students').select('id, first_name, middle_name, last_name, student_id').eq('class_id', selectedClass).eq('is_active', true).order('last_name')
+        const { data } = await safeQuery(() => supabase.from('students').select('id, first_name, middle_name, last_name, student_id').eq('class_id', selectedClass).eq('is_active', true).order('last_name'))
         setStudents(data || [])
       }
       fetchStudents()
@@ -43,15 +44,15 @@ export default function FeeManagement({ showToast }) {
 
   const fetchPayments = async () => {
     setLoading(true)
-    const { data } = await supabase.from('payments').select('*, students(first_name, last_name, student_id), classes(class_name)').order('created_at', { ascending: false })
+    const { data } = await safeQuery(() => supabase.from('payments').select('*, students(first_name, last_name, student_id), classes(class_name)').order('created_at', { ascending: false }))
     setPayments(data || [])
     setLoading(false)
   }
 
   const recordPayment = async (e) => {
     e.preventDefault()
-    if (!selectedStudent || !amount || !dueDate) {
-      showToast?.('Please fill in all required fields', 'error')
+    if (!selectedStudent || !amount || isNaN(Number(amount)) || Number(amount) < 0 || !dueDate) {
+      showToast?.('Please fill in all required fields with valid values', 'error')
       return
     }
 
@@ -115,23 +116,15 @@ export default function FeeManagement({ showToast }) {
   }
 
   const markAsPaid = async (paymentId) => {
-    const { error } = await supabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', paymentId)
-    if (error) {
-      showToast?.('Failed to update payment', 'error')
-    } else {
-      showToast?.('Payment marked as paid', 'success')
-      fetchPayments()
-    }
+    await safeQuery(() => supabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', paymentId))
+    showToast?.('Payment marked as paid', 'success')
+    fetchPayments()
   }
 
   const deletePayment = async (paymentId) => {
-    const { error } = await supabase.from('payments').delete().eq('id', paymentId)
-    if (error) {
-      showToast?.('Failed to delete payment', 'error')
-    } else {
-      showToast?.('Payment record deleted', 'success')
-      fetchPayments()
-    }
+    await safeQuery(() => supabase.from('payments').delete().eq('id', paymentId))
+    showToast?.('Payment record deleted', 'success')
+    fetchPayments()
   }
 
   const selectedStudentName = students.find((s) => String(s.id) === String(selectedStudent))
@@ -252,7 +245,7 @@ export default function FeeManagement({ showToast }) {
                         <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{p.classes?.class_name}</td>
                         <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{p.fee_type}</td>
                         <td style={{ padding: 14, textAlign: 'center', color: '#e2e8f0', fontWeight: 700 }}>₦{p.amount?.toLocaleString()}</td>
-                        <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{new Date(p.due_date).toLocaleDateString()}</td>
+                        <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{p.due_date ? new Date(p.due_date).toLocaleDateString() : '—'}</td>
                         <td style={{ padding: 14, textAlign: 'center' }}>
                           <span style={{
                             padding: '4px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,

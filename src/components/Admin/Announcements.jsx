@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { CardSkeleton } from '../Common/Skeleton'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import { API_URL } from '../../config/api'
 
 export default function AdminAnnouncements({ showToast }) {
@@ -17,16 +18,11 @@ export default function AdminAnnouncements({ showToast }) {
 
   const fetchAnnouncements = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data } = await safeQuery(() => supabase
       .from('announcements')
       .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      showToast?.('Failed to load announcements', 'error')
-    } else {
-      setAnnouncements(data || [])
-    }
+      .order('created_at', { ascending: false }))
+    setAnnouncements(data || [])
     setLoading(false)
   }
 
@@ -94,13 +90,9 @@ export default function AdminAnnouncements({ showToast }) {
   }
 
   const deleteAnnouncement = async (id) => {
-    const { error } = await supabase.from('announcements').delete().eq('id', id)
-    if (error) {
-      showToast?.('Failed to delete announcement', 'error')
-    } else {
-      showToast?.('Announcement deleted', 'success')
-      fetchAnnouncements()
-    }
+    await safeQuery(() => supabase.from('announcements').delete().eq('id', id))
+    showToast?.('Announcement deleted', 'success')
+    fetchAnnouncements()
   }
 
   const getAudienceLabel = (aud) => {
@@ -160,7 +152,11 @@ export default function AdminAnnouncements({ showToast }) {
 
       <h3 style={{ margin: '0 0 16px', color: '#f8fafc' }}>Sent Announcements</h3>
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading...</div>
+        <div style={{ padding: '20px 0' }}>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={2} />
+        </div>
       ) : announcements.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', border: '1px dashed #334155', borderRadius: 14 }}>No announcements sent yet.</div>
       ) : (

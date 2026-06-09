@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { CardSkeleton } from '../Common/Skeleton'
 import { supabase } from '../../supabaseClient'
 import { Trash2, RefreshCw, Newspaper, Calendar, Image } from 'lucide-react'
 
@@ -18,6 +19,7 @@ export default function ManageNews({ showToast }) {
       setNews(data || [])
     } catch (err) {
       console.error('Error fetching news:', err)
+      showToast?.('Failed to load news: ' + err.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -119,9 +121,10 @@ export default function ManageNews({ showToast }) {
 
       {/* Content */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
-          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-          <p>Loading news...</p>
+        <div style={{ padding: '20px 0' }}>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={2} />
         </div>
       ) : news.length === 0 ? (
         <div style={{
@@ -187,7 +190,7 @@ export default function ManageNews({ showToast }) {
                       {item.category}
                     </span>
                     <span style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Calendar size={12} /> {new Date(item.published_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <Calendar size={12} /> {item.published_date ? new Date(item.published_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date TBD'}
                     </span>
                   </div>
                   <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '700', color: '#f8fafc' }}>{item.title}</h3>

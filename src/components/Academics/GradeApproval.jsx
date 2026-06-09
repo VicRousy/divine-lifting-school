@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-
-function getGradeInfo(total) {
-  const score = Number(total)
-  if (score >= 90) return { grade: 'A+', remark: 'Excellent', color: '#10b981' }
-  if (score >= 80) return { grade: 'A', remark: 'Very Good', color: '#34d399' }
-  if (score >= 70) return { grade: 'B+', remark: 'Good', color: '#38bdf8' }
-  if (score >= 60) return { grade: 'B', remark: 'Satisfactory', color: '#f59e0b' }
-  if (score >= 50) return { grade: 'C', remark: 'Pass', color: '#fbbf24' }
-  return { grade: 'F', remark: 'Fail', color: '#ef4444' }
-}
+import { safeQuery } from '../../utils/safeQuery'
+import { getGradeInfo } from '../../utils/gradeUtils'
 
 export default function GradeApproval({ showToast }) {
   const [submissions, setSubmissions] = useState([])
@@ -24,7 +16,7 @@ export default function GradeApproval({ showToast }) {
 
   const loadSubmissions = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data } = await safeQuery(() => supabase
       .from('exam_scores')
       .select(`
         *,
@@ -32,37 +24,26 @@ export default function GradeApproval({ showToast }) {
         subjects(id, subject_name),
         classes(id, class_name)
       `)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      showToast?.('Error loading submissions: ' + error.message, 'error')
-      setSubmissions([])
-    } else {
-      const enriched = (data || []).map((row) => {
-        const total = Number(row.ca1_score || 0) + Number(row.ca2_score || 0) + Number(row.exam_score || 0)
-        return { ...row, total_score: total }
-      })
-      setSubmissions(enriched)
-    }
+      .order('created_at', { ascending: false }))
+    const enriched = (data || []).map((row) => {
+      const total = Number(row.ca1_score || 0) + Number(row.ca2_score || 0) + Number(row.exam_score || 0)
+      return { ...row, total_score: total }
+    })
+    setSubmissions(enriched)
     setLoading(false)
   }
 
   const handleApprove = async (submissionId) => {
-    const { error } = await supabase
+    await safeQuery(() => supabase
       .from('exam_scores')
       .update({
         approval_status: 'approved',
         approved_at: new Date().toISOString(),
       })
-      .eq('id', submissionId)
-
-    if (error) {
-      showToast?.('Error approving: ' + error.message, 'error')
-    } else {
-      showToast?.('Submission approved!', 'success')
-      setSelectedSubmission(null)
-      loadSubmissions()
-    }
+      .eq('id', submissionId))
+    showToast?.('Submission approved!', 'success')
+    setSelectedSubmission(null)
+    loadSubmissions()
   }
 
   const handleReject = async (submissionId) => {
@@ -71,22 +52,17 @@ export default function GradeApproval({ showToast }) {
       return
     }
 
-    const { error } = await supabase
+    await safeQuery(() => supabase
       .from('exam_scores')
       .update({
         approval_status: 'rejected',
         rejection_reason: rejectionReason,
       })
-      .eq('id', submissionId)
-
-    if (error) {
-      showToast?.('Error rejecting: ' + error.message, 'error')
-    } else {
-      showToast?.('Submission rejected.', 'success')
-      setRejectionReason('')
-      setSelectedSubmission(null)
-      loadSubmissions()
-    }
+      .eq('id', submissionId))
+    showToast?.('Submission rejected.', 'success')
+    setRejectionReason('')
+    setSelectedSubmission(null)
+    loadSubmissions()
   }
 
   const filteredSubmissions = submissions.filter((s) => {

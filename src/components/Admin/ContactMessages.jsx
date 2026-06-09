@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { Mail, RefreshCw, CheckCheck, Trash2, MessageSquare } from 'lucide-react'
+import Pagination from '../Common/Pagination'
+import { CardSkeleton } from '../Common/Skeleton'
+
+const ITEMS_PER_PAGE = 10
 
 export default function ContactMessages({ showToast }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalPages = Math.ceil(messages.length / ITEMS_PER_PAGE)
+  const paginatedMessages = messages.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE) // id of message being acted upon
 
   const fetchMessages = async () => {
     setLoading(true)
@@ -29,6 +38,7 @@ export default function ContactMessages({ showToast }) {
   }, [])
 
   const handleMarkRead = async (id) => {
+    setActionLoading(id)
     try {
       const { error } = await supabase
         .from('contact_messages')
@@ -39,12 +49,14 @@ export default function ContactMessages({ showToast }) {
       setMessages(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m))
     } catch (err) {
       showToast?.('Failed to update message', 'error')
+    } finally {
+      setActionLoading(null)
     }
   }
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this message permanently?')) return
-
+    setActionLoading(id)
     try {
       const { error } = await supabase
         .from('contact_messages')
@@ -56,6 +68,8 @@ export default function ContactMessages({ showToast }) {
       fetchMessages()
     } catch (err) {
       showToast?.('Failed to delete message', 'error')
+    } finally {
+      setActionLoading(null)
     }
   }
 
@@ -114,9 +128,10 @@ export default function ContactMessages({ showToast }) {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
-          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-          <p>Loading messages...</p>
+        <div style={{ padding: '20px 0' }}>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={2} />
         </div>
       ) : messages.length === 0 ? (
         <div style={{
@@ -132,7 +147,7 @@ export default function ContactMessages({ showToast }) {
         </div>
       ) : (
         <div>
-          {messages.map((msg) => (
+          {paginatedMessages.map((msg) => (
             <div
               key={msg.id}
               style={{
@@ -151,14 +166,16 @@ export default function ContactMessages({ showToast }) {
                   {!msg.is_read && (
                     <button
                       onClick={() => handleMarkRead(msg.id)}
+                      disabled={actionLoading === msg.id}
                       title="Mark as read"
                       style={{
                         padding: '8px',
-                        background: 'rgba(16, 185, 129, 0.1)',
+                        background: actionLoading === msg.id ? 'rgba(16, 185, 129, 0.05)' : 'rgba(16, 185, 129, 0.1)',
                         border: 'none',
                         borderRadius: '8px',
                         color: '#10b981',
-                        cursor: 'pointer'
+                        cursor: actionLoading === msg.id ? 'not-allowed' : 'pointer',
+                        opacity: actionLoading === msg.id ? 0.5 : 1
                       }}
                     >
                       <CheckCheck size={18} />
@@ -166,14 +183,16 @@ export default function ContactMessages({ showToast }) {
                   )}
                   <button
                     onClick={() => handleDelete(msg.id)}
+                    disabled={actionLoading === msg.id}
                     title="Delete"
                     style={{
                       padding: '8px',
-                      background: 'rgba(239, 68, 68, 0.1)',
+                      background: actionLoading === msg.id ? 'rgba(239, 68, 68, 0.05)' : 'rgba(239, 68, 68, 0.1)',
                       border: 'none',
                       borderRadius: '8px',
                       color: '#ef4444',
-                      cursor: 'pointer'
+                      cursor: actionLoading === msg.id ? 'not-allowed' : 'pointer',
+                      opacity: actionLoading === msg.id ? 0.5 : 1
                     }}
                   >
                     <Trash2 size={18} />
@@ -199,10 +218,11 @@ export default function ContactMessages({ showToast }) {
                 {msg.message}
               </p>
               <p style={{ color: '#64748b', fontSize: '12px', marginTop: '12px' }}>
-                {new Date(msg.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {msg.created_at ? new Date(msg.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
               </p>
             </div>
           ))}
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </div>
       )}
     </div>

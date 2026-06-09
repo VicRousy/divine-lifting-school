@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import ConfirmModal from '../ConfirmModal'
 
 function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured showToast
@@ -15,16 +16,16 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
   const [formData, setFormData] = useState({ teacher_id: '', class_id: '', subject_id: '' })
 
   const fetchData = async () => {
-    const { data: t } = await supabase.from('teachers').select('id, first_name, last_name')
-    const { data: c } = await supabase.from('classes').select('id, class_name')
-    const { data: s } = await supabase.from('subjects').select('id, subject_name')
+    const { data: t } = await safeQuery(() => supabase.from('teachers').select('id, first_name, last_name'))
+    const { data: c } = await safeQuery(() => supabase.from('classes').select('id, class_name'))
+    const { data: s } = await safeQuery(() => supabase.from('subjects').select('id, subject_name'))
     
-    const { data: a } = await supabase.from('teacher_assignments').select(`
+    const { data: a } = await safeQuery(() => supabase.from('teacher_assignments').select(`
       id,
       teachers (first_name, last_name),
       classes (class_name),
       subjects (subject_name)
-    `)
+    `))
 
     setTeachers(t || [])
     setClasses(c || [])
@@ -47,19 +48,11 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
       subject_id: parseInt(formData.subject_id)
     }
 
-    const { error } = await supabase.from('teacher_assignments').insert([payload])
+    await safeQuery(() => supabase.from('teacher_assignments').insert([payload]))
     
-    if (error) {
-      // Professional error handling via Toasts
-      const errorMsg = error.code === '23505' 
-        ? "This assignment already exists." 
-        : "Error: " + error.message;
-      showToast(errorMsg, "error")
-    } else {
-      showToast("Role assigned successfully!", "success")
-      setFormData({ teacher_id: '', class_id: '', subject_id: '' })
-      fetchData()
-    }
+    showToast("Role assigned successfully!", "success")
+    setFormData({ teacher_id: '', class_id: '', subject_id: '' })
+    fetchData()
     setLoading(false)
   }
 
@@ -69,13 +62,9 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
   }
 
   const confirmRemove = async () => {
-    const { error } = await supabase.from('teacher_assignments').delete().eq('id', targetAssignment.id)
-    if (error) {
-      showToast("Failed to remove assignment.", "error")
-    } else {
-      showToast("Assignment removed.", "success")
-      fetchData()
-    }
+    await safeQuery(() => supabase.from('teacher_assignments').delete().eq('id', targetAssignment.id))
+    showToast("Assignment removed.", "success")
+    fetchData()
     setShowConfirm(false)
   }
 

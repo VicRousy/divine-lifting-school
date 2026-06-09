@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { safeQuery } from "../../utils/safeQuery";
 import { loadAnnouncementFeed } from "../../services/announcementService";
 
 const shellStyle = {
@@ -115,17 +116,14 @@ export function TeacherNotifications({ teacherId, showToast }) {
       setLoading(true);
       const [assignmentRes, announcementRes] = await Promise.all([
         teacherId
-          ? supabase
+          ? safeQuery(() => supabase
               .from("teacher_assignments")
               .select("id, classes(class_name), subjects(subject_name)")
-              .eq("teacher_id", teacherId)
+              .eq("teacher_id", teacherId))
           : Promise.resolve({ data: [] }),
         loadAnnouncementFeed(["all", "teachers"]),
       ]);
 
-      if (assignmentRes.error) {
-        showToast?.("Could not load assignment notifications.", "error");
-      }
       setAssignments(assignmentRes.data || []);
       setAnnouncements((announcementRes.data || []).slice(0, 5));
       setLoading(false);

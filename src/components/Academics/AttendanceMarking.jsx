@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 
 function AttendanceMarking({ showToast, teacherId }) {
   const [classes, setClasses] = useState([])
@@ -20,25 +21,19 @@ function AttendanceMarking({ showToast, teacherId }) {
       if (/^\d+$/.test(String(teacherId))) {
         teacherBigIntId = Number(teacherId);
       } else {
-        const { data: teacherData } = await supabase
+        const { data: teacherData } = await safeQuery(() => supabase
           .from('teachers')
           .select('id')
           .or(`login_id.eq.${teacherId},email.eq.${teacherId}`)
-          .maybeSingle();
+          .maybeSingle());
         teacherBigIntId = teacherData?.id;
       }
 
       if (teacherBigIntId) {
-        const { data, error } = await supabase
+        const { data } = await safeQuery(() => supabase
           .from('teacher_assignments')
           .select('class_id, classes(id, class_name)')
-          .eq('teacher_id', teacherBigIntId)
-
-        if (error) {
-          showToast?.('Could not load assigned classes: ' + error.message, 'error')
-          setClasses([])
-          return
-        }
+          .eq('teacher_id', teacherBigIntId))
 
         const seen = new Set()
         const assignedClasses = (data || [])
@@ -56,11 +51,11 @@ function AttendanceMarking({ showToast, teacherId }) {
     }
 
     // Fallback: show all active classes
-    const { data } = await supabase
+    const { data } = await safeQuery(() => supabase
       .from('classes')
       .select('*')
       .eq('is_active', true)
-      .order('class_name')
+      .order('class_name'))
     setScopeMessage('')
     setClasses(data || [])
   }
@@ -75,21 +70,21 @@ function AttendanceMarking({ showToast, teacherId }) {
     setLoading(true)
     
     // Fetch students
-    const { data: studentData } = await supabase
+    const { data: studentData } = await safeQuery(() => supabase
       .from('students')
       .select('id, first_name, middle_name, last_name')
       .eq('class_id', selectedClass)
       .eq('is_active', true)
-      .order('last_name')
+      .order('last_name'))
     
     setStudents(studentData || [])
 
     // Fetch existing attendance for this date
-    const { data: attendanceData } = await supabase
+    const { data: attendanceData } = await safeQuery(() => supabase
       .from('attendance')
       .select('*')
       .eq('date', selectedDate)
-      .in('student_id', (studentData || []).map(s => s.id))
+      .in('student_id', (studentData || []).map(s => s.id)))
 
     // Build attendance state
     const initialAttendance = {}

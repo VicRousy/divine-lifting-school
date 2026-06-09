@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
 
 const STUDENT_ACCESS_KEY = 'DLS-STUDENT-2026'
@@ -25,7 +26,7 @@ export default function AddStudent(props) {
 
   useEffect(() => {
     const fetchClasses = async () => {
-      const { data } = await supabase.from('classes').select('id, class_name').order('class_name')
+      const { data } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
       setClasses(data || [])
     }
     fetchClasses()

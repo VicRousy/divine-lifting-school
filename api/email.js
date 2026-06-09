@@ -15,6 +15,10 @@ const ALLOWED = [
   'http://localhost:3001',
 ]
 
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -62,16 +66,16 @@ async function sendWelcome(req, res) {
   if (accountType === 'parent') {
     accountTypeText = 'Parent';
     detailsHtml = `
-      ${parentName ? `<div class="credential-row"><span class="label">Parent Name:</span><span class="value">${parentName}</span></div>` : ''}
-      <div class="credential-row"><span class="label">Login ID:</span><span class="value">${uniqueId}</span></div>
-      <div class="credential-row"><span class="label">Password:</span><span class="value">${password}</span></div>
-      ${studentName ? `<div class="credential-row"><span class="label">Linked Student:</span><span class="value">${studentName}</span></div>` : ''}
+      ${parentName ? `<div class="credential-row"><span class="label">Parent Name:</span><span class="value">${esc(parentName)}</span></div>` : ''}
+      <div class="credential-row"><span class="label">Login ID:</span><span class="value">${esc(uniqueId)}</span></div>
+      <div class="credential-row"><span class="label">Password:</span><span class="value">${esc(password)}</span></div>
+      ${studentName ? `<div class="credential-row"><span class="label">Linked Student:</span><span class="value">${esc(studentName)}</span></div>` : ''}
     `;
   } else {
     accountTypeText = accountType === 'admin' ? 'Administrator' : accountType === 'teacher' ? 'Teacher' : 'Student';
     detailsHtml = `
-      <div class="credential-row"><span class="label">Login ID:</span><span class="value">${uniqueId}</span></div>
-      <div class="credential-row"><span class="label">Password:</span><span class="value">${password}</span></div>
+      <div class="credential-row"><span class="label">Login ID:</span><span class="value">${esc(uniqueId)}</span></div>
+      <div class="credential-row"><span class="label">Password:</span><span class="value">${esc(password)}</span></div>
     `;
   }
 
@@ -173,9 +177,9 @@ async function sendAnnouncement(req, res) {
       <div class="container">
         <div class="header"><h1>Divine Lifting School</h1><p>New Announcement</p></div>
         <div class="content">
-          <span class="badge">For: ${audience}</span>
-          <h2>${title}</h2>
-          <div class="message">${body}</div>
+          <span class="badge">For: ${esc(audience)}</span>
+          <h2>${esc(title)}</h2>
+          <div class="message">${esc(body)}</div>
           <div class="footer"><p><strong>Divine Lifting School</strong></p><p>Ikorodu, Lagos, Nigeria</p></div>
         </div>
       </div>
@@ -214,10 +218,10 @@ async function sendFeeInvoice(req, res) {
         <div class="header"><h1>Divine Lifting School</h1><p>Fee Invoice</p></div>
         <div class="content">
           <p>Dear Parent/Guardian,</p>
-          <p>This is an invoice for <strong>${studentName}</strong>.</p>
+          <p>This is an invoice for <strong>${esc(studentName)}</strong>.</p>
           <div class="invoice-box">
-            <div class="row"><span class="label">Fee Type:</span><span class="value">${feeType || 'School Fees'}</span></div>
-            <div class="row"><span class="label">Student:</span><span class="value">${studentName}</span></div>
+            <div class="row"><span class="label">Fee Type:</span><span class="value">${esc(feeType || 'School Fees')}</span></div>
+            <div class="row"><span class="label">Student:</span><span class="value">${esc(studentName)}</span></div>
             <div class="amount">₦${Number(amount).toLocaleString()}</div>
             <div class="due-date">Due Date: ${new Date(dueDate).toLocaleDateString()}</div>
           </div>
@@ -247,8 +251,8 @@ async function sendApplicationDecision(req, res) {
     : `Application Update - ${studentName} - Divine Lifting School`;
 
   const bodyContent = isAccepted ? `
-    <p>We are pleased to inform you that <strong>${studentName}</strong> has been <span style="color:#10b981;font-weight:700;">accepted</span> into <strong>${className || 'our school'}</strong> at <strong>Divine Lifting International School</strong>.</p>
-    <p>Application Number: <strong>${applicationNumber}</strong></p>
+    <p>We are pleased to inform you that <strong>${esc(studentName)}</strong> has been <span style="color:#10b981;font-weight:700;">accepted</span> into <strong>${esc(className || 'our school')}</strong> at <strong>Divine Lifting International School</strong>.</p>
+    <p>Application Number: <strong>${esc(applicationNumber)}</strong></p>
     <div class="info-box">
       <p style="margin:0;font-weight:700;color:#1e293b;">Next Steps:</p>
       <ol style="margin:8px 0 0;padding-left:20px;color:#475569;">
@@ -261,7 +265,7 @@ async function sendApplicationDecision(req, res) {
     <p>For any questions regarding the admission process, please contact the school office.</p>
   ` : `
     <p>Thank you for your interest in <strong>Divine Lifting International School</strong>.</p>
-    <p>After careful review of the application for <strong>${studentName}</strong> (Application #${applicationNumber}) for <strong>${className || 'admission'}</strong>, we regret to inform you that your application has <span style="color:#ef4444;font-weight:700;">not been successful</span> at this time.</p>
+    <p>After careful review of the application for <strong>${esc(studentName)}</strong> (Application #${esc(applicationNumber)}) for <strong>${esc(className || 'admission')}</strong>, we regret to inform you that your application has <span style="color:#ef4444;font-weight:700;">not been successful</span> at this time.</p>
     <p>We appreciate the time you took to apply and encourage you to consider applying again in the future.</p>
   `;
 

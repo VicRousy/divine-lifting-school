@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
+import { getGradeInfo } from '../../utils/gradeUtils'
 import AnnouncementsWidget from '../Common/AnnouncementsWidget'
 import { generateReportCardPDF } from '../../utils/pdfGenerator'
 import PasswordChangeModal from '../PasswordChangeModal'
@@ -73,27 +75,17 @@ export default function ParentDashboard({ userInfo, onLogout }) {
     setLoading(false)
   }
 
-  const getGradeInfo = (total) => {
-    const score = Number(total)
-    if (score >= 90) return { grade: 'A+', color: '#10b981' }
-    if (score >= 80) return { grade: 'A', color: '#34d399' }
-    if (score >= 70) return { grade: 'B+', color: '#38bdf8' }
-    if (score >= 60) return { grade: 'B', color: '#f59e0b' }
-    if (score >= 50) return { grade: 'C', color: '#fbbf24' }
-    return { grade: 'F', color: '#ef4444' }
-  }
-
   const handleDownloadReportCard = async (term) => {
     if (!selectedChild) return
     
     // Fetch grades for the specific term
-    const { data: termGrades } = await supabase
+    const { data: termGrades } = await safeQuery(() => supabase
       .from('exam_scores')
       .select('*, subjects(subject_name)')
       .eq('student_id', selectedChild.id)
       .eq('term', term.label)
       .eq('academic_year', term.year)
-      .eq('approval_status', 'approved')
+      .eq('approval_status', 'approved'))
 
     if (!termGrades || termGrades.length === 0) {
       alert('No grades available for this term.')
@@ -421,7 +413,7 @@ export default function ParentDashboard({ userInfo, onLogout }) {
                             <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                               <td style={{ padding: 14, color: '#e2e8f0', fontWeight: 600 }}>{f.fee_type}</td>
                               <td style={{ padding: 14, textAlign: 'center', color: '#e2e8f0', fontWeight: 700 }}>₦{f.amount?.toLocaleString()}</td>
-                              <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{new Date(f.due_date).toLocaleDateString()}</td>
+                              <td style={{ padding: 14, textAlign: 'center', color: '#94a3b8' }}>{f.due_date ? new Date(f.due_date).toLocaleDateString() : '—'}</td>
                               <td style={{ padding: 14, textAlign: 'center' }}>
                                 <span style={{
                                   padding: '4px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
@@ -458,16 +450,16 @@ export default function ParentDashboard({ userInfo, onLogout }) {
                               <h4 style={{ margin: '0 0 8px', color: '#e2e8f0' }}>{hw.title}</h4>
                               <p style={{ margin: '0 0 12px', color: '#94a3b8', fontSize: '0.9rem' }}>{hw.description}</p>
                               <div style={{ display: 'flex', gap: 16, fontSize: '0.8rem', color: '#64748b' }}>
-                                <span>📅 Due: {new Date(hw.due_date).toLocaleDateString()}</span>
+                                <span>📅 Due: {hw.due_date ? new Date(hw.due_date).toLocaleDateString() : 'TBD'}</span>
                                 <span>🏫 Class ID: {hw.class_id}</span>
                               </div>
                             </div>
                             <span style={{
                               padding: '4px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
-                              background: new Date(hw.due_date) < new Date() ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
-                              color: new Date(hw.due_date) < new Date() ? '#ef4444' : '#f59e0b',
+                              background: hw.due_date && new Date(hw.due_date) < new Date() ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                              color: hw.due_date && new Date(hw.due_date) < new Date() ? '#ef4444' : '#f59e0b',
                             }}>
-                              {new Date(hw.due_date) < new Date() ? 'Overdue' : 'Pending'}
+                              {hw.due_date && new Date(hw.due_date) < new Date() ? 'Overdue' : 'Pending'}
                             </span>
                           </div>
                         </div>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
+import { getGradeInfo } from '../../utils/gradeUtils'
 import {
   getPreferredTerm,
   getTermAcademicYear,
@@ -7,8 +9,6 @@ import {
   normalizeTermRows,
 } from '../../utils/academicSession'
 // Removed static import of generateReportCardPDF
-
-// ... (existing code)
 
   const handleDownloadPDF = async (student) => {
     try {
@@ -35,8 +35,8 @@ export default function ReportCards({ showToast }) {
   useEffect(() => {
     const setup = async () => {
       const [{ data: cls }, { data: termData }] = await Promise.all([
-        supabase.from('classes').select('id, class_name').order('class_name'),
-        supabase.from('terms').select('id, academic_year, is_active').order('id', { ascending: true }),
+        safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name')),
+        safeQuery(() => supabase.from('terms').select('id, academic_year, is_active').order('id', { ascending: true })),
       ])
       setClasses(cls || [])
       const normalizedTerms = normalizeTermRows(termData || [])

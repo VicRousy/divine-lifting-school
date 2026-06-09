@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 
 function StudentProfile({ student, onBack }) {
   const [academicSquad, setAcademicSquad] = useState([])
@@ -142,26 +143,26 @@ function StudentProfile({ student, onBack }) {
     setLoading(true)
     
     // 1. Fetch Teachers
-    const { data: squad } = await supabase
+    const { data: squad } = await safeQuery(() => supabase
       .from('teacher_assignments')
       .select(`id, teachers (first_name, last_name), subjects (subject_name)`)
-      .eq('class_id', student.class_id)
+      .eq('class_id', student.class_id))
     setAcademicSquad(squad || [])
 
     // 2. Fetch Fee History
-    const { data: fees } = await supabase
+    const { data: fees } = await safeQuery(() => supabase
       .from('fees')
       .select('*')
       .eq('student_id', student.id)
-      .order('payment_date', { ascending: false })
+      .order('payment_date', { ascending: false }))
     setFeeHistory(fees || [])
 
     // 3. NEW: Fetch Exam Scores for Report
-    const { data: scores } = await supabase
+    const { data: scores } = await safeQuery(() => supabase
       .from('exam_scores')
       .select('*, subjects(subject_name)')
       .eq('student_id', student.id)
-      .eq('term', 'First Term 2026')
+      .eq('term', 'First Term 2026'))
     setReportScores(scores || [])
 
     setLoading(false)
@@ -172,20 +173,16 @@ function StudentProfile({ student, onBack }) {
   }, [student.id])
 
   const handleAddPayment = async () => {
-    const { error } = await supabase.from('fees').insert([{
+    await safeQuery(() => supabase.from('fees').insert([{
       student_id: student.id,
       amount_paid: parseFloat(newPayment.amount),
       payment_method: newPayment.method,
       term: newPayment.term,
       total_tuition: tuitionFee 
-    }])
-
-    if (error) alert(error.message)
-    else {
-      setShowPaymentModal(false)
-      setNewPayment({ ...newPayment, amount: '' })
-      fetchData() 
-    }
+    }]))
+    setShowPaymentModal(false)
+    setNewPayment({ ...newPayment, amount: '' })
+    fetchData() 
   }
 
   const totalPaid = feeHistory.reduce((sum, record) => sum + Number(record.amount_paid), 0)
@@ -258,7 +255,7 @@ function StudentProfile({ student, onBack }) {
                 <tbody>
                   {feeHistory.map(fee => (
                     <tr key={fee.id} style={{ borderTop: '1px solid #334155' }}>
-                      <td style={{ padding: '12px' }}>{new Date(fee.payment_date).toLocaleDateString()}</td>
+                      <td style={{ padding: '12px' }}>{fee.payment_date ? new Date(fee.payment_date).toLocaleDateString() : '—'}</td>
                       <td style={{ padding: '12px' }}>{fee.term}</td>
                       <td style={{ padding: '12px', textAlign: 'right', color: '#10b981' }}>₦{Number(fee.amount_paid).toLocaleString()}</td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>

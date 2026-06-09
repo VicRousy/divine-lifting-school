@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { getGradeInfo } from "../../utils/gradeUtils";
 import {
   getPreferredTerm,
   getTermAcademicYear,
@@ -13,16 +14,6 @@ function clampScore(value, max) {
   const num = Number(value);
   if (Number.isNaN(num)) return "";
   return Math.max(0, Math.min(max, num));
-}
-
-function getGradeInfo(total) {
-  const score = Number(total);
-  if (score >= 90) return { grade: "A+", remark: "Excellent", color: "#10b981" };
-  if (score >= 80) return { grade: "A", remark: "Very Good", color: "#34d399" };
-  if (score >= 70) return { grade: "B+", remark: "Good", color: "#38bdf8" };
-  if (score >= 60) return { grade: "B", remark: "Satisfactory", color: "#f59e0b" };
-  if (score >= 50) return { grade: "C", remark: "Pass", color: "#fbbf24" };
-  return { grade: "F", remark: "Fail", color: "#ef4444" };
 }
 
 export default function TeacherGradebook({ teacherId, showToast, onBack }) {

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import ConfirmModal from '../ConfirmModal'
+import Pagination from '../Common/Pagination'
+
+const ITEMS_PER_PAGE = 15
 
 function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) { // Destructured showToast
   const [students, setStudents] = useState([])
@@ -10,17 +14,18 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [editData, setEditData] = useState({ first_name: '', middle_name: '', last_name: '', class_id: '' })
+  const [currentPage, setCurrentPage] = useState(1)
 
   const fetchStudents = async () => {
-    const { data } = await supabase
+    const { data } = await safeQuery(() => supabase
       .from('students')
       .select(`id, first_name, middle_name, last_name, admission_number, class_id, created_at, classes (class_name)`)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false }))
     setStudents(data || [])
   }
 
   const fetchClasses = async () => {
-    const { data } = await supabase.from('classes').select('id, class_name').order('class_name')
+    const { data } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
     setClasses(data || [])
   }
 
@@ -41,7 +46,7 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
   }
 
   const handleUpdate = async () => {
-    const { error } = await supabase
+    await safeQuery(() => supabase
       .from('students')
       .update({ 
         first_name: editData.first_name, 
@@ -49,35 +54,28 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
         last_name: editData.last_name,
         class_id: editData.class_id 
       })
-      .eq('id', selectedStudent.id)
-
-    if (error) {
-      showToast(error.message, 'error')
-    } else {
-      showToast(`${editData.first_name}'s profile updated!`, 'success')
-      fetchStudents(); 
-      setShowEditModal(false);
-      if (onUpdate) onUpdate();
-    }
+      .eq('id', selectedStudent.id))
+    showToast(`${editData.first_name}'s profile updated!`, 'success')
+    fetchStudents(); 
+    setShowEditModal(false);
+    if (onUpdate) onUpdate();
   }
 
   const handleDelete = async () => {
-    const { error } = await supabase.from('students').delete().eq('id', selectedStudent.id);
-    
-    if (error) {
-      showToast("Could not delete student. Check for related records.", "error")
-    } else {
-      showToast(`${selectedStudent.first_name} removed from registry.`, "success")
-      fetchStudents();
-      setShowDeleteModal(false);
-      if (onUpdate) onUpdate();
-    }
+    await safeQuery(() => supabase.from('students').delete().eq('id', selectedStudent.id))
+    showToast(`${selectedStudent.first_name} removed from registry.`, "success")
+    fetchStudents();
+    setShowDeleteModal(false);
+    if (onUpdate) onUpdate();
   }
 
   const filteredStudents = students.filter(s => {
     const fullName = `${s.first_name} ${s.middle_name || ''} ${s.last_name}`.toLowerCase();
     return fullName.includes(searchTerm.toLowerCase());
   })
+
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE)
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   const forceDarkStyle = {
     backgroundColor: '#1e293b',
@@ -104,7 +102,7 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
           </tr>
         </thead>
         <tbody>
-          {filteredStudents.map(s => (
+          {paginatedStudents.map(s => (
             <tr key={s.id}>
               <td 
                 onClick={() => onSelectStudent && onSelectStudent(s)}
@@ -123,6 +121,8 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
           ))}
         </tbody>
       </table>
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
 
       {/* EDIT MODAL */}
       {showEditModal && (

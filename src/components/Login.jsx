@@ -64,11 +64,12 @@ function Login({ onLogin }) {
 
     try {
       // Check profiles (Admin)
-      const { data: admin } = await supabase
+      const { data: admin, error: adminErr } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, school_id, role, login_id, password, is_verified, is_first_login')
         .eq('login_id', input)
         .maybeSingle()
+      if (adminErr) throw adminErr
 
       if (admin && await verifyPassword(password, admin.password, admin.id, 'profiles')) {
         if (admin.is_first_login) {
@@ -82,11 +83,12 @@ function Login({ onLogin }) {
       }
 
       // Check teachers
-      const { data: teacher } = await supabase
+      const { data: teacher, error: teacherErr } = await supabase
         .from('teachers')
         .select('id, first_name, last_name, staff_id, login_id, password, is_first_login')
         .eq('login_id', input)
         .maybeSingle()
+      if (teacherErr) throw teacherErr
 
       if (teacher && await verifyPassword(password, teacher.password, teacher.id, 'teachers')) {
         if (teacher.is_first_login) {
@@ -100,11 +102,12 @@ function Login({ onLogin }) {
       }
 
       // Check students
-      const { data: student } = await supabase
+      const { data: student, error: studentErr } = await supabase
         .from('students')
         .select('id, first_name, last_name, student_id, login_id, password')
         .eq('login_id', input)
         .maybeSingle()
+      if (studentErr) throw studentErr
 
       if (student && await verifyPassword(password, student.password, student.id, 'students')) {
         onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id, loginId: student.login_id })
@@ -113,11 +116,12 @@ function Login({ onLogin }) {
       }
 
       // Check parents
-      const { data: parent } = await supabase
+      const { data: parent, error: parentErr } = await supabase
         .from('parents')
         .select('id, first_name, last_name, parent_id, login_id, password')
         .eq('login_id', input)
         .maybeSingle()
+      if (parentErr) throw parentErr
 
       if (parent && await verifyPassword(password, parent.password, parent.id, 'parents')) {
         onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id, loginId: parent.login_id })
@@ -351,6 +355,7 @@ function Login({ onLogin }) {
           <form onSubmit={handleLogin}>
             <input
               type="text"
+              aria-label="Login ID"
               placeholder="Login ID (e.g. ADM-001, TCH-001)"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
@@ -360,6 +365,7 @@ function Login({ onLogin }) {
             <div style={{ position: 'relative' }}>
               <input
                 type={showPw ? 'text' : 'password'}
+                aria-label="Password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -384,16 +390,16 @@ function Login({ onLogin }) {
         {isSignup && step === 'form' && (
           <form onSubmit={handleSignupSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '15px' }}>
-              <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
-              <input type="text" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={inputStyle} />
-              <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
+              <input type="text" aria-label="First Name" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
+              <input type="text" aria-label="Middle Name" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={inputStyle} />
+              <input type="text" aria-label="Last Name" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
             </div>
-            <input type="email" placeholder="Gmail Address" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
+            <input type="email" aria-label="Gmail Address" placeholder="Gmail Address" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
             <div style={{ position: 'relative' }}>
-              <input type={showSignupPw ? 'text' : 'password'} placeholder="Create Password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required style={inputStyle} />
+              <input type={showSignupPw ? 'text' : 'password'} aria-label="Create Password" placeholder="Create Password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required style={inputStyle} />
               <span onClick={() => setShowSignupPw(!showSignupPw)} style={{ position: 'absolute', right: 12, top: 12, cursor: 'pointer', color: '#64748b', fontSize: '0.85rem', userSelect: 'none' }}>{showSignupPw ? 'Hide' : 'Show'}</span>
             </div>
-            <input type="password" placeholder="Master Access Key" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} required style={inputStyle} />
+            <input type="password" aria-label="Master Access Key" placeholder="Master Access Key" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} required style={inputStyle} />
             {error && (
               <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
@@ -414,6 +420,7 @@ function Login({ onLogin }) {
             </p>
             <input
               type="text"
+              aria-label="Verification code"
               placeholder="Enter 6-digit code"
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -442,6 +449,7 @@ function Login({ onLogin }) {
             <div style={{ position: 'relative' }}>
               <input
                 type={showNewPw ? 'text' : 'password'}
+                aria-label="New Password"
                 placeholder="New Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -453,6 +461,7 @@ function Login({ onLogin }) {
             <div style={{ position: 'relative' }}>
               <input
                 type={showNewPw ? 'text' : 'password'}
+                aria-label="Confirm New Password"
                 placeholder="Confirm New Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
