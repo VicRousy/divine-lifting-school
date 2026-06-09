@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { sendApplicationDecision } from '../../services/emailService'
 import { FileText, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -38,6 +39,9 @@ export default function Applications({ showToast }) {
 
   const handleStatusUpdate = async (id, status) => {
     try {
+      const app = applications.find(a => a.id === id)
+      if (!app) throw new Error('Application not found')
+
       const { error } = await supabase
         .from('applications')
         .update({ status })
@@ -46,6 +50,21 @@ export default function Applications({ showToast }) {
       if (error) throw error
       setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a))
       showToast?.(`Application marked as ${status}`, 'success')
+
+      if (status === 'accepted' || status === 'rejected') {
+        const recipient = app.father_email || app.mother_email
+        if (recipient) {
+          const studentName = `${app.student_first_name} ${app.student_last_name}`
+          const result = await sendApplicationDecision(recipient, studentName, app.application_number, status, app.class_applying_for)
+          if (result.success) {
+            showToast?.(`Decision email sent to ${recipient}`, 'success')
+          } else {
+            showToast?.('Status updated but email failed to send', 'warning')
+          }
+        } else {
+          showToast?.('Status updated but no parent email on file', 'warning')
+        }
+      }
     } catch (err) {
       showToast?.('Failed to update status', 'error')
     }
