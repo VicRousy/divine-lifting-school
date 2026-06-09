@@ -122,10 +122,10 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
       <table className="admin-table">
         <thead>
           <tr style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
-            <th>Staff Member</th>
-            <th>Assigned Class</th>
-            <th>Subject</th>
-            <th style={{ textAlign: 'right' }}>Actions</th>
+            <th scope="col">Staff Member</th>
+            <th scope="col">Assigned Class</th>
+            <th scope="col">Subject</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>

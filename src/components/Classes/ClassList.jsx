@@ -62,10 +62,10 @@ function ClassList({ refreshTrigger, showToast }) { // Added showToast to props
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Class Name</th>
-            <th>Status</th>
-            <th>Tuition Fee</th>
-            <th style={{ textAlign: 'right' }}>Action</th>
+            <th scope="col">Class Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">Tuition Fee</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Action</th>
           </tr>
         </thead>
         <tbody>

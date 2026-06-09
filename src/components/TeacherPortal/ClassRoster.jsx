@@ -142,7 +142,7 @@ export default function ClassRoster({ teacherId, showToast }) {
                 <thead>
                   <tr style={{ borderBottom: "1px solid #334155" }}>
                     {["#", "STUDENT NAME", "ADMISSION NO.", "GENDER", "DATE OF BIRTH"].map((h) => (
-                      <th key={h} style={{ padding: "12px 16px", textAlign: "left", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+                      <th scope="col" key={h} style={{ padding: "12px 16px", textAlign: "left", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}

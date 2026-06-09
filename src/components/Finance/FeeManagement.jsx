@@ -238,7 +238,7 @@ export default function FeeManagement({ showToast }) {
                   <thead>
                     <tr style={{ borderBottom: '1px solid #334155' }}>
                       {['STUDENT', 'CLASS', 'FEE TYPE', 'AMOUNT', 'DUE DATE', 'STATUS', 'ACTION'].map((h) => (
-                        <th key={h} style={{ padding: 14, textAlign: h === 'STUDENT' || h === 'FEE TYPE' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th scope="col" key={h} style={{ padding: 14, textAlign: h === 'STUDENT' || h === 'FEE TYPE' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>

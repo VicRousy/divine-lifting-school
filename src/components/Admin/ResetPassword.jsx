@@ -107,9 +107,9 @@ export default function ResetPassword({ showToast }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#334155' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontSize: '0.85rem' }}>Name</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontSize: '0.85rem' }}>Login ID</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontSize: '0.85rem' }}>Action</th>
+                <th scope="col" style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontSize: '0.85rem' }}>Name</th>
+                <th scope="col" style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontSize: '0.85rem' }}>Login ID</th>
+                <th scope="col" style={{ padding: '12px 16px', textAlign: 'left', color: '#94a3b8', fontSize: '0.85rem' }}>Action</th>
               </tr>
             </thead>
             <tbody>

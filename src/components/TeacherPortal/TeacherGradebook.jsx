@@ -515,7 +515,7 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
                 <thead>
                   <tr style={{ borderBottom: "1px solid #334155" }}>
                     {["STUDENT", "CA1 (20)", "CA2 (20)", "EXAM (60)", "TOTAL", "GRADE", "COMMENT"].map((h) => (
-                      <th key={h} style={{ padding: 14, textAlign: h === "STUDENT" || h === "COMMENT" ? "left" : "center", color: "#94a3b8", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
+                      <th scope="col" key={h} style={{ padding: 14, textAlign: h === "STUDENT" || h === "COMMENT" ? "left" : "center", color: "#94a3b8", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}

@@ -55,7 +55,7 @@ function StudentProfile({ student, onBack }) {
           </div>
           <table>
             <thead>
-              <tr><th>SUBJECT</th><th>CA (40)</th><th>EXAM (60)</th><th>TOTAL</th><th>GRADE</th><th>REMARK</th></tr>
+              <tr><th scope="col">SUBJECT</th><th scope="col">CA (40)</th><th scope="col">EXAM (60)</th><th scope="col">TOTAL</th><th scope="col">GRADE</th><th scope="col">REMARK</th></tr>
             </thead>
             <tbody>
               ${reportScores.map(s => `
@@ -246,10 +246,10 @@ function StudentProfile({ student, onBack }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <tr>
-                    <th style={{ padding: '12px', textAlign: 'left' }}>Date</th>
-                    <th style={{ padding: '12px', textAlign: 'left' }}>Term</th>
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Amount</th>
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Action</th>
+                    <th scope="col" style={{ padding: '12px', textAlign: 'left' }}>Date</th>
+                    <th scope="col" style={{ padding: '12px', textAlign: 'left' }}>Term</th>
+                    <th scope="col" style={{ padding: '12px', textAlign: 'right' }}>Amount</th>
+                    <th scope="col" style={{ padding: '12px', textAlign: 'right' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -303,11 +303,11 @@ function StudentProfile({ student, onBack }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'rgba(168, 85, 247, 0.1)' }}>
                 <tr>
-                  <th style={{ padding: '15px', textAlign: 'left' }}>Subject</th>
-                  <th style={{ padding: '15px' }}>CA (40)</th>
-                  <th style={{ padding: '15px' }}>Exam (60)</th>
-                  <th style={{ padding: '15px' }}>Total</th>
-                  <th style={{ padding: '15px' }}>Grade</th>
+                  <th scope="col" style={{ padding: '15px', textAlign: 'left' }}>Subject</th>
+                  <th scope="col" style={{ padding: '15px' }}>CA (40)</th>
+                  <th scope="col" style={{ padding: '15px' }}>Exam (60)</th>
+                  <th scope="col" style={{ padding: '15px' }}>Total</th>
+                  <th scope="col" style={{ padding: '15px' }}>Grade</th>
                 </tr>
               </thead>
               <tbody>

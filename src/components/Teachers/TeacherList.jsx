@@ -59,9 +59,9 @@ function TeacherList({ refreshTrigger, showToast }) {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Full Name</th>
-            <th>Middle Name</th>
-            <th style={{ textAlign: 'right' }}>Actions</th>
+            <th scope="col">Full Name</th>
+            <th scope="col">Middle Name</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
