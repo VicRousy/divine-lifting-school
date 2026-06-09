@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { sendWelcomeEmail } from '../../services/emailService'
 
@@ -12,6 +13,8 @@ function AddTeacher(props) {
   const [password, setPassword] = useState('')
   const [accessKey, setAccessKey] = useState('')
   const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  useUnsavedChanges(dirty)
 
   const generateStaffId = () => 'TCH-' + Math.floor(1000 + Math.random() * 9000)
 
@@ -47,6 +50,7 @@ function AddTeacher(props) {
 
       props.showToast(`${firstName} ${lastName} registered! Credentials sent to ${email}`, 'success')
 
+      setDirty(false)
       setFirstName('')
       setMiddleName('')
       setLastName('')
@@ -76,7 +80,7 @@ function AddTeacher(props) {
               style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="e.g. Favour"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); setDirty(true) }}
               required
             />
           </div>
@@ -88,7 +92,7 @@ function AddTeacher(props) {
               style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="e.g. Peace"
               value={middleName}
-              onChange={(e) => setMiddleName(e.target.value)}
+              onChange={(e) => { setMiddleName(e.target.value); setDirty(true) }}
             />
           </div>
 
@@ -99,7 +103,7 @@ function AddTeacher(props) {
               style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="e.g. Adebayo"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => { setLastName(e.target.value); setDirty(true) }}
               required
             />
           </div>
@@ -112,7 +116,7 @@ function AddTeacher(props) {
               style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="e.g. teacher@gmail.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setDirty(true) }}
               required
             />
           </div>
@@ -125,7 +129,7 @@ function AddTeacher(props) {
               style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="Set initial password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setDirty(true) }}
               required
             />
           </div>
@@ -138,7 +142,7 @@ function AddTeacher(props) {
               style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
               placeholder="Enter authorized access key"
               value={accessKey}
-              onChange={(e) => setAccessKey(e.target.value)}
+              onChange={(e) => { setAccessKey(e.target.value); setDirty(true) }}
               required
             />
           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { API_URL } from '../../config/api'
@@ -16,7 +17,9 @@ export default function FeeManagement({ showToast }) {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [view, setView] = useState('record') // 'record' or 'history'
+  const [view, setView] = useState('record')
+  const [dirty, setDirty] = useState(false)
+  useUnsavedChanges(dirty)
 
   useEffect(() => {
     const setup = async () => {
@@ -105,6 +108,7 @@ export default function FeeManagement({ showToast }) {
         showToast?.('Payment record saved successfully!', 'success')
       }
 
+      setDirty(false)
       setAmount('')
       setDueDate('')
       setStatus('pending')
@@ -154,14 +158,14 @@ export default function FeeManagement({ showToast }) {
             <div className="responsive-grid-2" style={{ gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Class</label>
-                <select value={selectedClass} onChange={(e) => { setSelectedClass(e.target.value); setSelectedStudent('') }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                <select value={selectedClass} onChange={(e) => { setSelectedClass(e.target.value); setSelectedStudent(''); setDirty(true) }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
                   <option value="">Select class</option>
                   {classes.map((c) => (<option key={c.id} value={c.id}>{c.class_name}</option>))}
                 </select>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Student</label>
-                <select value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                <select value={selectedStudent} onChange={(e) => { setSelectedStudent(e.target.value); setDirty(true) }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
                   <option value="">Select student</option>
                   {students.map((s) => (<option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>))}
                 </select>
@@ -170,7 +174,7 @@ export default function FeeManagement({ showToast }) {
             <div className="responsive-grid-3" style={{ gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Fee Type</label>
-                <select value={feeType} onChange={(e) => setFeeType(e.target.value)} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+                <select value={feeType} onChange={(e) => { setFeeType(e.target.value); setDirty(true) }} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
                   <option>Tuition</option>
                   <option>Development</option>
                   <option>Uniform</option>
@@ -181,16 +185,16 @@ export default function FeeManagement({ showToast }) {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Amount (₦)</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required placeholder="0.00" style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }} />
+                <input type="number" value={amount} onChange={(e) => { setAmount(e.target.value); setDirty(true) }} required placeholder="0.00" style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Due Date</label>
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }} />
+                <input type="date" value={dueDate} onChange={(e) => { setDueDate(e.target.value); setDirty(true) }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }} />
               </div>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
+              <select value={status} onChange={(e) => { setStatus(e.target.value); setDirty(true) }} style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
                 <option value="pending">Pending</option>
                 <option value="paid">Paid</option>
                 <option value="overdue">Overdue</option>
@@ -199,7 +203,7 @@ export default function FeeManagement({ showToast }) {
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input type="checkbox" id="sendInvoice" checked={sendInvoice} onChange={(e) => setSendInvoice(e.target.checked)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+              <input type="checkbox" id="sendInvoice" checked={sendInvoice} onChange={(e) => { setSendInvoice(e.target.checked); setDirty(true) }} style={{ width: 18, height: 18, cursor: 'pointer' }} />
               <label htmlFor="sendInvoice" style={{ color: '#e2e8f0', cursor: 'pointer', fontSize: '0.9rem' }}>📧 Send Invoice Email to Parent</label>
             </div>
 

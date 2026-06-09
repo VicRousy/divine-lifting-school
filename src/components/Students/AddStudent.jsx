@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
@@ -23,6 +24,8 @@ export default function AddStudent(props) {
 
   const [accessKey, setAccessKey] = useState('')
   const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  useUnsavedChanges(dirty)
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -124,6 +127,7 @@ export default function AddStudent(props) {
       )
 
       props.showToast(`${firstName} ${lastName} registered! Credentials sent to ${parentEmail}`, 'success')
+      setDirty(false)
       resetForm()
       if (props.onAdd) props.onAdd()
     } catch (err) {
@@ -147,7 +151,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>First Name</label>
               <input
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e) => { setFirstName(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
@@ -156,7 +160,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Middle Name</label>
               <input
                 value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
+                onChange={(e) => { setMiddleName(e.target.value); setDirty(true) }}
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
             </div>
@@ -164,7 +168,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Last Name</label>
               <input
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => { setLastName(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
@@ -175,7 +179,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Class</label>
               <select
                 value={selectedClassId}
-                onChange={(e) => setSelectedClassId(e.target.value)}
+                onChange={(e) => { setSelectedClassId(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               >
@@ -190,7 +194,7 @@ export default function AddStudent(props) {
               <input
                 type="password"
                 value={studentPassword}
-                onChange={(e) => setStudentPassword(e.target.value)}
+                onChange={(e) => { setStudentPassword(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
@@ -205,7 +209,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent First Name</label>
               <input
                 value={parentFirstName}
-                onChange={(e) => setParentFirstName(e.target.value)}
+                onChange={(e) => { setParentFirstName(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
@@ -214,7 +218,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Middle Name</label>
               <input
                 value={parentMiddleName}
-                onChange={(e) => setParentMiddleName(e.target.value)}
+                onChange={(e) => { setParentMiddleName(e.target.value); setDirty(true) }}
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
             </div>
@@ -222,7 +226,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Last Name</label>
               <input
                 value={parentLastName}
-                onChange={(e) => setParentLastName(e.target.value)}
+                onChange={(e) => { setParentLastName(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
@@ -234,7 +238,7 @@ export default function AddStudent(props) {
               <input
                 type="email"
                 value={parentEmail}
-                onChange={(e) => setParentEmail(e.target.value)}
+                onChange={(e) => { setParentEmail(e.target.value); setDirty(true) }}
                 required
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
@@ -243,7 +247,7 @@ export default function AddStudent(props) {
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Parent Phone</label>
               <input
                 value={parentPhone}
-                onChange={(e) => setParentPhone(e.target.value)}
+                onChange={(e) => { setParentPhone(e.target.value); setDirty(true) }}
                 style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
               />
             </div>
@@ -253,8 +257,8 @@ export default function AddStudent(props) {
             <input
               type="password"
               value={parentPassword}
-              onChange={(e) => setParentPassword(e.target.value)}
-              required
+                onChange={(e) => { setParentPassword(e.target.value); setDirty(true) }}
+                required
               style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
             />
           </div>
@@ -265,7 +269,7 @@ export default function AddStudent(props) {
           <input
             type="password"
             value={accessKey}
-            onChange={(e) => setAccessKey(e.target.value)}
+            onChange={(e) => { setAccessKey(e.target.value); setDirty(true) }}
             required
             style={{ width: '100%', padding: 14, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none', fontSize: '1rem' }}
           />

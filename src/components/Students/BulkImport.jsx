@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
@@ -18,6 +19,8 @@ function BulkImport({ showToast }) {
   const [imported, setImported] = useState({ students: 0, parents: 0 })
   const [errors, setErrors] = useState([])
   const [classMap, setClassMap] = useState({})
+  const [dirty, setDirty] = useState(false)
+  useUnsavedChanges(dirty)
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -43,6 +46,7 @@ function BulkImport({ showToast }) {
       if (rows.length > 0) {
         setHeaders(rows[0])
         setCsvData(rows.slice(1).filter(row => row.length > 1))
+        setDirty(true)
       }
     }
     reader.readAsText(file)
@@ -161,6 +165,7 @@ function BulkImport({ showToast }) {
     if (importErrors.length > 0) {
       showToast(`${importErrors.length} errors occurred. Check details below.`, 'error')
     }
+    setDirty(false)
   }
 
   return (
