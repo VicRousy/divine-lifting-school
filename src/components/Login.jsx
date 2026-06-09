@@ -352,7 +352,7 @@ function Login({ onLogin }) {
 
         {/* LOGIN FORM */}
         {!isSignup && step === 'form' && (
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} aria-describedby={error ? "login-error" : undefined}>
             <input
               type="text"
               aria-label="Login ID"
@@ -375,7 +375,7 @@ function Login({ onLogin }) {
               <span onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 12, top: 12, cursor: 'pointer', color: '#64748b', fontSize: '0.85rem', userSelect: 'none' }}>{showPw ? 'Hide' : 'Show'}</span>
             </div>
             {error && (
-              <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
+              <p id="login-error" style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
             <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: loading ? '#64748b' : 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', color: loading ? '#cbd5e1' : '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
               {loading ? 'Authenticating...' : 'Login'}
@@ -388,7 +388,7 @@ function Login({ onLogin }) {
 
         {/* SIGNUP FORM */}
         {isSignup && step === 'form' && (
-          <form onSubmit={handleSignupSubmit}>
+          <form onSubmit={handleSignupSubmit} aria-describedby={error ? "login-error" : undefined}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '15px' }}>
               <input type="text" aria-label="First Name" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
               <input type="text" aria-label="Middle Name" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={inputStyle} />
@@ -401,7 +401,7 @@ function Login({ onLogin }) {
             </div>
             <input type="password" aria-label="Master Access Key" placeholder="Master Access Key" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} required style={inputStyle} />
             {error && (
-              <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
+              <p id="login-error" style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
             <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: loading ? '#64748b' : 'linear-gradient(135deg, #10b981 0%, #38bdf8 100%)', color: loading ? '#cbd5e1' : '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
               {loading ? 'Sending Code...' : 'Create Admin Account'}
@@ -414,7 +414,7 @@ function Login({ onLogin }) {
 
         {/* VERIFICATION FORM */}
         {isSignup && step === 'verify' && (
-          <form onSubmit={handleVerifyCode}>
+          <form onSubmit={handleVerifyCode} aria-describedby={error ? "login-error" : undefined}>
             <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px', fontSize: '0.9rem' }}>
               We sent a 6-digit code to <strong style={{ color: '#38bdf8' }}>{email}</strong>
             </p>
@@ -429,7 +429,7 @@ function Login({ onLogin }) {
               style={{ width: '100%', padding: '14px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '8px', boxSizing: 'border-box' }}
             />
             {error && (
-              <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
+              <p id="login-error" style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
             <button type="submit" disabled={loading || verificationCode.length !== 6} style={{ width: '100%', padding: '14px', background: loading || verificationCode.length !== 6 ? '#64748b' : 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', color: loading || verificationCode.length !== 6 ? '#cbd5e1' : '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loading || verificationCode.length !== 6 ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
               {loading ? 'Verifying...' : 'Verify & Activate'}
@@ -442,7 +442,7 @@ function Login({ onLogin }) {
 
         {/* SET NEW PASSWORD SCREEN */}
         {firstLoginUser && (
-          <form onSubmit={handleSetNewPassword}>
+          <form onSubmit={handleSetNewPassword} aria-describedby={error ? "login-error" : undefined}>
             <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px', fontSize: '0.9rem' }}>
               Welcome <strong style={{ color: '#38bdf8' }}>{firstLoginUser.first_name}</strong>! Please set your new password.
             </p>
@@ -470,7 +470,7 @@ function Login({ onLogin }) {
               />
             </div>
             {error && (
-              <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
+              <p id="login-error" style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
             )}
             <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: loading ? '#64748b' : 'linear-gradient(135deg, #10b981 0%, #38bdf8 100%)', color: loading ? '#cbd5e1' : '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
               {loading ? 'Updating...' : 'Set Password & Login'}
