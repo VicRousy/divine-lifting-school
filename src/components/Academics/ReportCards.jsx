@@ -203,7 +203,7 @@ export default function ReportCards({ showToast }) {
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
                   {['STUDENT', 'TOTAL', 'AVERAGE', 'GRADE', 'POSITION', 'ACTION'].map((h) => (
-                    <th key={h} style={{ padding: 14, textAlign: h === 'STUDENT' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th scope="col" key={h} style={{ padding: 14, textAlign: h === 'STUDENT' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -261,13 +261,13 @@ export default function ReportCards({ showToast }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: '14px' }}>
               <thead>
                 <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'left' }}>Subject</th>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>CA1 (20)</th>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>CA2 (20)</th>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>Exam (60)</th>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>Total</th>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 60 }}>Grade</th>
-                  <th style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>Remark</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'left' }}>Subject</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>CA1 (20)</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>CA2 (20)</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>Exam (60)</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 80 }}>Total</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center', width: 60 }}>Grade</th>
+                  <th scope="col" style={{ padding: '8px 12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>Remark</th>
                 </tr>
               </thead>
               <tbody>

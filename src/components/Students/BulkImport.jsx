@@ -195,7 +195,7 @@ function BulkImport({ showToast }) {
               <thead>
                 <tr style={{ borderBottom: '2px solid #334155' }}>
                   {headers.map((h, i) => (
-                    <th key={i} style={{ padding: '10px', color: '#94a3b8', textAlign: 'left' }}>{h}</th>
+                    <th scope="col" key={i} style={{ padding: '10px', color: '#94a3b8', textAlign: 'left' }}>{h}</th>
                   ))}
                 </tr>
               </thead>

@@ -185,6 +185,7 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#020617', color: '#38bdf8' }}>
         <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, border: '4px solid #1e293b', borderTopColor: '#38bdf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
           <h2>Verifying Access...</h2>
           <p style={{ color: '#475569' }}>Connecting to school database</p>
         </div>
@@ -243,7 +244,8 @@ function App() {
              display: flex !important;
              flex-direction: column !important;
            }
-           .hamburger-btn {
+           @keyframes spin { to { transform: rotate(360deg); } }
+          .hamburger-btn {
              display: block !important;
            }
            .mobile-close-btn {
@@ -321,8 +323,8 @@ function App() {
         `}</style>
 
        {/* SIDEBAR */}
-       {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
-       <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, overflowY: 'auto' }}>
+        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} aria-hidden={true} />}
+       <aside aria-label="Sidebar navigation" className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ background: '#1e293b', borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, overflowY: 'auto' }}>
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid #334155' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -353,7 +355,7 @@ function App() {
           </div>
         </div>
 
-        <nav style={{ flex: 1, padding: '20px 0' }}>
+        <nav aria-label="Main navigation" style={{ flex: 1, padding: '20px 0' }}>
           {/* Admin Menu */}
           {userRole === 'admin' && (
             <>

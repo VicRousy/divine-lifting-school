@@ -189,8 +189,8 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #334155" }}>
-                  <th style={{ padding: "12px", textAlign: "left", color: "#94a3b8", fontSize: "0.85rem" }}>CLASS</th>
-                  <th style={{ padding: "12px", textAlign: "left", color: "#94a3b8", fontSize: "0.85rem" }}>SUBJECT</th>
+                  <th scope="col" style={{ padding: "12px", textAlign: "left", color: "#94a3b8", fontSize: "0.85rem" }}>CLASS</th>
+                  <th scope="col" style={{ padding: "12px", textAlign: "left", color: "#94a3b8", fontSize: "0.85rem" }}>SUBJECT</th>
                 </tr>
               </thead>
               <tbody>

@@ -133,7 +133,7 @@ export default function GradeScale({ showToast }) {
             <thead>
               <tr style={{ borderBottom: '1px solid #334155' }}>
                 {['GRADE', 'MIN SCORE', 'MAX SCORE', 'REMARK', 'COLOR', 'PREVIEW'].map((h) => (
-                  <th
+                  <th scope="col"
                     key={h}
                     style={{
                       padding: 14,

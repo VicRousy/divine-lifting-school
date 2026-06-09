@@ -233,8 +233,8 @@ function AttendanceMarking({ showToast, teacherId }) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Student Name</th>
-                <th style={{ textAlign: 'center' }}>Status</th>
+                <th scope="col">Student Name</th>
+                <th scope="col" style={{ textAlign: 'center' }}>Status</th>
               </tr>
             </thead>
             <tbody>

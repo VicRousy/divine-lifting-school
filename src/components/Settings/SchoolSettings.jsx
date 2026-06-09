@@ -186,7 +186,7 @@ export default function SchoolSettings({ showToast }) {
                 <thead>
                   <tr style={{ borderBottom: '1px solid #334155' }}>
                     {['TERM NAME', 'ACADEMIC YEAR', 'STATUS', 'ACTIONS'].map((h) => (
-                      <th key={h} style={{ padding: 14, textAlign: h === 'TERM NAME' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                      <th scope="col" key={h} style={{ padding: 14, textAlign: h === 'TERM NAME' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>

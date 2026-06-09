@@ -256,7 +256,7 @@ export default function StudentPortal({ userInfo, onLogout }) {
                     <thead>
                       <tr style={{ borderBottom: '1px solid #334155' }}>
                         {['SUBJECT', 'CA1 (20)', 'CA2 (20)', 'EXAM (60)', 'TOTAL', 'GRADE'].map((h) => (
-                          <th key={h} style={{ padding: 14, textAlign: h === 'SUBJECT' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th scope="col" key={h} style={{ padding: 14, textAlign: h === 'SUBJECT' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -309,7 +309,7 @@ export default function StudentPortal({ userInfo, onLogout }) {
                     <thead>
                       <tr style={{ borderBottom: '1px solid #334155' }}>
                         {['DATE', 'STATUS'].map((h) => (
-                          <th key={h} style={{ padding: 14, textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>{h}</th>
+                          <th scope="col" key={h} style={{ padding: 14, textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -391,7 +391,7 @@ export default function StudentPortal({ userInfo, onLogout }) {
                     <thead>
                       <tr style={{ borderBottom: '1px solid #334155' }}>
                         {['FEE TYPE', 'AMOUNT', 'DUE DATE', 'STATUS', 'PAID DATE'].map((h) => (
-                          <th key={h} style={{ padding: 14, textAlign: h === 'FEE TYPE' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th scope="col" key={h} style={{ padding: 14, textAlign: h === 'FEE TYPE' ? 'left' : 'center', color: '#94a3b8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>

@@ -120,7 +120,7 @@ export default function GradeApproval({ showToast }) {
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
                   {['STUDENT', 'CLASS', 'SUBJECT', 'TERM', 'CA1', 'CA2', 'EXAM', 'TOTAL', 'GRADE', 'STATUS', 'ACTION'].map((h) => (
-                    <th
+                    <th scope="col"
                       key={h}
                       style={{
                         padding: 14,

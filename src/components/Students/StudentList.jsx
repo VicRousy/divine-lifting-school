@@ -96,9 +96,9 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Full Name</th>
-            <th>Current Class</th>
-            <th style={{ textAlign: 'right' }}>Actions</th>
+            <th scope="col">Full Name</th>
+            <th scope="col">Current Class</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>

@@ -85,8 +85,8 @@ function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast 
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Subject Name</th>
-            <th style={{ textAlign: 'right' }}>Action</th>
+            <th scope="col">Subject Name</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Action</th>
           </tr>
         </thead>
         <tbody>

@@ -151,8 +151,8 @@ export default function ClassPromotion({ showToast }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
-                  <th style={{ padding: 14, textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', width: 60 }}>SELECT</th>
-                  <th style={{ padding: 14, textAlign: 'left', color: '#94a3b8', fontSize: '0.8rem' }}>STUDENT NAME</th>
+                  <th scope="col" style={{ padding: 14, textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', width: 60 }}>SELECT</th>
+                  <th scope="col" style={{ padding: 14, textAlign: 'left', color: '#94a3b8', fontSize: '0.8rem' }}>STUDENT NAME</th>
                 </tr>
               </thead>
               <tbody>
