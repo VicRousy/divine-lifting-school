@@ -147,7 +147,6 @@ function BulkImport({ showToast }) {
             fullStudentName,
           )
         } catch (emailErr) {
-          console.warn('Welcome email failed:', emailErr)
           importErrors.push(`Row ${i + 1}: Student saved but welcome email failed (check email config)`)
         }
       } catch (err) {

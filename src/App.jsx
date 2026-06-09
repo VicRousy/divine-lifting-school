@@ -124,7 +124,7 @@ function App() {
     const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
     const table = TABLE_MAP[role]
     if (table) {
-      supabase.from(table).update({ last_login: new Date().toISOString() }).eq('id', userInfo.id).then(() => {}).catch((e) => console.warn('Failed to update last_login:', e))
+      supabase.from(table).update({ last_login: new Date().toISOString() }).eq('id', userInfo.id).then(() => {}).catch(() => {})
     }
   }, [])
 

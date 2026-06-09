@@ -30,12 +30,10 @@ export default function GradeScale({ showToast }) {
           setScale(data.scale)
           return
         }
-      } catch {
-        console.warn('Failed to load grade scale from Supabase, falling back to local')
-      }
+      } catch {}
       const local = localStorage.getItem('dls_grade_scale')
       if (local) {
-        try { setScale(JSON.parse(local)); return } catch { console.warn('Invalid grade scale in localStorage') }
+        try { setScale(JSON.parse(local)); return } catch {} 
       }
       setScale(DEFAULT_SCALE)
     }
@@ -82,7 +80,7 @@ export default function GradeScale({ showToast }) {
     localStorage.removeItem('dls_grade_scale')
     try {
       await supabase.from('grade_scale').upsert({ id: 1, scale: DEFAULT_SCALE, updated_at: new Date().toISOString() }, { onConflict: 'id' })
-    } catch { console.warn('Failed to reset grade scale in Supabase') }
+    } catch {}
     showToast?.('Grade scale reset to defaults.', 'success')
   }
 
