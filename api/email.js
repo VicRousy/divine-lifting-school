@@ -8,12 +8,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const ALLOWED = [
+  'https://divine-lifting-school.vercel.app',
+  'https://divine-lifting-website.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3001',
+]
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const origin = req.headers.origin || req.headers.referer || ''
+  if (origin && !ALLOWED.some(a => origin.startsWith(a))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
   const { type } = req.body;
+
+  if (!type || type.length > 30) {
+    return res.status(400).json({ error: 'Invalid email type' })
+  }
 
   try {
     switch (type) {
