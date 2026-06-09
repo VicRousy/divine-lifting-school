@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
+import { safeQuery } from "../../utils/safeQuery";
 
 export default function QuickAttendance({ teacherId, showToast }) {
   const [classes, setClasses] = useState([]);
@@ -20,12 +21,12 @@ export default function QuickAttendance({ teacherId, showToast }) {
     if (/^\d+$/.test(String(teacherId))) {
       teacherBigIntId = Number(teacherId);
     } else {
-      const { data: t } = await supabase.from("teachers").select("id").or(`login_id.eq.${teacherId},email.eq.${teacherId}`).maybeSingle();
+      const { data: t } = await safeQuery(() => supabase.from("teachers").select("id").or(`login_id.eq.${teacherId},email.eq.${teacherId}`).maybeSingle());
       teacherBigIntId = t?.id;
     }
 
     if (teacherBigIntId) {
-      const { data } = await supabase.from("teacher_assignments").select("class_id, classes(id, class_name)").eq("teacher_id", teacherBigIntId);
+      const { data } = await safeQuery(() => supabase.from("teacher_assignments").select("class_id, classes(id, class_name)").eq("teacher_id", teacherBigIntId));
       const seen = new Set();
       const assignedClasses = (data || []).filter((row) => row.classes?.id && !seen.has(row.classes.id) && seen.add(row.classes.id)).map((row) => row.classes);
       setClasses(assignedClasses);
@@ -39,10 +40,10 @@ export default function QuickAttendance({ teacherId, showToast }) {
 
   const fetchStudentsAndAttendance = async () => {
     setLoading(true);
-    const { data: studentData } = await supabase.from("students").select("id, first_name, middle_name, last_name").eq("class_id", selectedClass).eq("is_active", true).order("last_name");
+    const { data: studentData } = await safeQuery(() => supabase.from("students").select("id, first_name, middle_name, last_name").eq("class_id", selectedClass).eq("is_active", true).order("last_name"));
     setStudents(studentData || []);
 
-    const { data: attendanceData } = await supabase.from("attendance").select("*").eq("date", selectedDate).in("student_id", (studentData || []).map((s) => s.id));
+    const { data: attendanceData } = await safeQuery(() => supabase.from("attendance").select("*").eq("date", selectedDate).in("student_id", (studentData || []).map((s) => s.id)));
 
     const initialAttendance = {};
     studentData?.forEach((s) => {

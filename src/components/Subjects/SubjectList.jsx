@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import ConfirmModal from '../ConfirmModal'
 
 function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast from props
@@ -10,7 +11,7 @@ function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast 
   const [selectedSubject, setSelectedSubject] = useState(null)
 
   const fetchSubjects = async () => {
-    const { data } = await supabase.from('subjects').select('*').order('subject_name', { ascending: true })
+    const { data } = await safeQuery(() => supabase.from('subjects').select('*').order('subject_name', { ascending: true }))
     setSubjects(data || [])
   }
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
+import { safeQuery } from "../../utils/safeQuery";
+import { CardSkeleton } from "../Common/Skeleton";
 
 export default function HomeworkManager({ teacherId, showToast }) {
   const [classes, setClasses] = useState([]);
@@ -22,12 +24,12 @@ export default function HomeworkManager({ teacherId, showToast }) {
     if (/^\d+$/.test(String(teacherId))) {
       teacherBigIntId = Number(teacherId);
     } else {
-      const { data: t } = await supabase.from("teachers").select("id").or(`login_id.eq.${teacherId},email.eq.${teacherId}`).maybeSingle();
+      const { data: t } = await safeQuery(() => supabase.from("teachers").select("id").or(`login_id.eq.${teacherId},email.eq.${teacherId}`).maybeSingle());
       teacherBigIntId = t?.id;
     }
 
     if (teacherBigIntId) {
-      const { data } = await supabase.from("teacher_assignments").select("class_id, classes(id, class_name)").eq("teacher_id", teacherBigIntId);
+      const { data } = await safeQuery(() => supabase.from("teacher_assignments").select("class_id, classes(id, class_name)").eq("teacher_id", teacherBigIntId));
       const seen = new Set();
       const assignedClasses = (data || []).filter((row) => row.classes?.id && !seen.has(row.classes.id) && seen.add(row.classes.id)).map((row) => row.classes);
       setClasses(assignedClasses);
@@ -36,7 +38,7 @@ export default function HomeworkManager({ teacherId, showToast }) {
 
   const fetchHomeworks = async () => {
     setLoading(true);
-    const { data } = await supabase.from("homeworks").select("*").order("created_at", { ascending: false });
+    const { data } = await safeQuery(() => supabase.from("homeworks").select("*").order("created_at", { ascending: false }));
     setHomeworks(data || []);
     setLoading(false);
   };
@@ -73,13 +75,9 @@ export default function HomeworkManager({ teacherId, showToast }) {
   };
 
   const deleteHomework = async (id) => {
-    const { error } = await supabase.from("homeworks").delete().eq("id", id);
-    if (error) {
-      showToast?.("Failed to delete homework", "error");
-    } else {
-      showToast?.("Homework deleted", "success");
-      fetchHomeworks();
-    }
+    await safeQuery(() => supabase.from("homeworks").delete().eq("id", id));
+    showToast?.("Homework deleted", "success");
+    fetchHomeworks();
   };
 
   return (
@@ -118,7 +116,11 @@ export default function HomeworkManager({ teacherId, showToast }) {
 
       <h3 style={{ margin: "0 0 16px", color: "#f8fafc" }}>Posted Homework</h3>
       {loading ? (
-        <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Loading...</div>
+        <div style={{ padding: '20px 0' }}>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={2} />
+        </div>
       ) : homeworks.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", border: "1px dashed #334155", borderRadius: 14 }}>No homework posted yet.</div>
       ) : (
@@ -129,7 +131,7 @@ export default function HomeworkManager({ teacherId, showToast }) {
                 <h4 style={{ margin: "0 0 8px", color: "#e2e8f0" }}>{hw.title}</h4>
                 <p style={{ margin: "0 0 8px", color: "#94a3b8", fontSize: "0.9rem" }}>{hw.description}</p>
                 <div style={{ display: "flex", gap: 16, fontSize: "0.8rem", color: "#64748b" }}>
-                  <span>📅 Due: {new Date(hw.due_date).toLocaleDateString()}</span>
+                  <span>📅 Due: {hw.due_date ? new Date(hw.due_date).toLocaleDateString() : 'TBD'}</span>
                   <span>🏫 Class ID: {hw.class_id}</span>
                 </div>
               </div>

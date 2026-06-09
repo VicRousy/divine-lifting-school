@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
+import { getGradeInfo } from '../../utils/gradeUtils'
 import {
   getPreferredTerm,
   getTermAcademicYear,
@@ -12,16 +14,6 @@ function clampScore(value, max) {
   const num = Number(value)
   if (Number.isNaN(num)) return ''
   return Math.max(0, Math.min(max, num))
-}
-
-function getGradeInfo(total) {
-  const score = Number(total)
-  if (score >= 90) return { grade: 'A+', remark: 'Excellent', color: '#10b981' }
-  if (score >= 80) return { grade: 'A', remark: 'Very Good', color: '#34d399' }
-  if (score >= 70) return { grade: 'B+', remark: 'Good', color: '#38bdf8' }
-  if (score >= 60) return { grade: 'B', remark: 'Satisfactory', color: '#f59e0b' }
-  if (score >= 50) return { grade: 'C', remark: 'Pass', color: '#fbbf24' }
-  return { grade: 'F', remark: 'Fail', color: '#ef4444' }
 }
 
 export default function ScoreEntry({ showToast }) {
@@ -44,9 +36,9 @@ export default function ScoreEntry({ showToast }) {
   useEffect(() => {
     const setup = async () => {
       const [{ data: cls }, { data: sub }, { data: termData }] = await Promise.all([
-        supabase.from('classes').select('*').order('class_name'),
-        supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('terms').select('*').order('id', { ascending: true }),
+        safeQuery(() => supabase.from('classes').select('*').order('class_name')),
+        safeQuery(() => supabase.from('subjects').select('*').order('subject_name')),
+        safeQuery(() => supabase.from('terms').select('*').order('id', { ascending: true })),
       ])
       setClasses(cls || [])
       setSubjects(sub || [])
@@ -62,17 +54,12 @@ export default function ScoreEntry({ showToast }) {
   useEffect(() => {
     if (!selectedClass) return
     const fetchStudents = async () => {
-      const { data, error } = await supabase
+      const { data } = await safeQuery(() => supabase
         .from('students')
         .select('id, first_name, middle_name, last_name')
         .eq('class_id', selectedClass)
         .eq('is_active', true)
-        .order('last_name')
-      if (error) {
-        showToast?.('Failed to load students: ' + error.message, 'error')
-        setStudents([])
-        return
-      }
+        .order('last_name'))
       const list = data || []
       setStudents(list)
       const initial = {}

@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
 
 const generateId = (prefix) => `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`
-const generatePassword = () => Math.random().toString(36).slice(-8)
+const generatePassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
+  const array = new Uint32Array(8)
+  crypto.getRandomValues(array)
+  return Array.from(array).map((n) => chars[n % chars.length]).join('')
+}
 
 function BulkImport({ showToast }) {
   const [csvData, setCsvData] = useState([])
@@ -15,7 +21,7 @@ function BulkImport({ showToast }) {
 
   useEffect(() => {
     const fetchClasses = async () => {
-      const { data } = await supabase.from('classes').select('id, class_name')
+      const { data } = await safeQuery(() => supabase.from('classes').select('id, class_name'))
       if (data) {
         const map = {}
         data.forEach(c => { map[c.class_name.toLowerCase().trim()] = c.id })
@@ -136,7 +142,8 @@ function BulkImport({ showToast }) {
             null,
             fullStudentName,
           )
-        } catch {
+        } catch (emailErr) {
+          console.warn('Welcome email failed:', emailErr)
           importErrors.push(`Row ${i + 1}: Student saved but welcome email failed (check email config)`)
         }
       } catch (err) {

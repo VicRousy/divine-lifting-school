@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { safeQuery } from '../../utils/safeQuery'
 
 export default function ClassPromotion({ showToast }) {
   const [classes, setClasses] = useState([])
@@ -11,7 +12,7 @@ export default function ClassPromotion({ showToast }) {
 
   useEffect(() => {
     const fetchClasses = async () => {
-      const { data } = await supabase.from('classes').select('id, class_name').order('class_name')
+      const { data } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
       setClasses(data || [])
     }
     fetchClasses()
@@ -23,12 +24,12 @@ export default function ClassPromotion({ showToast }) {
       return
     }
     const fetchStudents = async () => {
-      const { data } = await supabase
+      const { data } = await safeQuery(() => supabase
         .from('students')
         .select('id, first_name, middle_name, last_name, class_id')
         .eq('class_id', selectedClass)
         .eq('is_active', true)
-        .order('last_name')
+        .order('last_name'))
       setStudents(data || [])
       const initial = {}
       for (const s of data || []) {

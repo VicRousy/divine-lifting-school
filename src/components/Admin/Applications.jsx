@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { sendApplicationDecision } from '../../services/emailService'
 import { FileText, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react'
+import Pagination from '../Common/Pagination'
+import { CardSkeleton } from '../Common/Skeleton'
+
+const ITEMS_PER_PAGE = 10
 
 const STATUS_COLORS = {
   pending: { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', label: 'Pending' },
@@ -14,6 +18,10 @@ export default function Applications({ showToast }) {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalPages = Math.ceil(applications.length / ITEMS_PER_PAGE)
+  const paginatedApps = applications.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   const fetchApplications = async () => {
     setLoading(true)
@@ -115,9 +123,10 @@ export default function Applications({ showToast }) {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
-          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-          <p>Loading applications...</p>
+        <div style={{ padding: '20px 0' }}>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={3} />
+          <CardSkeleton lines={2} />
         </div>
       ) : applications.length === 0 ? (
         <div style={{ background: '#1e293b', borderRadius: '20px', padding: '60px 20px', textAlign: 'center', border: '1px dashed #334155' }}>
@@ -127,7 +136,7 @@ export default function Applications({ showToast }) {
         </div>
       ) : (
         <div>
-          {applications.map((app) => {
+          {paginatedApps.map((app) => {
             const sc = STATUS_COLORS[app.status] || STATUS_COLORS.pending
             const isExpanded = expanded === app.id
             return (
@@ -201,6 +210,7 @@ export default function Applications({ showToast }) {
               </div>
             )
           })}
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </div>
       )}
     </div>

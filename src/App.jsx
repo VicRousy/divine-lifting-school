@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense, memo, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
@@ -7,57 +7,44 @@ import PasswordChangeModal from './components/PasswordChangeModal'
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
-// Core Dashboard Components
-import DashboardStats from './components/Dashboard/DashboardStats'
-import RecentActivity from './components/Dashboard/RecentActivity'
-import AdminAnnouncements from './components/Admin/Announcements'
+// Eager — needed immediately
+import ErrorBoundary from './components/Common/ErrorBoundary'
 
-// Registration Components
-import AddTeacher from './components/Teachers/AddTeacher'
-import AddClass from './components/Classes/AddClass'
-import AddStudent from './components/Students/AddStudent'
-import BulkImport from './components/Students/BulkImport'
-
-// Management Components
-import StudentList from './components/Students/StudentList'
-import TeacherList from './components/Teachers/TeacherList'
-import ClassList from './components/Classes/ClassList'
-import SubjectList from './components/Subjects/SubjectList'
-import TeacherAssignments from './components/Teachers/TeacherAssignments'
-
-// Academic Components
-import StudentProfile from './components/Students/StudentProfile'
-import ScoreEntry from './components/Academics/ScoreEntry'
-import GradeApproval from './components/Academics/GradeApproval'
-import ReportCards from './components/Academics/ReportCards'
-import ClassPromotion from './components/Academics/ClassPromotion'
-import GradeScale from './components/Academics/GradeScale'
-
-// Finance Components
-import FeeManagement from './components/Finance/FeeManagement'
-import ContactMessages from './components/Admin/ContactMessages'
-import Applications from './components/Admin/Applications'
-import ManageNews from './components/Admin/ManageNews'
-import PostNews from './components/Admin/PostNews'
-
-// Teacher Portal Components
-import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
-import TeacherGradebook from './components/TeacherPortal/TeacherGradebook'
-import ClassRoster from './components/TeacherPortal/ClassRoster'
-import TeacherComms from './components/TeacherPortal/TeacherComms'
-import AttendanceMarking from './components/Academics/AttendanceMarking'
-import QuickAttendance from './components/TeacherPortal/QuickAttendance'
-import HomeworkManager from './components/TeacherPortal/HomeworkManager'
-
-// Parent Portal
-import ParentDashboard from './components/ParentPortal/ParentDashboard'
-
-// Student Portal
-import StudentPortal from './components/StudentPortal/StudentPortal'
-
-// Settings
-import SchoolSettings from './components/Settings/SchoolSettings'
-import ResetPassword from './components/Admin/ResetPassword'
+// Lazy-loaded route components
+const DashboardStats = lazy(() => import('./components/Dashboard/DashboardStats'))
+const RecentActivity = lazy(() => import('./components/Dashboard/RecentActivity'))
+const AdminAnnouncements = lazy(() => import('./components/Admin/Announcements'))
+const AddTeacher = lazy(() => import('./components/Teachers/AddTeacher'))
+const AddClass = lazy(() => import('./components/Classes/AddClass'))
+const AddStudent = lazy(() => import('./components/Students/AddStudent'))
+const BulkImport = lazy(() => import('./components/Students/BulkImport'))
+const StudentList = lazy(() => import('./components/Students/StudentList'))
+const TeacherList = lazy(() => import('./components/Teachers/TeacherList'))
+const ClassList = lazy(() => import('./components/Classes/ClassList'))
+const SubjectList = lazy(() => import('./components/Subjects/SubjectList'))
+const TeacherAssignments = lazy(() => import('./components/Teachers/TeacherAssignments'))
+const StudentProfile = lazy(() => import('./components/Students/StudentProfile'))
+const ScoreEntry = lazy(() => import('./components/Academics/ScoreEntry'))
+const GradeApproval = lazy(() => import('./components/Academics/GradeApproval'))
+const ReportCards = lazy(() => import('./components/Academics/ReportCards'))
+const ClassPromotion = lazy(() => import('./components/Academics/ClassPromotion'))
+const GradeScale = lazy(() => import('./components/Academics/GradeScale'))
+const FeeManagement = lazy(() => import('./components/Finance/FeeManagement'))
+const ContactMessages = lazy(() => import('./components/Admin/ContactMessages'))
+const Applications = lazy(() => import('./components/Admin/Applications'))
+const ManageNews = lazy(() => import('./components/Admin/ManageNews'))
+const PostNews = lazy(() => import('./components/Admin/PostNews'))
+const TeacherDashboard = lazy(() => import('./components/TeacherPortal/TeacherDashboard'))
+const TeacherGradebook = lazy(() => import('./components/TeacherPortal/TeacherGradebook'))
+const ClassRoster = lazy(() => import('./components/TeacherPortal/ClassRoster'))
+const TeacherComms = lazy(() => import('./components/TeacherPortal/TeacherComms'))
+const AttendanceMarking = lazy(() => import('./components/Academics/AttendanceMarking'))
+const QuickAttendance = lazy(() => import('./components/TeacherPortal/QuickAttendance'))
+const HomeworkManager = lazy(() => import('./components/TeacherPortal/HomeworkManager'))
+const ParentDashboard = lazy(() => import('./components/ParentPortal/ParentDashboard'))
+const StudentPortal = lazy(() => import('./components/StudentPortal/StudentPortal'))
+const SchoolSettings = lazy(() => import('./components/Settings/SchoolSettings'))
+const ResetPassword = lazy(() => import('./components/Admin/ResetPassword'))
 
 function App() {
   const [session, setSession] = useState(null)
@@ -73,6 +60,11 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
+  const contentRef = useRef(null)
+
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.focus()
+  }, [activeTab])
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -81,6 +73,7 @@ function App() {
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
+    let mounted = true
 
     const prepareApp = async () => {
       try {
@@ -96,25 +89,28 @@ function App() {
           const elapsed = Date.now() - new Date(parsed.loginTime).getTime()
           if (elapsed > SESSION_DURATION_MS) {
             localStorage.removeItem('dls_session')
-            showToast('Session expired. Please login again.', 'warning')
+            if (mounted) showToast('Session expired. Please login again.', 'warning')
           } else {
-            setSession(parsed)
-            setUserRole(parsed.role)
-            setUserInfo(parsed.userInfo)
-            setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
+            if (mounted) {
+              setSession(parsed)
+              setUserRole(parsed.role)
+              setUserInfo(parsed.userInfo)
+              setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
+            }
           }
         }
       } catch (error) {
         console.error('Initialization error:', error)
       } finally {
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     }
 
     prepareApp()
+    return () => { mounted = false }
   }, [])
 
-  const handleLogin = (role, userInfo) => {
+  const handleLogin = useCallback((role, userInfo) => {
     const sessionData = { role, userInfo, loginTime: new Date().toISOString() }
     setSession(sessionData)
     setUserRole(role)
@@ -127,11 +123,11 @@ function App() {
     const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
     const table = TABLE_MAP[role]
     if (table) {
-      supabase.from(table).update({ last_login: new Date().toISOString() }).eq('id', userInfo.id).then().catch(() => {})
+      supabase.from(table).update({ last_login: new Date().toISOString() }).eq('id', userInfo.id).then(() => {}).catch((e) => console.warn('Failed to update last_login:', e))
     }
-  }
+  }, [])
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     setShowLogoutConfirm(false)
     setSession(null)
     setUserRole(null)
@@ -139,16 +135,16 @@ function App() {
     setActiveTab('overview')
     localStorage.removeItem('dls_session')
     showToast('Logged out successfully', 'success')
-  }
+  }, [])
 
-  const switchPortal = (mode) => {
+  const switchPortal = useCallback((mode) => {
     setUserRole(mode)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
     const sessionData = { role: mode, userInfo, loginTime: new Date().toISOString() }
     setSession(sessionData)
     localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Switched to ${mode} portal`, 'success')
-  }
+  }, [userInfo])
 
   const refreshData = () => setRefreshTrigger(prev => prev + 1)
 
@@ -191,9 +187,9 @@ function App() {
           <h2>Verifying Access...</h2>
           <p style={{ color: '#475569' }}>Connecting to school database</p>
         </div>
-      </div>
-    )
-  }
+    </div>
+  )
+}
 
   if (!session) return <Login onLogin={handleLogin} />
 
@@ -224,6 +220,10 @@ function App() {
       
        {/* Global Style to Hide Scrollbars Completely & Mobile Responsiveness */}
        <style>{`
+         @keyframes skeletonShimmer {
+           0% { background-position: 200% 0; }
+           100% { background-position: -200% 0; }
+         }
          ::-webkit-scrollbar {
            display: none;
          }
@@ -328,11 +328,11 @@ function App() {
               <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#38bdf8' }}>DLS Admin</h2>
               <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Management Portal</p>
             </div>
-            <button onClick={() => setMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }} className="mobile-close-btn">✕</button>
+            <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu" style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }} className="mobile-close-btn">✕</button>
           </div>
           
           {/* Back to Website Button */}
-          <a 
+          <a aria-label="Visit public website"
             href="https://divine-lifting-website.vercel.app" 
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '15px', padding: '8px', borderRadius: '6px', background: '#334155', color: '#f8fafc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', transition: 'background 0.2s' }}
           >
@@ -341,11 +341,11 @@ function App() {
           
           {/* Admin/Teacher Toggle */}
           <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
-            <button 
+            <button aria-label="Switch to admin portal"
               onClick={() => switchPortal('admin')}
               style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'admin' ? '#38bdf8' : 'transparent', color: userRole === 'admin' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
             >Admin</button>
-            <button 
+            <button aria-label="Switch to teacher portal"
               onClick={() => switchPortal('teacher')}
               style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'teacher' ? '#38bdf8' : 'transparent', color: userRole === 'teacher' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
             >Teacher</button>
@@ -429,8 +429,8 @@ function App() {
         </nav>
 
         <div style={{ padding: '20px', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <button onClick={() => setShowPasswordChange(true)} style={{ width: '100%', padding: '10px', background: '#475569', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Change Password</button>
-          <button onClick={() => setShowLogoutConfirm(true)} style={{ width: '100%', padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Logout</button>
+          <button onClick={() => setShowPasswordChange(true)} aria-label="Change Password" style={{ width: '100%', padding: '10px', background: '#475569', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Change Password</button>
+          <button onClick={() => setShowLogoutConfirm(true)} aria-label="Logout" style={{ width: '100%', padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>Logout</button>
         </div>
       </aside>
 
@@ -440,7 +440,7 @@ function App() {
         {/* TOP HEADER BAR */}
         <header className="header-bar" style={{ background: '#1e293b', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-             <button className="hamburger-btn" onClick={() => setMobileMenuOpen(true)} style={{ background: 'none', border: 'none', color: '#f8fafc', fontSize: '1.5rem', cursor: 'pointer' }}>☰</button>
+             <button onClick={() => setMobileMenuOpen(true)} aria-label="Open menu" className="hamburger-btn" style={{ background: 'none', border: 'none', color: '#f8fafc', fontSize: '1.5rem', cursor: 'pointer' }}>☰</button>
              <div>
                <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
                <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
@@ -449,7 +449,7 @@ function App() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ position: 'relative' }}>
-              <div onClick={() => setShowProfileMenu(!showProfileMenu)} style={{ width: 40, height: 40, background: '#38bdf8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#0f172a', cursor: 'pointer', fontSize: '1.1rem' }}>
+              <div onClick={() => setShowProfileMenu(!showProfileMenu)} aria-label="Open profile menu" style={{ width: 40, height: 40, background: '#38bdf8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#0f172a', cursor: 'pointer', fontSize: '1.1rem' }}>
                 {userInfo?.name?.charAt(0) || 'U'}
               </div>
               {showProfileMenu && (
@@ -457,8 +457,8 @@ function App() {
                   <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#f8fafc', marginBottom: 4 }}>{userInfo?.name || 'User'}</div>
                   <div style={{ fontSize: '0.8rem', color: '#38bdf8', marginBottom: 12 }}>{userInfo?.staffId || userInfo?.loginId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
                   <div style={{ borderTop: '1px solid #334155', paddingTop: 10 }}>
-                    <button onClick={() => { setShowProfileMenu(false); setShowPasswordChange(true) }} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => e.currentTarget.style.background = '#334155'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>Change Password</button>
-                    <button onClick={() => { setShowProfileMenu(false); setShowLogoutConfirm(true) }} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => e.currentTarget.style.background = '#334155'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>Logout</button>
+                    <button onClick={() => { setShowProfileMenu(false); setShowPasswordChange(true) }} aria-label="Change Password" style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => e.currentTarget.style.background = '#334155'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>Change Password</button>
+                    <button onClick={() => { setShowProfileMenu(false); setShowLogoutConfirm(true) }} aria-label="Logout" style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => e.currentTarget.style.background = '#334155'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>Logout</button>
                   </div>
                 </div>
               )}
@@ -468,20 +468,22 @@ function App() {
         </header>
 
         {/* CONTENT AREA */}
-        <div className="main-content" style={{ flex: 1, padding: '30px' }}>
+        <ErrorBoundary>
+        <div className="main-content" ref={contentRef} tabIndex={-1} style={{ flex: 1, padding: '30px' }}>
           
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
           {activeTab === 'overview' && userRole === 'admin' && (
             <div className="responsive-actions" style={{ marginBottom: '30px' }}>
-              <input type="text" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
+              <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
                 onKeyDown={(e) => { if (e.key === 'Enter') setActiveTab('student-list') }}
               />
-              <button onClick={() => setActiveTab('students')} style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
-              <button onClick={() => setActiveTab('fees')} style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
+              <button aria-label="Add new student" onClick={() => setActiveTab('students')} style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+              <button aria-label="Open fee management" onClick={() => setActiveTab('fees')} style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
             </div>
           )}
 
           {/* DASHBOARD CONTENT */}
+          <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Loading...</div>}>
           {userRole === 'admin' && (
             <>
               {activeTab === 'overview' && (
@@ -535,7 +537,9 @@ function App() {
               {activeTab === 'teacher-comms' && <TeacherComms />}
             </>
           )}
+          </Suspense>
         </div>
+        </ErrorBoundary>
       </main>
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
@@ -545,20 +549,24 @@ function App() {
   )
 }
 
-// Helper Components for Sidebar
-function SidebarGroup({ title, children }) {
+const SidebarGroup = memo(function SidebarGroup({ title, children }) {
   return (
     <div style={{ marginBottom: '20px' }}>
       <h3 style={{ margin: '0 0 10px 20px', fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', letterSpacing: '1px', fontWeight: 'bold' }}>{title}</h3>
       {children}
     </div>
   )
-}
+})
 
-function SidebarItem({ icon, label, active, onClick }) {
+const SidebarItem = memo(function SidebarItem({ icon, label, active, onClick }) {
   return (
     <div 
       onClick={onClick}
+      role="button"
+      aria-label={label}
+      aria-current={active ? 'page' : undefined}
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
       style={{ 
         display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', cursor: 'pointer', 
         background: active ? '#334155' : 'transparent', borderLeft: active ? '3px solid #38bdf8' : '3px solid transparent',
@@ -571,6 +579,6 @@ function SidebarItem({ icon, label, active, onClick }) {
       <span style={{ fontSize: '0.9rem' }}>{label}</span>
     </div>
   )
-}
+})
 
 export default App
