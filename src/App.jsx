@@ -36,6 +36,7 @@ import GradeScale from './components/Academics/GradeScale'
 // Finance Components
 import FeeManagement from './components/Finance/FeeManagement'
 import ContactMessages from './components/Admin/ContactMessages'
+import Applications from './components/Admin/Applications'
 import ManageNews from './components/Admin/ManageNews'
 import PostNews from './components/Admin/PostNews'
 
@@ -177,7 +178,8 @@ function App() {
       'fees': 'Fee Management',
       'post-news': 'Post News',
       'manage-news': 'Manage News',
-      'contact-messages': 'Contact Messages'
+      'contact-messages': 'Contact Messages',
+      'applications': 'Admission Applications'
     }
     return titles[activeTab] || activeTab.toUpperCase()
   }
@@ -391,6 +393,7 @@ function App() {
               <SidebarGroup title="Communication">
                 <SidebarItem icon="📢" label="Announcements" active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} />
                 <SidebarItem icon="📬" label="Contact Messages" active={activeTab === 'contact-messages'} onClick={() => setActiveTab('contact-messages')} />
+                <SidebarItem icon="📋" label="Applications" active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} />
               </SidebarGroup>
 
               <SidebarGroup title="Website News">
@@ -511,6 +514,7 @@ function App() {
               {activeTab === 'reset-password' && <ResetPassword showToast={showToast} />}
               {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
               {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
+              {activeTab === 'applications' && <Applications showToast={showToast} />}
               {activeTab === 'post-news' && <PostNews showToast={showToast} />}
               {activeTab === 'manage-news' && <ManageNews showToast={showToast} />}
               
