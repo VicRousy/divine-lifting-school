@@ -26,6 +26,8 @@ export default function ParentDashboard({ userInfo, onLogout }) {
     }
   }, [userInfo])
 
+  useEffect(() => { window.scrollTo(0, 0) }, [activeTab])
+
   useEffect(() => {
     if (selectedChild) {
       fetchChildData(selectedChild.id)

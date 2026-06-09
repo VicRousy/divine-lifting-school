@@ -63,6 +63,7 @@ function App() {
   const contentRef = useRef(null)
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     if (contentRef.current) contentRef.current.focus()
   }, [activeTab])
 
