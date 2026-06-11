@@ -45,6 +45,15 @@ app.use((req, res, next) => {
   next()
 })
 
+// API key check for email endpoints
+app.use('/api/email', (req, res, next) => {
+  const key = req.headers['x-api-key']
+  if (!key || key !== process.env.EMAIL_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+  next()
+})
+
 // Create Gmail transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',

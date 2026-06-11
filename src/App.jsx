@@ -4,6 +4,7 @@ import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
 import PasswordChangeModal from './components/PasswordChangeModal'
+import ReAuthModal from './components/ReAuthModal'
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -64,6 +65,7 @@ function App() {
   const [toast, setToast] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [reAuthMode, setReAuthMode] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
@@ -145,7 +147,7 @@ function App() {
     showToast('Logged out successfully', 'success')
   }, [])
 
-  const switchPortal = useCallback((mode) => {
+  const doSwitchPortal = useCallback((mode) => {
     setUserRole(mode)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
     const sessionData = { role: mode, userInfo, loginTime: new Date().toISOString() }
@@ -153,6 +155,12 @@ function App() {
     localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Switched to ${mode} portal`, 'success')
   }, [userInfo])
+
+  const switchPortal = useCallback((mode) => {
+    if (mode !== userRole) {
+      setReAuthMode(mode)
+    }
+  }, [userRole])
 
   const refreshData = () => setRefreshTrigger(prev => prev + 1)
 
@@ -328,6 +336,7 @@ function App() {
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
       {showPasswordChange && <PasswordChangeModal userInfo={userInfo} userRole={userRole} onClose={() => setShowPasswordChange(false)} showToast={showToast} />}
+      {reAuthMode && <ReAuthModal userRole={userRole} userInfo={userInfo} targetRole={reAuthMode} onVerified={() => { setReAuthMode(null); doSwitchPortal(reAuthMode) }} onClose={() => setReAuthMode(null)} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
