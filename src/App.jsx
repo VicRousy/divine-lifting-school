@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
-import { supabase, lookupUserByAuthId, lookupUserByEmail, buildUserInfo } from './supabaseClient'
+import { supabase } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
 import PasswordChangeModal from './components/PasswordChangeModal'
-import ReAuthModal from './components/ReAuthModal'
 
+const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+// Eager — needed immediately
 import ErrorBoundary from './components/Common/ErrorBoundary'
 import './styles/admin.css'
 import Sidebar from './components/Sidebar/Sidebar'
 import HeaderBar from './components/Common/HeaderBar'
 
+// Lazy-loaded route components
 const DashboardStats = lazy(() => import('./components/Dashboard/DashboardStats'))
 const RecentActivity = lazy(() => import('./components/Dashboard/RecentActivity'))
 const AdminAnnouncements = lazy(() => import('./components/Admin/Announcements'))
@@ -46,10 +49,6 @@ const StudentPortal = lazy(() => import('./components/StudentPortal/StudentPorta
 const SchoolSettings = lazy(() => import('./components/Settings/SchoolSettings'))
 const ResetPassword = lazy(() => import('./components/Admin/ResetPassword'))
 
-function TabErrorBoundary({ children }) {
-  return <ErrorBoundary>{children}</ErrorBoundary>
-}
-
 function App() {
   const [session, setSession] = useState(null)
   const [userRole, setUserRole] = useState(null)
@@ -61,7 +60,6 @@ function App() {
   const [toast, setToast] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
-  const [reAuthMode, setReAuthMode] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
@@ -76,85 +74,45 @@ function App() {
     setToast({ message, type })
   }
 
-  const restoreSession = useCallback(async (authUser) => {
-    try {
-      localStorage.removeItem('dls_session')
-      const result = await lookupUserByAuthId(authUser.id)
-      if (result) {
-        const { user, role } = result
-        const info = buildUserInfo(role, user)
-        setSession({ role, userInfo: info, loginTime: new Date().toISOString() })
-        setUserRole(role)
-        setUserInfo(info)
-        setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
-        return
-      }
-      // If auth_id lookup fails, try email lookup
-      if (authUser.email) {
-        const emailResult = await lookupUserByEmail(authUser.email)
-        if (emailResult) {
-          const { user, role } = emailResult
-          const info = buildUserInfo(role, user)
-          setSession({ role, userInfo: info, loginTime: new Date().toISOString() })
-          setUserRole(role)
-          setUserInfo(info)
-          setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
-          return
-        }
-      }
-      console.warn('Session restore: user not found in any table')
-    } catch (e) {
-      console.error('Session restore error:', e)
-    }
-  }, [])
-
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
-
     let mounted = true
-    const init = async () => {
+
+    const prepareApp = async () => {
       try {
-        // Try to restore from Supabase Auth session (with 3s timeout)
-        const authSession = await Promise.race([
-          supabase.auth.getSession().then(r => r.data?.session ?? null),
-          new Promise(res => setTimeout(() => res(null), 3000)),
-        ])
-        if (authSession?.user) {
-          await restoreSession(authSession.user)
-          if (mounted) setLoading(false)
-          return
+        // Check for force_login parameter to clear session (useful for testing)
+        const urlParams = new URLSearchParams(window.location.search)
+        if (urlParams.get('force_login') === 'true') {
+          localStorage.removeItem('dls_session')
         }
 
-        // No valid session — clear stale Supabase tokens
-        Object.keys(localStorage).filter(k => k.startsWith('sb-') || k === 'supabase.auth.token').forEach(k => localStorage.removeItem(k))
-        localStorage.removeItem('dls_session')
+        const storedSession = localStorage.getItem('dls_session')
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession)
+          const elapsed = Date.now() - new Date(parsed.loginTime).getTime()
+          if (elapsed > SESSION_DURATION_MS) {
+            localStorage.removeItem('dls_session')
+            if (mounted) showToast('Session expired. Please login again.', 'warning')
+          } else {
+            if (mounted) {
+              setSession(parsed)
+              setUserRole(parsed.role)
+              setUserInfo(parsed.userInfo)
+              setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
+            }
+          }
+        }
       } catch (error) {
         console.error('Initialization error:', error)
-        localStorage.removeItem('dls_session')
       } finally {
         if (mounted) setLoading(false)
       }
     }
 
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, authSession) => {
-      if (event === 'SIGNED_IN' && authSession?.user) {
-        await restoreSession(authSession.user)
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null)
-        setUserRole(null)
-        setUserInfo(null)
-        localStorage.removeItem('dls_session')
-      }
-    })
-
-    return () => {
-      mounted = false
-      subscription?.unsubscribe()
-    }
-  }, [restoreSession])
+    prepareApp()
+    return () => { mounted = false }
+  }, [])
 
   const handleLogin = useCallback((role, userInfo) => {
     const sessionData = { role, userInfo, loginTime: new Date().toISOString() }
@@ -163,6 +121,7 @@ function App() {
     setUserInfo(userInfo)
     setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
     setLoading(false)
+    localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Welcome back! Logged in as ${role}`, 'success')
 
     const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
@@ -180,21 +139,16 @@ function App() {
     setActiveTab('overview')
     localStorage.removeItem('dls_session')
     showToast('Logged out successfully', 'success')
-    supabase.auth.signOut().catch(() => {})
-  }, [])
-
-  const doSwitchPortal = useCallback((mode) => {
-    setUserRole(mode)
-    setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
-    setSession(prev => ({ ...prev, role: mode }))
-    showToast(`Switched to ${mode} portal`, 'success')
   }, [])
 
   const switchPortal = useCallback((mode) => {
-    if (mode !== userRole) {
-      setReAuthMode(mode)
-    }
-  }, [userRole])
+    setUserRole(mode)
+    setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
+    const sessionData = { role: mode, userInfo, loginTime: new Date().toISOString() }
+    setSession(sessionData)
+    localStorage.setItem('dls_session', JSON.stringify(sessionData))
+    showToast(`Switched to ${mode} portal`, 'success')
+  }, [userInfo])
 
   const refreshData = () => setRefreshTrigger(prev => prev + 1)
 
@@ -244,6 +198,7 @@ function App() {
 
   if (!session) return <Login onLogin={handleLogin} />
 
+  // Parent Portal
   if (userRole === 'parent') {
     return (
       <>
@@ -254,6 +209,7 @@ function App() {
     )
   }
 
+  // Student Portal
   if (userRole === 'student') {
     return (
       <>
@@ -266,6 +222,7 @@ function App() {
 
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
+
       <Sidebar
         userRole={userRole}
         activeTab={activeTab}
@@ -277,8 +234,9 @@ function App() {
         onSwitchPortal={switchPortal}
       />
 
+       {/* MAIN CONTENT */}
        <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-
+        
         <HeaderBar
           title={getHeaderTitle()}
           userInfo={userInfo}
@@ -289,8 +247,11 @@ function App() {
           onLogoutClick={() => { setShowProfileMenu(false); setShowLogoutConfirm(true) }}
         />
 
+        {/* CONTENT AREA */}
+        <ErrorBoundary>
         <div className="main-content" ref={contentRef} tabIndex={-1} style={{ flex: 1, padding: '30px' }}>
-
+          
+          {/* Search and Actions Bar (Only on Admin Dashboard) */}
           {activeTab === 'overview' && userRole === 'admin' && (
             <div className="responsive-actions" style={{ marginBottom: '30px' }}>
               <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
@@ -301,69 +262,68 @@ function App() {
             </div>
           )}
 
+          {/* DASHBOARD CONTENT */}
           <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Loading...</div>}>
           {userRole === 'admin' && (
             <>
               {activeTab === 'overview' && (
-                <TabErrorBoundary key="overview">
-                  <div>
-                    <p className="text-dim" style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
-                    <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActiveTab} />
-                    <RecentActivity refreshTrigger={refreshTrigger} />
-                  </div>
-                </TabErrorBoundary>
+                <div>
+                  <p className="text-dim" style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
+                  <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActiveTab} />
+                  <RecentActivity refreshTrigger={refreshTrigger} />
+                </div>
               )}
-              {activeTab === 'teachers' && <TabErrorBoundary key="teachers"><AddTeacher onAdd={refreshData} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'classes' && <TabErrorBoundary key="classes"><AddClass onAdd={refreshData} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'students' && <TabErrorBoundary key="students"><AddStudent onAdd={refreshData} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'import' && <TabErrorBoundary key="import"><BulkImport showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
+              {activeTab === 'import' && <BulkImport showToast={showToast} />}
               {activeTab === 'student-list' && (
-                <TabErrorBoundary key="student-list">
-                  {selectedStudentProfile ? (
-                    <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
-                  ) : (
-                    <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onSelectStudent={setSelectedStudentProfile} showToast={showToast} />
-                  )}
-                </TabErrorBoundary>
+                selectedStudentProfile ? (
+                  <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
+                ) : (
+                  <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onSelectStudent={setSelectedStudentProfile} showToast={showToast} />
+                )
               )}
-              {activeTab === 'teacher-list' && <TabErrorBoundary key="teacher-list"><TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'class-list' && <TabErrorBoundary key="class-list"><ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'subjects' && <TabErrorBoundary key="subjects"><SubjectList refreshTrigger={refreshTrigger} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'assignments' && <TabErrorBoundary key="assignments"><TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'score-entry' && <TabErrorBoundary key="score-entry"><ScoreEntry showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'approval' && <TabErrorBoundary key="approval"><GradeApproval showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'reports' && <TabErrorBoundary key="reports"><ReportCards showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'fees' && <TabErrorBoundary key="fees"><FeeManagement showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'settings' && <TabErrorBoundary key="settings"><SchoolSettings showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'reset-password' && <TabErrorBoundary key="reset-password"><ResetPassword showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'announcements' && <TabErrorBoundary key="announcements"><AdminAnnouncements showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'contact-messages' && <TabErrorBoundary key="contact-messages"><ContactMessages showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'applications' && <TabErrorBoundary key="applications"><Applications showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'post-news' && <TabErrorBoundary key="post-news"><PostNews showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'manage-news' && <TabErrorBoundary key="manage-news"><ManageNews showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'promote' && <TabErrorBoundary key="promote"><ClassPromotion showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'scale' && <TabErrorBoundary key="scale"><GradeScale showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'teacher-list' && <TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
+              {activeTab === 'class-list' && <ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
+              {activeTab === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
+              {activeTab === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
+              {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
+              {activeTab === 'approval' && <GradeApproval showToast={showToast} />}
+              {activeTab === 'reports' && <ReportCards showToast={showToast} />}
+              {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
+              {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
+              {activeTab === 'reset-password' && <ResetPassword showToast={showToast} />}
+              {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
+              {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
+              {activeTab === 'applications' && <Applications showToast={showToast} />}
+              {activeTab === 'post-news' && <PostNews showToast={showToast} />}
+              {activeTab === 'manage-news' && <ManageNews showToast={showToast} />}
+              
+              {/* Placeholders */}
+              {activeTab === 'promote' && <ClassPromotion showToast={showToast} />}
+              {activeTab === 'scale' && <GradeScale showToast={showToast} />}
             </>
           )}
 
           {userRole === 'teacher' && (
             <>
-              {activeTab === 'teacher-dashboard' && <TabErrorBoundary key="teacher-dashboard"><TeacherDashboard user={userInfo} teacherId={userInfo?.id} onNavigate={setActiveTab} /></TabErrorBoundary>}
-              {activeTab === 'scores' && <TabErrorBoundary key="scores"><TeacherGradebook teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'quick-attendance' && <TabErrorBoundary key="quick-attendance"><QuickAttendance teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'roster' && <TabErrorBoundary key="roster"><ClassRoster teacherId={userInfo?.id} /></TabErrorBoundary>}
-              {activeTab === 'teacher-attendance' && <TabErrorBoundary key="teacher-attendance"><AttendanceMarking teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'homework' && <TabErrorBoundary key="homework"><HomeworkManager teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
-              {activeTab === 'teacher-comms' && <TabErrorBoundary key="teacher-comms"><TeacherComms /></TabErrorBoundary>}
+              {activeTab === 'teacher-dashboard' && <TeacherDashboard user={userInfo} teacherId={userInfo?.id} onNavigate={setActiveTab} />}
+              {activeTab === 'scores' && <TeacherGradebook teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'quick-attendance' && <QuickAttendance teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'roster' && <ClassRoster teacherId={userInfo?.id} />}
+              {activeTab === 'teacher-attendance' && <AttendanceMarking teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'homework' && <HomeworkManager teacherId={userInfo?.id} showToast={showToast} />}
+              {activeTab === 'teacher-comms' && <TeacherComms />}
             </>
           )}
           </Suspense>
         </div>
+        </ErrorBoundary>
       </main>
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
       {showPasswordChange && <PasswordChangeModal userInfo={userInfo} userRole={userRole} onClose={() => setShowPasswordChange(false)} showToast={showToast} />}
-      {reAuthMode && <ReAuthModal userRole={userRole} userInfo={userInfo} targetRole={reAuthMode} onVerified={() => { setReAuthMode(null); doSwitchPortal(reAuthMode) }} onClose={() => setReAuthMode(null)} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )

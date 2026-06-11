@@ -9,16 +9,10 @@ function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast 
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [selectedSubject, setSelectedSubject] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [fetchError, setFetchError] = useState('')
 
   const fetchSubjects = async () => {
-    setLoading(true)
-    setFetchError('')
-    const { data, error } = await safeQuery(() => supabase.from('subjects').select('*').order('subject_name', { ascending: true }))
-    if (error) setFetchError('Failed to load subjects.')
+    const { data } = await safeQuery(() => supabase.from('subjects').select('*').order('subject_name', { ascending: true }))
     setSubjects(data || [])
-    setLoading(false)
   }
 
   const addSubject = async () => {
@@ -88,40 +82,30 @@ function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast 
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-dim" style={{ padding: '20px', textAlign: 'center' }}>Loading subjects...</p>
-      ) : fetchError ? (
-        <p style={{ padding: '20px', textAlign: 'center', color: '#ef4444', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>{fetchError}</p>
-      ) : filteredSubjects.length === 0 ? (
-        <p className="text-dim" style={{ padding: '20px', textAlign: 'center' }}>
-          {searchTerm ? 'No subjects match your search.' : 'No subjects found. Add one above.'}
-        </p>
-      ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th scope="col">Subject Name</th>
-              <th scope="col" style={{ textAlign: 'right' }}>Action</th>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th scope="col">Subject Name</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredSubjects.map(s => (
+            <tr key={s.id}>
+              <td style={{ fontSize: '1.1rem', fontWeight: '500' }}>{s.subject_name}</td>
+              <td style={{ textAlign: 'right' }}>
+                <button 
+                  className="btn-delete" 
+                  style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                  onClick={() => handleDeleteClick(s)}
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {filteredSubjects.map(s => (
-              <tr key={s.id}>
-                <td style={{ fontSize: '1.1rem', fontWeight: '500' }}>{s.subject_name}</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button 
-                    className="btn-delete" 
-                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-                    onClick={() => handleDeleteClick(s)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
 
       <ConfirmModal 
         isOpen={showModal}

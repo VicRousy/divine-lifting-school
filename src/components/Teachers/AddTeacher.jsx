@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { sendWelcomeEmail } from '../../services/emailService'
-import { createAuthUser } from '../../services/authApi'
 
 const TEACHER_ACCESS_KEY = import.meta.env.VITE_TEACHER_ACCESS_KEY || 'DLS-TEACHER-2026'
 
@@ -32,18 +31,6 @@ function AddTeacher(props) {
     const staffId = generateStaffId()
 
     try {
-      // Create Supabase Auth user first
-      const authResult = await createAuthUser(email.trim().toLowerCase(), password, {
-        full_name: `${firstName} ${lastName}`,
-        login_id: staffId,
-        role: 'teacher',
-      })
-
-      let authId = null
-      if (authResult.success && authResult.auth_id) {
-        authId = authResult.auth_id
-      }
-
       const { error: insertError } = await supabase
         .from('teachers')
         .insert([{
@@ -52,24 +39,12 @@ function AddTeacher(props) {
           last_name: lastName,
           staff_id: staffId,
           login_id: staffId,
-          auth_id: authId,
           email: email.trim().toLowerCase(),
           password: password,
           is_first_login: true
         }])
 
-      if (insertError) {
-        // Rollback auth user creation if DB insert fails
-        if (authId) {
-          try {
-            const { deleteAuthUser } = await import('../../services/authApi')
-            await deleteAuthUser(authId)
-          } catch (rollbackErr) {
-            console.error('Auth rollback error:', rollbackErr)
-          }
-        }
-        throw insertError
-      }
+      if (insertError) throw insertError
 
       await sendWelcomeEmail(email.trim().toLowerCase(), staffId, password, 'teacher')
 

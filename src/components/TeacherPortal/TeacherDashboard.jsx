@@ -8,9 +8,8 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
   const [teacherInfo, setTeacherInfo] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
 
-  const fetchTeacherData = useCallback(async (signal) => {
+  const fetchTeacherData = useCallback(async () => {
     if (!teacherId) {
       setLoading(false);
       return;
@@ -36,14 +35,11 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
         return;
       }
 
-      if (signal?.aborted) return;
-
+      // Parallel queries with minimal columns
       const [{ data: teacher, error: tError }, { data: assignmentData, error: aError }] = await Promise.all([
         supabase.from("teachers").select("first_name, middle_name, last_name, staff_id, email").eq("id", teacherBigIntId).single(),
         supabase.from("teacher_assignments").select(`id, class_id, subject_id, classes (id, class_name), subjects (id, subject_name)`).eq("teacher_id", teacherBigIntId),
       ]);
-
-      if (signal?.aborted) return;
 
       if (tError) throw tError;
       setTeacherInfo(teacher);
@@ -52,26 +48,25 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
       setAssignments(assignmentData || []);
       
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        setLoadError('Failed to load dashboard data.');
-      }
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      setLoading(false);
     }
   }, [teacherId]);
 
   useEffect(() => {
     if (teacherId) {
-      const abortController = new AbortController();
       const fetchData = async () => {
-        await fetchTeacherData(abortController.signal);
+        await fetchTeacherData();
       };
       fetchData();
-      return () => abortController.abort();
     } else {
-      setTeacherInfo(null);
-      setAssignments([]);
-      setLoading(false);
+      // Safety check: if teacherId is null, we shouldn't be loading
+      const clearData = () => {
+        setTeacherInfo(null);
+        setAssignments([]);
+        setLoading(false);
+      };
+      clearData();
     }
   }, [teacherId, fetchTeacherData]);
 
@@ -107,17 +102,6 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
       }}>
         <div style={{ fontSize: "1.2rem" }}>Loading your dashboard...</div>
         <div style={{ fontSize: "0.8rem", opacity: 0.6 }}>ID: {teacherId || 'Awaiting ID...'}</div>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", flexDirection: "column", gap: "10px" }}>
-        <div style={{ fontSize: "1.2rem" }}>{loadError}</div>
-        <button onClick={() => window.location.reload()} style={{ padding: "10px 20px", background: "#38bdf8", color: "#0f172a", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
-          Reload
-        </button>
       </div>
     );
   }

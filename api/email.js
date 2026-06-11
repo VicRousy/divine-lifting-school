@@ -29,13 +29,8 @@ export default async function handler(req, res) {
   }
 
   const origin = req.headers.origin || req.headers.referer || ''
-  if (origin && !ALLOWED.some(a => origin.startsWith(a) && origin.length === a.length)) {
+  if (origin && !ALLOWED.some(a => origin.startsWith(a))) {
     return res.status(403).json({ error: 'Forbidden' })
-  }
-
-  const key = req.headers['x-api-key']
-  if (!key || key !== process.env.EMAIL_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
@@ -100,7 +95,7 @@ async function sendWelcome(req, res) {
   const info = await transporter.sendMail({
     from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
     to: userEmail,
-    subject: `Welcome to Divine Lifting School - Your ${esc(accountTypeText)} Credentials`,
+    subject: `Welcome to Divine Lifting School - Your ${accountTypeText} Credentials`,
     html: `<!DOCTYPE html><html><head><style>
       body{font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0}
       .container{max-width:600px;margin:0 auto}
@@ -118,7 +113,7 @@ async function sendWelcome(req, res) {
         <div class="header"><h1>Divine Lifting School</h1><p>Academic Management Portal</p></div>
         <div class="content">
           <h2>Account Created Successfully!</h2>
-          <p>Your <strong>${esc(accountTypeText)}</strong> account has been created. Below are your login credentials:</p>
+          <p>Your <strong>${accountTypeText}</strong> account has been created. Below are your login credentials:</p>
           <div class="credentials">${detailsHtml}</div>
           <div class="warning"><strong>Important Security Notice:</strong><br>Please keep these credentials confidential. We strongly recommend changing your password after your first login.</div>
           <div class="footer"><p><strong>Divine Lifting School</strong></p><p>Ikorodu, Lagos, Nigeria</p></div>
@@ -156,8 +151,8 @@ async function sendVerification(req, res) {
         <div class="content">
           <h2>Verify Your Email Address</h2>
           <p>Enter this 6-digit code to activate your admin account:</p>
-          <div class="code-box">${esc(code)}</div>
-          <p class="info"><strong>Login ID:</strong> ${esc(loginId)}</p>
+          <div class="code-box">${code}</div>
+          <p class="info"><strong>Login ID:</strong> ${loginId}</p>
           <p class="info">This code expires in 15 minutes. If you didn't request this, please ignore this email.</p>
           <div class="footer"><p><strong>Divine Lifting School</strong></p><p>Ikorodu, Lagos, Nigeria</p></div>
         </div>
@@ -181,7 +176,7 @@ async function sendAnnouncement(req, res) {
   const info = await transporter.sendMail({
     from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
     to: recipients.join(', '),
-    subject: `New Announcement: ${esc(title)}`,
+    subject: `New Announcement: ${title}`,
     html: `<!DOCTYPE html><html><head><style>
       body{font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background:#f9fafb}
       .container{max-width:600px;margin:0 auto}
@@ -217,7 +212,7 @@ async function sendFeeInvoice(req, res) {
   const info = await transporter.sendMail({
     from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
     to: recipient,
-    subject: `Fee Invoice: ${esc(feeType || 'School Fees')} for ${esc(studentName)}`,
+    subject: `Fee Invoice: ${feeType || 'School Fees'} for ${studentName}`,
     html: `<!DOCTYPE html><html><head><style>
       body{font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background:#f9fafb}
       .container{max-width:600px;margin:0 auto}
@@ -265,8 +260,8 @@ async function sendApplicationDecision(req, res) {
   const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const subject = isAccepted
-    ? `Admission Accepted - ${esc(studentName)} - Divine Lifting School`
-    : `Application Update - ${esc(studentName)} - Divine Lifting School`;
+    ? `Admission Accepted - ${studentName} - Divine Lifting School`
+    : `Application Update - ${studentName} - Divine Lifting School`;
 
   const bodyContent = isAccepted ? `
     <p>We are pleased to inform you that <strong>${esc(studentName)}</strong> has been <span style="color:#10b981;font-weight:700;">accepted</span> into <strong>${esc(className || 'our school')}</strong> at <strong>Divine Lifting International School</strong>.</p>
@@ -288,7 +283,7 @@ async function sendApplicationDecision(req, res) {
   `;
 
   const info = await transporter.sendMail({
-    from: `Divine Lifting International School <${esc(schoolEmail)}>`,
+    from: `Divine Lifting International School <${schoolEmail}>`,
     to: recipient,
     subject,
     html: `<!DOCTYPE html><html><head><style>
@@ -308,7 +303,7 @@ async function sendApplicationDecision(req, res) {
           <p>${isAccepted ? 'Admission Accepted' : 'Application Decision'}</p>
         </div>
         <div class="content">
-          <p style="color:#64748b;font-size:13px;">Date: ${esc(date)}</p>
+          <p style="color:#64748b;font-size:13px;">Date: ${date}</p>
           <p>Dear Parent/Guardian,</p>
           ${bodyContent}
           <p>Yours sincerely,</p>
@@ -318,7 +313,7 @@ async function sendApplicationDecision(req, res) {
           <div class="footer">
             <p style="margin:0 0 4px;"><strong>Divine Lifting International School</strong></p>
             <p style="margin:0 0 2px;">Ikorodu, Lagos, Nigeria</p>
-            <p style="margin:0;">Email: ${esc(schoolEmail)}</p>
+            <p style="margin:0;">Email: ${schoolEmail}</p>
           </div>
         </div>
       </div>
