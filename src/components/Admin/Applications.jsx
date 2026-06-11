@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { sendApplicationDecision } from '../../services/emailService'
 import { FileText, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react'
@@ -14,7 +14,7 @@ const STATUS_COLORS = {
   rejected: { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', label: 'Rejected' },
 }
 
-export default function Applications({ showToast }) {
+function Applications({ showToast }) {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
@@ -34,7 +34,6 @@ export default function Applications({ showToast }) {
       if (error) throw error
       setApplications(data || [])
     } catch (err) {
-      console.error('Error fetching applications:', err)
       showToast?.('Failed to load applications', 'error')
     } finally {
       setLoading(false)
@@ -216,3 +215,5 @@ export default function Applications({ showToast }) {
     </div>
   )
 }
+
+export default memo(Applications)

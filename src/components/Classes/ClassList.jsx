@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import ConfirmModal from '../ConfirmModal'
 
@@ -103,4 +103,4 @@ function ClassList({ refreshTrigger, showToast }) { // Added showToast to props
   )
 }
 
-export default ClassList
+export default memo(ClassList)

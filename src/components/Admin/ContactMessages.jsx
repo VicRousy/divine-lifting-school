@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { Mail, RefreshCw, CheckCheck, Trash2, MessageSquare } from 'lucide-react'
 import Pagination from '../Common/Pagination'
@@ -6,7 +6,7 @@ import { CardSkeleton } from '../Common/Skeleton'
 
 const ITEMS_PER_PAGE = 10
 
-export default function ContactMessages({ showToast }) {
+function ContactMessages({ showToast }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
@@ -26,7 +26,6 @@ export default function ContactMessages({ showToast }) {
       if (error) throw error
       setMessages(data || [])
     } catch (err) {
-      console.error('Error fetching messages:', err)
       showToast?.('Failed to load messages', 'error')
     } finally {
       setLoading(false)
@@ -184,6 +183,7 @@ export default function ContactMessages({ showToast }) {
                   <button
                     onClick={() => handleDelete(msg.id)}
                     disabled={actionLoading === msg.id}
+                    aria-label="Delete message"
                     title="Delete"
                     style={{
                       padding: '8px',
@@ -228,3 +228,5 @@ export default function ContactMessages({ showToast }) {
     </div>
   )
 }
+
+export default memo(ContactMessages)

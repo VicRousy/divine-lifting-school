@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import ConfirmModal from '../ConfirmModal' // Import shared component
 
@@ -16,7 +16,6 @@ function TeacherList({ refreshTrigger, showToast }) {
       if (error) throw error
       setTeachers(data || [])
     } catch (err) {
-      console.error("Staff fetch failed:", err.message)
     } finally {
       setLoading(false)
     }
@@ -93,4 +92,4 @@ function TeacherList({ refreshTrigger, showToast }) {
   )
 }
 
-export default TeacherList
+export default memo(TeacherList)

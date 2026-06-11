@@ -46,7 +46,6 @@ export default function StudentPortal({ userInfo, onLogout }) {
       setFees(feesData || [])
       setTerms(termsData || [])
     } catch (err) {
-      console.error('Failed to fetch student data:', err)
     }
     setLoading(false)
   }

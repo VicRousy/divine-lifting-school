@@ -21,7 +21,6 @@ export default function ManageNews({ showToast }) {
       if (error) throw error
       setNews(data || [])
     } catch (err) {
-      console.error('Error fetching news:', err)
       showToast?.('Failed to load news: ' + err.message, 'error')
     } finally {
       setLoading(false)

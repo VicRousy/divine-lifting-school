@@ -22,7 +22,6 @@ export default function SchoolSettings({ showToast }) {
       const { data: termData } = await supabase.from('terms').select('*').order('id', { ascending: true })
       setTerms(termData || [])
     } catch (err) {
-      console.error('Failed to fetch settings:', err)
     }
   }
 

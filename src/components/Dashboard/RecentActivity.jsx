@@ -22,7 +22,6 @@ function RecentActivity({ refreshTrigger }) {
 
       setActivities(combined.slice(0, 5)) // Keep top 5 latest overall
     } catch (err) {
-      console.error("Activity fetch failed", err)
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import ConfirmModal from '../ConfirmModal'
@@ -6,7 +6,7 @@ import Pagination from '../Common/Pagination'
 
 const ITEMS_PER_PAGE = 15
 
-function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) { // Destructured showToast
+const StudentList = memo(function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) { // Destructured showToast
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -176,6 +176,6 @@ function StudentList({ refreshTrigger, onUpdate, onSelectStudent, showToast }) {
       />
     </div>
   )
-}
+})
 
 export default StudentList

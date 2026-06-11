@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { getGradeInfo } from '../../utils/gradeUtils'
@@ -8,20 +8,7 @@ import {
   getTermLabel,
   normalizeTermRows,
 } from '../../utils/academicSession'
-// Removed static import of generateReportCardPDF
-
-  const handleDownloadPDF = async (student) => {
-    try {
-      const { generateReportCardPDF } = await import('../../utils/pdfGenerator')
-      generateReportCardPDF(student, selectedClassName, termLabel, academicYear, students.length)
-      showToast?.('PDF downloaded successfully!', 'success')
-    } catch (error) {
-      showToast?.('Failed to generate PDF', 'error')
-      console.error('PDF generation error:', error)
-    }
-  }
-
-export default function ReportCards({ showToast }) {
+function ReportCards({ showToast }) {
   const [classes, setClasses] = useState([])
   const [terms, setTerms] = useState([])
   const [selectedClass, setSelectedClass] = useState('')
@@ -128,9 +115,14 @@ export default function ReportCards({ showToast }) {
     }, 100)
   }
 
-  const handleDownloadPDF = (student) => {
-    generateReportCardPDF(student, selectedClassName, termLabel, academicYear, students.length)
-    showToast?.('PDF downloaded successfully!', 'success')
+  const handleDownloadPDF = async (student) => {
+    try {
+      const { generateReportCardPDF } = await import('../../utils/pdfGenerator')
+      generateReportCardPDF(student, selectedClassName, termLabel, academicYear, students.length)
+      showToast?.('PDF downloaded successfully!', 'success')
+    } catch (error) {
+      showToast?.('Failed to generate PDF', 'error')
+    }
   }
 
   const selectedClassName = classes.find((c) => String(c.id) === String(selectedClass))?.class_name || ''
@@ -321,3 +313,5 @@ export default function ReportCards({ showToast }) {
     </div>
   )
 }
+
+export default memo(ReportCards)

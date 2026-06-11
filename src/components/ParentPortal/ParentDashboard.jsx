@@ -50,7 +50,6 @@ export default function ParentDashboard({ userInfo, onLogout }) {
         setSelectedChild(childList[0])
       }
     } catch (err) {
-      console.error('Failed to fetch children:', err)
     }
     setLoading(false)
   }
@@ -72,7 +71,6 @@ export default function ParentDashboard({ userInfo, onLogout }) {
       setHomework(homeworkData || [])
       setTerms(termsData || [])
     } catch (err) {
-      console.error('Failed to fetch child data:', err)
     }
     setLoading(false)
   }
