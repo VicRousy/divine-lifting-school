@@ -125,12 +125,13 @@ CREATE POLICY "Teachers can view students in their classes" ON students FOR SELE
     WHERE t.auth_id = auth.uid() AND ta.class_id = students.class_id
   )
 );
--- Teachers can manage attendance for their classes
+-- Teachers can manage attendance for students in their classes
 CREATE POLICY "Teachers can manage attendance for their classes" ON attendance FOR ALL USING (
   EXISTS (
     SELECT 1 FROM teacher_assignments ta
     JOIN teachers t ON t.id = ta.teacher_id
-    WHERE t.auth_id = auth.uid() AND ta.class_id = attendance.class_id
+    JOIN students s ON s.class_id = ta.class_id
+    WHERE t.auth_id = auth.uid() AND s.id = attendance.student_id
   )
 );
 -- Teachers can manage grades for their subjects/classes
