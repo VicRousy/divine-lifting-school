@@ -1,135 +1,120 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase, lookupUserByLoginId, buildUserInfo } from '../supabaseClient'
 import { sendVerificationEmail } from '../services/emailService'
+import { createAuthUser } from '../services/authApi'
 import bcrypt from 'bcryptjs'
 
 const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY || 'DLS-MASTER-2026'
 
 const verifyPassword = async (inputPassword, dbPassword, userId, tableName) => {
   if (dbPassword === inputPassword) {
-    // Plain text match - auto-migrate
     try {
-      const hashedPassword = await bcrypt.hash(inputPassword, 10);
-      await supabase.from(tableName).update({ password: hashedPassword }).eq('id', userId);
+      const hashedPassword = await bcrypt.hash(inputPassword, 10)
+      await supabase.from(tableName).update({ password: hashedPassword }).eq('id', userId)
     } catch (e) {
-      console.error('Auto-migration error:', e);
+      console.error('Auto-migration error:', e)
     }
-    return true;
+    return true
   }
-  // Check hash
   try {
-    return await bcrypt.compare(inputPassword, dbPassword);
+    return await bcrypt.compare(inputPassword, dbPassword)
   } catch (e) {
-    return false;
+    return false
   }
-};
+}
 
 function Login({ onLogin }) {
   const [isSignup, setIsSignup] = useState(false)
-  const [step, setStep] = useState('form') // 'form' | 'verify' | 'success'
-  
-  // Login State
+  const [step, setStep] = useState('form')
+
   const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
-  
-  // Signup State
+
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [signupPassword, setSignupPassword] = useState('')
   const [masterKey, setMasterKey] = useState('')
-  
-  // Verification State
+
   const [verificationCode, setVerificationCode] = useState('')
   const [pendingLoginId, setPendingLoginId] = useState('')
-  
-  // First Login State
+
   const [firstLoginUser, setFirstLoginUser] = useState(null)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [showNewPw, setShowNewPw] = useState(false)
   const [showSignupPw, setShowSignupPw] = useState(false)
-  
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const input = loginId.trim().toUpperCase()
-
     try {
-      // Check profiles (Admin)
-      const { data: admin, error: adminErr } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, school_id, role, login_id, password, is_verified, is_first_login')
-        .eq('login_id', input)
-        .maybeSingle()
-      if (adminErr) throw adminErr
+      const result = await lookupUserByLoginId(loginId)
+      if (!result) {
+        setError('Invalid Login ID or Password.')
+        setLoading(false)
+        return
+      }
 
-      if (admin && await verifyPassword(password, admin.password, admin.id, 'profiles')) {
-        if (admin.is_first_login) {
-          setFirstLoginUser({ ...admin, role: 'admin' })
+      const { user, role } = result
+      const tableName = role === 'admin' ? 'profiles' : role === 'teacher' ? 'teachers' : role === 'student' ? 'students' : 'parents'
+
+      if (!(await verifyPassword(password, user.password, user.id, tableName))) {
+        setError('Invalid Login ID or Password.')
+        setLoading(false)
+        return
+      }
+
+      // If user has auth_id, use Supabase Auth to sign in
+      if (user.auth_id) {
+        if (user.is_first_login) {
+          setFirstLoginUser({ ...user, role, tableName })
           setLoading(false)
           return
         }
-        onLogin('admin', { id: admin.id, name: `${admin.first_name} ${admin.last_name}`, schoolId: admin.school_id, loginId: admin.login_id })
-        setLoading(false)
-        return
-      }
 
-      // Check teachers
-      const { data: teacher, error: teacherErr } = await supabase
-        .from('teachers')
-        .select('id, first_name, last_name, staff_id, login_id, password, is_first_login')
-        .eq('login_id', input)
-        .maybeSingle()
-      if (teacherErr) throw teacherErr
-
-      if (teacher && await verifyPassword(password, teacher.password, teacher.id, 'teachers')) {
-        if (teacher.is_first_login) {
-          setFirstLoginUser({ ...teacher, role: 'teacher' })
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password,
+        })
+        if (signInErr) {
+          setError('Authentication error. Please try again.')
           setLoading(false)
           return
         }
-        onLogin('teacher', { id: teacher.id, name: `${teacher.first_name} ${teacher.last_name}`, staffId: teacher.staff_id, loginId: teacher.login_id })
+      }
+
+      if (user.is_first_login) {
+        setFirstLoginUser({ ...user, role, tableName })
         setLoading(false)
         return
       }
 
-      // Check students
-      const { data: student, error: studentErr } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, student_id, login_id, password')
-        .eq('login_id', input)
-        .maybeSingle()
-      if (studentErr) throw studentErr
-
-      if (student && await verifyPassword(password, student.password, student.id, 'students')) {
-        onLogin('student', { id: student.id, name: `${student.first_name} ${student.last_name}`, studentId: student.student_id, loginId: student.login_id })
-        setLoading(false)
-        return
+      // Legacy user without auth_id — migrate
+      if (!user.auth_id && user.email) {
+        try {
+          const result = await createAuthUser(user.email, password, {
+            full_name: `${user.first_name} ${user.last_name}`,
+            login_id: user.login_id,
+            role,
+          })
+          if (result.success && result.auth_id) {
+            await supabase.from(tableName).update({ auth_id: result.auth_id }).eq('id', user.id)
+          }
+        } catch (e) {
+          // If migration fails, still proceed (they'll migrate next login)
+          console.error('Auth migration error:', e)
+        }
       }
 
-      // Check parents
-      const { data: parent, error: parentErr } = await supabase
-        .from('parents')
-        .select('id, first_name, last_name, parent_id, login_id, password')
-        .eq('login_id', input)
-        .maybeSingle()
-      if (parentErr) throw parentErr
-
-      if (parent && await verifyPassword(password, parent.password, parent.id, 'parents')) {
-        onLogin('parent', { id: parent.id, name: `${parent.first_name} ${parent.last_name}`, parentId: parent.parent_id, loginId: parent.login_id })
-        setLoading(false)
-        return
-      }
-
-      setError('Invalid Login ID or Password.')
+      onLogin(role, buildUserInfo(role, user))
       setLoading(false)
     } catch (err) {
       setError('Connection error. Please try again.')
@@ -152,21 +137,20 @@ function Login({ onLogin }) {
     const newLoginId = 'ADM-' + Math.floor(1000 + Math.random() * 9000)
 
     try {
-      // 1. Sign up in Supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: signupPassword,
       })
 
       if (signUpError) throw signUpError
-      
+
       const userId = authData.user?.id
 
-      // 2. Create the profile in our profiles table
       const { error: insertError } = await supabase
         .from('profiles')
         .insert([{
           id: userId,
+          auth_id: userId,
           first_name: firstName,
           middle_name: middleName || '-',
           last_name: lastName,
@@ -268,7 +252,7 @@ function Login({ onLogin }) {
 
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10)
-      const table = firstLoginUser.role === 'teacher' ? 'teachers' : 'profiles'
+      const table = firstLoginUser.tableName || (firstLoginUser.role === 'teacher' ? 'teachers' : 'profiles')
       const { error: updateError, data: updateData } = await supabase
         .from(table)
         .update({ password: hashedPassword, is_first_login: false })
@@ -277,13 +261,23 @@ function Login({ onLogin }) {
 
       if (updateError || !updateData || updateData.length === 0) throw new Error('Password update failed')
 
-      onLogin(firstLoginUser.role, {
-        id: firstLoginUser.id,
-        name: `${firstLoginUser.first_name} ${firstLoginUser.last_name}`,
-        staffId: firstLoginUser.staff_id,
-        schoolId: firstLoginUser.school_id,
-        loginId: firstLoginUser.login_id
-      })
+      // Create Supabase Auth account with the new password
+      if (firstLoginUser.email) {
+        try {
+          const authResult = await createAuthUser(firstLoginUser.email, newPassword, {
+            full_name: `${firstLoginUser.first_name} ${firstLoginUser.last_name}`,
+            login_id: firstLoginUser.login_id,
+            role: firstLoginUser.role,
+          })
+          if (authResult.success && authResult.auth_id) {
+            await supabase.from(table).update({ auth_id: authResult.auth_id }).eq('id', firstLoginUser.id)
+          }
+        } catch (e) {
+          console.error('Auth creation error:', e)
+        }
+      }
+
+      onLogin(firstLoginUser.role, buildUserInfo(firstLoginUser.role, firstLoginUser))
     } catch (err) {
       setError('Failed to update password: ' + err.message)
     }
@@ -346,7 +340,6 @@ function Login({ onLogin }) {
           {step === 'success' ? 'Account Verified!' : isSignup ? 'Register New Administrator' : 'Management System Portal'}
         </p>
 
-        {/* LOGIN FORM */}
         {!isSignup && step === 'form' && (
           <form onSubmit={handleLogin} aria-describedby={error ? "login-error" : undefined}>
             <input
@@ -382,7 +375,6 @@ function Login({ onLogin }) {
           </form>
         )}
 
-        {/* SIGNUP FORM */}
         {isSignup && step === 'form' && (
           <form onSubmit={handleSignupSubmit} aria-describedby={error ? "login-error" : undefined}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '15px' }}>
@@ -408,7 +400,6 @@ function Login({ onLogin }) {
           </form>
         )}
 
-        {/* VERIFICATION FORM */}
         {isSignup && step === 'verify' && (
           <form onSubmit={handleVerifyCode} aria-describedby={error ? "login-error" : undefined}>
             <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px', fontSize: '0.9rem' }}>
@@ -436,7 +427,6 @@ function Login({ onLogin }) {
           </form>
         )}
 
-        {/* SET NEW PASSWORD SCREEN */}
         {firstLoginUser && (
           <form onSubmit={handleSetNewPassword} aria-describedby={error ? "login-error" : undefined}>
             <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px', fontSize: '0.9rem' }}>
@@ -474,7 +464,6 @@ function Login({ onLogin }) {
           </form>
         )}
 
-        {/* SUCCESS SCREEN */}
         {step === 'success' && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '3rem', marginBottom: '15px' }}>✅</div>

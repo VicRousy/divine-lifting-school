@@ -1,19 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import bcrypt from 'bcryptjs'
+import { resetAuthPassword } from '../services/authApi'
 
 const TABLE_MAP = {
   admin: 'profiles',
   teacher: 'teachers',
   student: 'students',
   parent: 'parents',
-}
-
-const ID_FIELD_MAP = {
-  admin: 'id',
-  teacher: 'id',
-  student: 'id',
-  parent: 'id',
 }
 
 export default function PasswordChangeModal({ userInfo, userRole, onClose, showToast }) {
@@ -80,9 +74,9 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
 
       const { data, error } = await supabase
         .from(table)
-        .select('password')
-        .eq(ID_FIELD_MAP[userRole], userInfo.id)
-        .single()
+        .select('password, email, auth_id')
+        .eq('id', userInfo.id)
+        .maybeSingle()
 
       if (error || !data) {
         showToast('Could not verify current password', 'error')
@@ -95,11 +89,21 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
         return
       }
 
+      // Update in Supabase Auth if user has auth_id
+      if (data.auth_id) {
+        try {
+          await resetAuthPassword(data.email, newPassword, data.auth_id)
+        } catch (authErr) {
+          console.error('Auth password update error:', authErr)
+        }
+      }
+
+      // Update in local DB (keep bcrypt hash as fallback)
       const hashedPassword = await bcrypt.hash(newPassword, 10)
       const { error: updateError } = await supabase
         .from(table)
         .update({ password: hashedPassword })
-        .eq(ID_FIELD_MAP[userRole], userInfo.id)
+        .eq('id', userInfo.id)
 
       if (updateError) {
         showToast('Failed to update password', 'error')

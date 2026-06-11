@@ -14,6 +14,9 @@ dist-ssr
 
 .env
 server/.env
+.service_key
+scripts/*.mjs
+scripts/*.js
 
 # Editor directories and files
 .vscode/*

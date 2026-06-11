@@ -1,5 +1,7 @@
+import 'dotenv/config'
 import express from 'express';
 import nodemailer from 'nodemailer';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
@@ -474,6 +476,64 @@ app.post('/api/send-application-decision', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// ============ AUTH ENDPOINTS ============
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const serviceKey = process.env.SUPABASE_SERVICE_KEY
+const authSupabase = supabaseUrl && serviceKey ? createSupabaseClient(supabaseUrl, serviceKey) : null
+
+app.post('/api/auth', async (req, res) => {
+  const { type } = req.body
+  try {
+    switch (type) {
+      case 'create-user': return await createAuthUser(req, res)
+      case 'reset-password': return await resetAuthPassword(req, res)
+      default: return res.status(400).json({ error: 'Invalid auth type' })
+    }
+  } catch (error) {
+    console.error(`Auth error [${type}]:`, error)
+    return res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+async function createAuthUser(req, res) {
+  if (!authSupabase) return res.status(500).json({ success: false, error: 'Auth not configured' })
+  const { email, password, userData } = req.body
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: 'Missing email or password' })
+  }
+  const { data, error } = await authSupabase.auth.admin.createUser({
+    email: email.trim().toLowerCase(),
+    password,
+    email_confirm: true,
+    user_metadata: userData || {},
+  })
+  if (error) {
+    if (error.message.includes('already been registered')) {
+      return res.json({ success: true, auth_id: null, alreadyExists: true })
+    }
+    return res.status(400).json({ success: false, error: error.message })
+  }
+  return res.json({ success: true, auth_id: data.user.id })
+}
+
+async function resetAuthPassword(req, res) {
+  if (!authSupabase) return res.status(500).json({ success: false, error: 'Auth not configured' })
+  const { email, newPassword, userId } = req.body
+  if (!newPassword) return res.status(400).json({ success: false, error: 'Missing password' })
+  let targetId = userId
+  if (!targetId) {
+    const { data: users, error } = await authSupabase.auth.admin.listUsers()
+    if (error) return res.status(400).json({ success: false, error: error.message })
+    const user = users.users.find(u => u.email === email?.trim()?.toLowerCase())
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' })
+    targetId = user.id
+  }
+  const { error } = await authSupabase.auth.admin.updateUserById(targetId, { password: newPassword })
+  if (error) return res.status(400).json({ success: false, error: error.message })
+  return res.json({ success: true })
+}
 
 // Start server
 app.listen(PORT, () => {

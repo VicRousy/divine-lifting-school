@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import bcrypt from 'bcryptjs'
+import { resetAuthPassword } from '../../services/authApi'
 
 const ROLES = [
   { key: 'student', label: 'Student', table: 'students', idField: 'id', searchFields: ['first_name', 'last_name', 'student_id', 'login_id'], nameField: ['first_name', 'last_name'] },
@@ -49,6 +50,16 @@ export default function ResetPassword({ showToast }) {
     setLoading(true)
 
     try {
+      // Reset in Supabase Auth if user has auth_id and email
+      if (user.auth_id && user.email) {
+        try {
+          await resetAuthPassword(user.email, tempPassword, user.auth_id)
+        } catch (authErr) {
+          console.error('Auth password reset error:', authErr)
+        }
+      }
+
+      // Update in local DB
       const hashed = await bcrypt.hash(tempPassword, 10)
       const updateData = { password: hashed }
       if (role.table === 'profiles' || role.table === 'teachers') {
