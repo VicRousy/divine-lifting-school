@@ -69,8 +69,8 @@ function App() {
   const initTimeout = useRef(null)
 
   useEffect(() => {
-    // Safety timeout: show Login after 8s if init hangs
-    initTimeout.current = setTimeout(() => setLoading(false), 8000)
+    // Safety timeout: show Login after 4s if init hangs
+    initTimeout.current = setTimeout(() => setLoading(false), 4000)
     return () => clearTimeout(initTimeout.current)
   }, [])
 
@@ -122,7 +122,10 @@ function App() {
 
     const init = async () => {
       try {
-        const { data: { session: authSession } } = await supabase.auth.getSession()
+        const authSession = await Promise.race([
+          supabase.auth.getSession().then(r => r.data?.session || null),
+          new Promise(res => setTimeout(() => res(null), 3000)),
+        ])
         if (authSession?.user) {
           await restoreSession(authSession.user)
           clearTimeout(initTimeout.current)
