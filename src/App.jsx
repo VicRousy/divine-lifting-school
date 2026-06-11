@@ -115,16 +115,19 @@ function App() {
     let mounted = true
     const init = async () => {
       try {
-        // Try to restore from Supabase Auth session
-        const { data: { session: authSession } } = await supabase.auth.getSession()
+        // Try to restore from Supabase Auth session (with 3s timeout)
+        const authSession = await Promise.race([
+          supabase.auth.getSession().then(r => r.data?.session ?? null),
+          new Promise(res => setTimeout(() => res(null), 3000)),
+        ])
         if (authSession?.user) {
           await restoreSession(authSession.user)
-          localStorage.removeItem('dls_session')
           if (mounted) setLoading(false)
           return
         }
 
-        // No Supabase Auth session — clear stale localStorage session
+        // No valid session — clear stale Supabase tokens
+        Object.keys(localStorage).filter(k => k.startsWith('sb-') || k === 'supabase.auth.token').forEach(k => localStorage.removeItem(k))
         localStorage.removeItem('dls_session')
       } catch (error) {
         console.error('Initialization error:', error)
