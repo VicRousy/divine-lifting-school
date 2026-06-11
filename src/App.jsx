@@ -6,8 +6,6 @@ import Toast from './components/Toast'
 import PasswordChangeModal from './components/PasswordChangeModal'
 import ReAuthModal from './components/ReAuthModal'
 
-const SESSION_DURATION_MS = 24 * 60 * 60 * 1000
-
 import ErrorBoundary from './components/Common/ErrorBoundary'
 import './styles/admin.css'
 import Sidebar from './components/Sidebar/Sidebar'
@@ -162,7 +160,6 @@ function App() {
     setUserInfo(userInfo)
     setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
     setLoading(false)
-    localStorage.setItem('dls_session', JSON.stringify(sessionData))
     showToast(`Welcome back! Logged in as ${role}`, 'success')
 
     const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
@@ -186,11 +183,9 @@ function App() {
   const doSwitchPortal = useCallback((mode) => {
     setUserRole(mode)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
-    const sessionData = { role: mode, userInfo, loginTime: new Date().toISOString() }
-    setSession(sessionData)
-    localStorage.setItem('dls_session', JSON.stringify(sessionData))
+    setSession(prev => ({ ...prev, role: mode }))
     showToast(`Switched to ${mode} portal`, 'success')
-  }, [userInfo])
+  }, [])
 
   const switchPortal = useCallback((mode) => {
     if (mode !== userRole) {
