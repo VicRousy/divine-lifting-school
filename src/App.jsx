@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
-import { supabase, lookupUserByAuthId, buildUserInfo } from './supabaseClient'
+import { supabase, lookupUserByAuthId, lookupUserByEmail, buildUserInfo } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
@@ -80,6 +80,7 @@ function App() {
 
   const restoreSession = useCallback(async (authUser) => {
     try {
+      localStorage.removeItem('dls_session')
       const result = await lookupUserByAuthId(authUser.id)
       if (result) {
         const { user, role } = result
@@ -88,7 +89,22 @@ function App() {
         setUserRole(role)
         setUserInfo(info)
         setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
+        return
       }
+      // If auth_id lookup fails, try email lookup
+      if (authUser.email) {
+        const emailResult = await lookupUserByEmail(authUser.email)
+        if (emailResult) {
+          const { user, role } = emailResult
+          const info = buildUserInfo(role, user)
+          setSession({ role, userInfo: info, loginTime: new Date().toISOString() })
+          setUserRole(role)
+          setUserInfo(info)
+          setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
+          return
+        }
+      }
+      console.warn('Session restore: user not found in any table')
     } catch (e) {
       console.error('Session restore error:', e)
     }
@@ -105,28 +121,16 @@ function App() {
         const { data: { session: authSession } } = await supabase.auth.getSession()
         if (authSession?.user) {
           await restoreSession(authSession.user)
+          localStorage.removeItem('dls_session')
           if (mounted) setLoading(false)
           return
         }
 
-        // Fallback: check localStorage (legacy)
-        const storedSession = localStorage.getItem('dls_session')
-        if (storedSession) {
-          const parsed = JSON.parse(storedSession)
-          const elapsed = Date.now() - new Date(parsed.loginTime).getTime()
-          if (elapsed < SESSION_DURATION_MS) {
-            if (mounted) {
-              setSession(parsed)
-              setUserRole(parsed.role)
-              setUserInfo(parsed.userInfo)
-              setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
-            }
-          } else {
-            localStorage.removeItem('dls_session')
-          }
-        }
+        // No Supabase Auth session — clear stale localStorage session
+        localStorage.removeItem('dls_session')
       } catch (error) {
         console.error('Initialization error:', error)
+        localStorage.removeItem('dls_session')
       } finally {
         if (mounted) setLoading(false)
       }
