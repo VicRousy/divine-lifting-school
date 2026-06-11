@@ -8,11 +8,14 @@ export default function ClassPromotion({ showToast }) {
   const [selectedClass, setSelectedClass] = useState('')
   const [targetClass, setTargetClass] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetchingStudents, setFetchingStudents] = useState(false)
+  const [fetchError, setFetchError] = useState('')
   const [selectedStudents, setSelectedStudents] = useState({})
 
   useEffect(() => {
     const fetchClasses = async () => {
-      const { data } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
+      const { data, error } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
+      if (error) showToast?.('Failed to load classes.', 'error')
       setClasses(data || [])
     }
     fetchClasses()
@@ -24,18 +27,26 @@ export default function ClassPromotion({ showToast }) {
       return
     }
     const fetchStudents = async () => {
-      const { data } = await safeQuery(() => supabase
+      setFetchingStudents(true)
+      setFetchError('')
+      const { data, error } = await safeQuery(() => supabase
         .from('students')
         .select('id, first_name, middle_name, last_name, class_id')
         .eq('class_id', selectedClass)
         .eq('is_active', true)
         .order('last_name'))
+      if (error) {
+        setFetchError('Failed to load students.')
+        setFetchingStudents(false)
+        return
+      }
       setStudents(data || [])
       const initial = {}
       for (const s of data || []) {
         initial[s.id] = true
       }
       setSelectedStudents(initial)
+      setFetchingStudents(false)
     }
     fetchStudents()
   }, [selectedClass])
@@ -138,7 +149,11 @@ export default function ClassPromotion({ showToast }) {
         </div>
       )}
 
-      {selectedClass && students.length > 0 ? (
+      {selectedClass && fetchingStudents ? (
+        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading students...</div>
+      ) : selectedClass && fetchError ? (
+        <div style={{ padding: 40, textAlign: 'center', color: '#ef4444', background: 'rgba(239,68,68,0.1)', borderRadius: 14 }}>{fetchError}</div>
+      ) : selectedClass && students.length > 0 ? (
         <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ padding: '10px 20px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{students.length} student(s) in class</span>

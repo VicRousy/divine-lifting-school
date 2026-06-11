@@ -31,7 +31,7 @@ export default function StudentPortal({ userInfo, onLogout }) {
     try {
       const studentId = userInfo.studentId || userInfo.id
       const [{ data: student }, { data: gradesData }, { data: attendanceData }, { data: homeworkData }, { data: feesData }, { data: termsData }] = await Promise.all([
-        supabase.from('students').select('*, classes(class_name)').eq('id', studentId).single(),
+        supabase.from('students').select('*, classes(class_name)').eq('id', studentId).maybeSingle(),
         supabase.from('exam_scores').select('*, subjects(subject_name)').eq('student_id', studentId).eq('approval_status', 'approved').order('created_at', { ascending: false }),
         supabase.from('attendance').select('*').eq('student_id', studentId).order('date', { ascending: false }).limit(30),
         supabase.from('homeworks').select('*').order('created_at', { ascending: false }),

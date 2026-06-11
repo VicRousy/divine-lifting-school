@@ -8,14 +8,17 @@ function TeacherList({ refreshTrigger, showToast }) {
   const [showModal, setShowModal] = useState(false)
   const [targetTeacher, setTargetTeacher] = useState(null) // Track full teacher object
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
 
   const fetchTeachers = async () => {
     try {
       setLoading(true)
+      setFetchError('')
       const { data, error } = await supabase.from('teachers').select('*')
       if (error) throw error
       setTeachers(data || [])
     } catch (err) {
+      setFetchError('Failed to load staff records.')
     } finally {
       setLoading(false)
     }
@@ -46,6 +49,8 @@ function TeacherList({ refreshTrigger, showToast }) {
 
   if (loading) return <p className="text-dim" style={{ padding: '20px' }}>Loading staff records...</p>
 
+  if (fetchError) return <p style={{ padding: '20px', color: '#ef4444', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>{fetchError}</p>
+
   return (
     <div className="admin-table-container">
       <input 
@@ -55,28 +60,34 @@ function TeacherList({ refreshTrigger, showToast }) {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th scope="col">Full Name</th>
-            <th scope="col">Middle Name</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredTeachers.map(t => (
-            <tr key={t.id}>
-              <td>{t.first_name} {t.last_name}</td>
-              <td className="text-dim">{t.middle_name || '-'}</td>
-              <td className="action-group">
-                <button className="btn-delete" onClick={() => handleDeleteClick(t)}>
-                  Delete
-                </button>
-              </td>
+      {filteredTeachers.length === 0 ? (
+        <p className="text-dim" style={{ padding: '20px', textAlign: 'center' }}>
+          {searchTerm ? 'No staff match your search.' : 'No staff records found.'}
+        </p>
+      ) : (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Full Name</th>
+              <th scope="col">Middle Name</th>
+              <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredTeachers.map(t => (
+              <tr key={t.id}>
+                <td>{t.first_name} {t.last_name}</td>
+                <td className="text-dim">{t.middle_name || '-'}</td>
+                <td className="action-group">
+                  <button className="btn-delete" onClick={() => handleDeleteClick(t)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {/* NEW UPDATED DELETE CONFIRMATION */}
       <ConfirmModal 

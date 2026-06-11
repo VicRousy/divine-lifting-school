@@ -49,6 +49,10 @@ const StudentPortal = lazy(() => import('./components/StudentPortal/StudentPorta
 const SchoolSettings = lazy(() => import('./components/Settings/SchoolSettings'))
 const ResetPassword = lazy(() => import('./components/Admin/ResetPassword'))
 
+function TabErrorBoundary({ children }) {
+  return <ErrorBoundary>{children}</ErrorBoundary>
+}
+
 function App() {
   const [session, setSession] = useState(null)
   const [userRole, setUserRole] = useState(null)
@@ -248,7 +252,6 @@ function App() {
         />
 
         {/* CONTENT AREA */}
-        <ErrorBoundary>
         <div className="main-content" ref={contentRef} tabIndex={-1} style={{ flex: 1, padding: '30px' }}>
           
           {/* Search and Actions Bar (Only on Admin Dashboard) */}
@@ -267,59 +270,60 @@ function App() {
           {userRole === 'admin' && (
             <>
               {activeTab === 'overview' && (
-                <div>
-                  <p className="text-dim" style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
-                  <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActiveTab} />
-                  <RecentActivity refreshTrigger={refreshTrigger} />
-                </div>
+                <TabErrorBoundary key="overview">
+                  <div>
+                    <p className="text-dim" style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
+                    <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActiveTab} />
+                    <RecentActivity refreshTrigger={refreshTrigger} />
+                  </div>
+                </TabErrorBoundary>
               )}
-              {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
-              {activeTab === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
-              {activeTab === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
-              {activeTab === 'import' && <BulkImport showToast={showToast} />}
+              {activeTab === 'teachers' && <TabErrorBoundary key="teachers"><AddTeacher onAdd={refreshData} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'classes' && <TabErrorBoundary key="classes"><AddClass onAdd={refreshData} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'students' && <TabErrorBoundary key="students"><AddStudent onAdd={refreshData} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'import' && <TabErrorBoundary key="import"><BulkImport showToast={showToast} /></TabErrorBoundary>}
               {activeTab === 'student-list' && (
-                selectedStudentProfile ? (
-                  <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
-                ) : (
-                  <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onSelectStudent={setSelectedStudentProfile} showToast={showToast} />
-                )
+                <TabErrorBoundary key="student-list">
+                  {selectedStudentProfile ? (
+                    <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
+                  ) : (
+                    <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onSelectStudent={setSelectedStudentProfile} showToast={showToast} />
+                  )}
+                </TabErrorBoundary>
               )}
-              {activeTab === 'teacher-list' && <TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
-              {activeTab === 'class-list' && <ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
-              {activeTab === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
-              {activeTab === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
-              {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
-              {activeTab === 'approval' && <GradeApproval showToast={showToast} />}
-              {activeTab === 'reports' && <ReportCards showToast={showToast} />}
-              {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
-              {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
-              {activeTab === 'reset-password' && <ResetPassword showToast={showToast} />}
-              {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
-              {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
-              {activeTab === 'applications' && <Applications showToast={showToast} />}
-              {activeTab === 'post-news' && <PostNews showToast={showToast} />}
-              {activeTab === 'manage-news' && <ManageNews showToast={showToast} />}
-              
-              {/* Placeholders */}
-              {activeTab === 'promote' && <ClassPromotion showToast={showToast} />}
-              {activeTab === 'scale' && <GradeScale showToast={showToast} />}
+              {activeTab === 'teacher-list' && <TabErrorBoundary key="teacher-list"><TeacherList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'class-list' && <TabErrorBoundary key="class-list"><ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'subjects' && <TabErrorBoundary key="subjects"><SubjectList refreshTrigger={refreshTrigger} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'assignments' && <TabErrorBoundary key="assignments"><TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'score-entry' && <TabErrorBoundary key="score-entry"><ScoreEntry showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'approval' && <TabErrorBoundary key="approval"><GradeApproval showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'reports' && <TabErrorBoundary key="reports"><ReportCards showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'fees' && <TabErrorBoundary key="fees"><FeeManagement showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'settings' && <TabErrorBoundary key="settings"><SchoolSettings showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'reset-password' && <TabErrorBoundary key="reset-password"><ResetPassword showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'announcements' && <TabErrorBoundary key="announcements"><AdminAnnouncements showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'contact-messages' && <TabErrorBoundary key="contact-messages"><ContactMessages showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'applications' && <TabErrorBoundary key="applications"><Applications showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'post-news' && <TabErrorBoundary key="post-news"><PostNews showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'manage-news' && <TabErrorBoundary key="manage-news"><ManageNews showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'promote' && <TabErrorBoundary key="promote"><ClassPromotion showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'scale' && <TabErrorBoundary key="scale"><GradeScale showToast={showToast} /></TabErrorBoundary>}
             </>
           )}
 
           {userRole === 'teacher' && (
             <>
-              {activeTab === 'teacher-dashboard' && <TeacherDashboard user={userInfo} teacherId={userInfo?.id} onNavigate={setActiveTab} />}
-              {activeTab === 'scores' && <TeacherGradebook teacherId={userInfo?.id} showToast={showToast} />}
-              {activeTab === 'quick-attendance' && <QuickAttendance teacherId={userInfo?.id} showToast={showToast} />}
-              {activeTab === 'roster' && <ClassRoster teacherId={userInfo?.id} />}
-              {activeTab === 'teacher-attendance' && <AttendanceMarking teacherId={userInfo?.id} showToast={showToast} />}
-              {activeTab === 'homework' && <HomeworkManager teacherId={userInfo?.id} showToast={showToast} />}
-              {activeTab === 'teacher-comms' && <TeacherComms />}
+              {activeTab === 'teacher-dashboard' && <TabErrorBoundary key="teacher-dashboard"><TeacherDashboard user={userInfo} teacherId={userInfo?.id} onNavigate={setActiveTab} /></TabErrorBoundary>}
+              {activeTab === 'scores' && <TabErrorBoundary key="scores"><TeacherGradebook teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'quick-attendance' && <TabErrorBoundary key="quick-attendance"><QuickAttendance teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'roster' && <TabErrorBoundary key="roster"><ClassRoster teacherId={userInfo?.id} /></TabErrorBoundary>}
+              {activeTab === 'teacher-attendance' && <TabErrorBoundary key="teacher-attendance"><AttendanceMarking teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'homework' && <TabErrorBoundary key="homework"><HomeworkManager teacherId={userInfo?.id} showToast={showToast} /></TabErrorBoundary>}
+              {activeTab === 'teacher-comms' && <TabErrorBoundary key="teacher-comms"><TeacherComms /></TabErrorBoundary>}
             </>
           )}
           </Suspense>
         </div>
-        </ErrorBoundary>
       </main>
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
