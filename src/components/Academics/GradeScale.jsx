@@ -30,7 +30,9 @@ export default function GradeScale({ showToast }) {
           setScale(data.scale)
           return
         }
-      } catch {}
+      } catch {
+        showToast?.('Failed to load grade scale from database.', 'error')
+      }
       const local = localStorage.getItem('dls_grade_scale')
       if (local) {
         try { setScale(JSON.parse(local)); return } catch {} 

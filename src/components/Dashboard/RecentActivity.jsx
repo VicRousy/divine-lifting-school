@@ -4,6 +4,7 @@ import { supabase } from '../../supabaseClient'
 function RecentActivity({ refreshTrigger }) {
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const fetchGlobalActivity = async () => {
     setLoading(true)
@@ -22,6 +23,7 @@ function RecentActivity({ refreshTrigger }) {
 
       setActivities(combined.slice(0, 5)) // Keep top 5 latest overall
     } catch (err) {
+      setError('Failed to load recent activity.')
     } finally {
       setLoading(false)
     }
@@ -54,6 +56,8 @@ function RecentActivity({ refreshTrigger }) {
       
       {loading ? (
         <p className="text-dim">Fetching updates...</p>
+      ) : error ? (
+        <p style={{ color: '#ef4444', padding: '12px 15px', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>{error}</p>
       ) : (
         activities.map((act, index) => (
           <div key={index} className="counter" style={{ 

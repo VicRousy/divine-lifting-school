@@ -38,7 +38,8 @@ export default function HomeworkManager({ teacherId, showToast }) {
 
   const fetchHomeworks = async () => {
     setLoading(true);
-    const { data } = await safeQuery(() => supabase.from("homeworks").select("*").order("created_at", { ascending: false }));
+    const { data, error } = await safeQuery(() => supabase.from("homeworks").select("*").order("created_at", { ascending: false }));
+    if (error) showToast?.("Failed to load homework.", "error");
     setHomeworks(data || []);
     setLoading(false);
   };

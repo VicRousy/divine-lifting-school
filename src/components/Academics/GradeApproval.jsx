@@ -6,6 +6,7 @@ import { getGradeInfo } from '../../utils/gradeUtils'
 export default function GradeApproval({ showToast }) {
   const [submissions, setSubmissions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
   const [filter, setFilter] = useState('pending')
   const [selectedSubmission, setSelectedSubmission] = useState(null)
   const [rejectionReason, setRejectionReason] = useState('')
@@ -16,7 +17,8 @@ export default function GradeApproval({ showToast }) {
 
   const loadSubmissions = async () => {
     setLoading(true)
-    const { data } = await safeQuery(() => supabase
+    setFetchError('')
+    const { data, error } = await safeQuery(() => supabase
       .from('exam_scores')
       .select(`
         *,
@@ -25,6 +27,12 @@ export default function GradeApproval({ showToast }) {
         classes(id, class_name)
       `)
       .order('created_at', { ascending: false }))
+    if (error) {
+      setFetchError('Failed to load submissions.')
+      setSubmissions([])
+      setLoading(false)
+      return
+    }
     const enriched = (data || []).map((row) => {
       const total = Number(row.ca1_score || 0) + Number(row.ca2_score || 0) + Number(row.exam_score || 0)
       return { ...row, total_score: total }
@@ -77,6 +85,7 @@ export default function GradeApproval({ showToast }) {
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading submissions...</div>
+  if (fetchError) return <div style={{ padding: 40, textAlign: 'center', color: '#ef4444', background: 'rgba(239,68,68,0.1)', borderRadius: 8, margin: 30 }}>{fetchError}</div>
 
   return (
     <div style={{ padding: 30 }}>
