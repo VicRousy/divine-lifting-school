@@ -9,8 +9,6 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
   const [subjects, setSubjects] = useState([])
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(false)
-  const [fetchError, setFetchError] = useState('')
-  const [fetching, setFetching] = useState(true)
   
   const [showConfirm, setShowConfirm] = useState(false)
   const [targetAssignment, setTargetAssignment] = useState(null)
@@ -18,26 +16,21 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
   const [formData, setFormData] = useState({ teacher_id: '', class_id: '', subject_id: '' })
 
   const fetchData = async () => {
-    setFetching(true)
-    setFetchError('')
-    const { data: t, error: te } = await safeQuery(() => supabase.from('teachers').select('id, first_name, last_name'))
-    const { data: c, error: ce } = await safeQuery(() => supabase.from('classes').select('id, class_name'))
-    const { data: s, error: se } = await safeQuery(() => supabase.from('subjects').select('id, subject_name'))
+    const { data: t } = await safeQuery(() => supabase.from('teachers').select('id, first_name, last_name'))
+    const { data: c } = await safeQuery(() => supabase.from('classes').select('id, class_name'))
+    const { data: s } = await safeQuery(() => supabase.from('subjects').select('id, subject_name'))
     
-    const { data: a, error: ae } = await safeQuery(() => supabase.from('teacher_assignments').select(`
+    const { data: a } = await safeQuery(() => supabase.from('teacher_assignments').select(`
       id,
       teachers (first_name, last_name),
       classes (class_name),
       subjects (subject_name)
     `))
 
-    if (te || ce || se || ae) setFetchError('Failed to load data.')
-
     setTeachers(t || [])
     setClasses(c || [])
     setSubjects(s || [])
     setAssignments(a || [])
-    setFetching(false)
   }
 
   useEffect(() => { fetchData() }, [refreshTrigger])
@@ -126,44 +119,36 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
         </button>
       </div>
 
-      {fetching ? (
-        <p className="text-dim" style={{ padding: '20px', textAlign: 'center' }}>Loading assignments...</p>
-      ) : fetchError ? (
-        <p style={{ padding: '20px', textAlign: 'center', color: '#ef4444', background: 'rgba(239,68,68,0.1)', borderRadius: 8 }}>{fetchError}</p>
-      ) : assignments.length === 0 ? (
-        <p className="text-dim" style={{ padding: '20px', textAlign: 'center' }}>No assignments yet. Use the form above to assign a role.</p>
-      ) : (
-        <table className="admin-table">
-          <thead>
-            <tr style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
-              <th scope="col">Staff Member</th>
-              <th scope="col">Assigned Class</th>
-              <th scope="col">Subject</th>
-              <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
+      <table className="admin-table">
+        <thead>
+          <tr style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
+            <th scope="col">Staff Member</th>
+            <th scope="col">Assigned Class</th>
+            <th scope="col">Subject</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assignments.map((asgn) => (
+            <tr key={asgn.id}>
+              <td style={{ fontWeight: '600' }}>
+                {asgn.teachers?.first_name} {asgn.teachers?.last_name}
+              </td>
+              <td><span className="text-accent">{asgn.classes?.class_name}</span></td>
+              <td className="text-dim">{asgn.subjects?.subject_name}</td>
+              <td style={{ textAlign: 'right' }}>
+                <button 
+                  className="btn-delete" 
+                  onClick={() => initiateRemove(asgn)}
+                  style={{ padding: '5px 15px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
+                >
+                  Remove
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {assignments.map((asgn) => (
-              <tr key={asgn.id}>
-                <td style={{ fontWeight: '600' }}>
-                  {asgn.teachers?.first_name} {asgn.teachers?.last_name}
-                </td>
-                <td><span className="text-accent">{asgn.classes?.class_name}</span></td>
-                <td className="text-dim">{asgn.subjects?.subject_name}</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button 
-                    className="btn-delete" 
-                    onClick={() => initiateRemove(asgn)}
-                    style={{ padding: '5px 15px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
 
       <ConfirmModal 
         isOpen={showConfirm}

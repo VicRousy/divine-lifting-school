@@ -17,38 +17,26 @@ export default function FeeManagement({ showToast }) {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [fetchingStudents, setFetchingStudents] = useState(false)
   const [view, setView] = useState('record')
   const [dirty, setDirty] = useState(false)
   useUnsavedChanges(dirty)
 
   useEffect(() => {
     const setup = async () => {
-      const { data: cls, error } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
-      if (error) showToast?.('Failed to load classes.', 'error')
+      const { data: cls } = await safeQuery(() => supabase.from('classes').select('id, class_name').order('class_name'))
       setClasses(cls || [])
     }
     setup()
   }, [])
 
   useEffect(() => {
-    if (!selectedClass) {
-      setStudents([])
-      setSelectedStudent('')
-      return
-    }
-    const abortController = new AbortController()
-    const fetchStudents = async () => {
-      setFetchingStudents(true)
-      setSelectedStudent('')
-      const { data } = await safeQuery(() => supabase.from('students').select('id, first_name, middle_name, last_name, student_id').eq('class_id', selectedClass).eq('is_active', true).order('last_name'))
-      if (!abortController.signal.aborted) {
+    if (selectedClass) {
+      const fetchStudents = async () => {
+        const { data } = await safeQuery(() => supabase.from('students').select('id, first_name, middle_name, last_name, student_id').eq('class_id', selectedClass).eq('is_active', true).order('last_name'))
         setStudents(data || [])
-        setFetchingStudents(false)
       }
+      fetchStudents()
     }
-    fetchStudents()
-    return () => abortController.abort()
   }, [selectedClass])
 
   useEffect(() => {
@@ -91,10 +79,10 @@ export default function FeeManagement({ showToast }) {
         showToast?.('Sending invoice email...', 'info')
         
         // Fetch parent email
-        const { data: studentData } = await supabase.from('students').select('parent_id').eq('id', Number(selectedStudent)).maybeSingle()
+        const { data: studentData } = await supabase.from('students').select('parent_id').eq('id', Number(selectedStudent)).single()
         let parentEmail = null
         if (studentData?.parent_id) {
-          const { data: parentData } = await supabase.from('parents').select('email').eq('id', studentData.parent_id).maybeSingle()
+          const { data: parentData } = await supabase.from('parents').select('email').eq('id', studentData.parent_id).single()
           parentEmail = parentData?.email
         }
 
@@ -178,7 +166,7 @@ export default function FeeManagement({ showToast }) {
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: 6 }}>Student</label>
                 <select value={selectedStudent} onChange={(e) => { setSelectedStudent(e.target.value); setDirty(true) }} required style={{ width: '100%', padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none' }}>
-                  <option value="">{fetchingStudents ? 'Loading...' : selectedClass ? 'Select student' : 'Select a class first'}</option>
+                  <option value="">Select student</option>
                   {students.map((s) => (<option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>))}
                 </select>
               </div>

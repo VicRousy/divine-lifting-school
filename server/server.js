@@ -1,60 +1,19 @@
-import 'dotenv/config'
+import process from 'node:process';
+import 'dotenv/config';
+import { config } from 'dotenv';
 import express from 'express';
 import nodemailer from 'nodemailer';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import cors from 'cors';
 
-function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
-}
-
-const ALLOWED_ORIGINS = [
-  'https://divine-lifting-school.vercel.app',
-  'https://divine-lifting-website.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3001',
-]
-
-const RATE_LIMIT = {}
-const RATE_WINDOW = 60000
-const MAX_PER_WINDOW = 20
+// Load environment variables
+config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-
-// Origin validation
-app.use((req, res, next) => {
-  const origin = req.headers.origin || req.headers.referer || ''
-  if (origin && !ALLOWED_ORIGINS.some(a => origin.startsWith(a) && origin.length === a.length)) {
-    return res.status(403).json({ error: 'Forbidden' })
-  }
-  next()
-})
-
-// Rate limiting
-app.use((req, res, next) => {
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
-  const now = Date.now()
-  if (RATE_LIMIT[ip] && RATE_LIMIT[ip].length >= MAX_PER_WINDOW && RATE_LIMIT[ip][0] > now - RATE_WINDOW) {
-    return res.status(429).json({ error: 'Too many requests' })
-  }
-  if (!RATE_LIMIT[ip]) RATE_LIMIT[ip] = []
-  RATE_LIMIT[ip].push(now)
-  RATE_LIMIT[ip] = RATE_LIMIT[ip].filter(t => t > now - RATE_WINDOW)
-  next()
-})
-
-// API key check for email endpoints
-app.use('/api/email', (req, res, next) => {
-  const key = req.headers['x-api-key']
-  if (!key || key !== process.env.EMAIL_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  next()
-})
+app.use(cors()); 
+app.use(express.json()); 
 
 // Create Gmail transporter
 const transporter = nodemailer.createTransport({
@@ -109,18 +68,18 @@ app.post('/api/send-welcome-email', async (req, res) => {
     accountTypeText = 'Parent';
     detailsHtml = `
       <div class="credentials">
-        ${parentName ? `<div class="credential-row"><span class="label">Parent Name:</span><span class="value">${esc(parentName)}</span></div>` : ''}
-        <div class="credential-row"><span class="label">Login ID:</span><span class="value">${esc(uniqueId)}</span></div>
-        <div class="credential-row"><span class="label">Password:</span><span class="value">${esc(password)}</span></div>
-        ${studentName ? `<div class="credential-row"><span class="label">Linked Student:</span><span class="value">${esc(studentName)}</span></div>` : ''}
+        ${parentName ? `<div class="credential-row"><span class="label">Parent Name:</span><span class="value">${parentName}</span></div>` : ''}
+        <div class="credential-row"><span class="label">Login ID:</span><span class="value">${uniqueId}</span></div>
+        <div class="credential-row"><span class="label">Password:</span><span class="value">${password}</span></div>
+        ${studentName ? `<div class="credential-row"><span class="label">Linked Student:</span><span class="value">${studentName}</span></div>` : ''}
       </div>
     `;
   } else {
     accountTypeText = accountType === 'admin' ? 'Administrator' : accountType === 'teacher' ? 'Teacher' : 'Student';
     detailsHtml = `
       <div class="credentials">
-        <div class="credential-row"><span class="label">Login ID:</span><span class="value">${esc(uniqueId)}</span></div>
-        <div class="credential-row"><span class="label">Password:</span><span class="value">${esc(password)}</span></div>
+        <div class="credential-row"><span class="label">Login ID:</span><span class="value">${uniqueId}</span></div>
+        <div class="credential-row"><span class="label">Password:</span><span class="value">${password}</span></div>
       </div>
     `;
   }
@@ -128,7 +87,7 @@ app.post('/api/send-welcome-email', async (req, res) => {
   const mailOptions = {
     from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
     to: userEmail,
-    subject: `Welcome to Divine Lifting School - Your ${esc(accountTypeText)} Credentials`,
+    subject: `Welcome to Divine Lifting School - Your ${accountTypeText} Credentials`,
     html: `
     <!DOCTYPE html>
     <html>
@@ -159,14 +118,14 @@ app.post('/api/send-welcome-email', async (req, res) => {
         </div>
         
         <div class="content">
-          <h2>Account Created Successfully!</h2>
+          <h2>Account Created Successfully! 🎉</h2>
           
-          <p>Your <strong>${esc(accountTypeText)}</strong> account has been created. Below are your login credentials:</p>
+          <p>Your <strong>${accountTypeText}</strong> account has been created. Below are your login credentials:</p>
           
           ${detailsHtml}
           
           <div class="warning">
-            <strong>Important Security Notice:</strong><br>
+            <strong>⚠️ Important Security Notice:</strong><br>
             Please keep these credentials confidential. We strongly recommend changing your password after your first login.
           </div>
           
@@ -233,8 +192,8 @@ app.post('/api/send-verification-email', async (req, res) => {
         <div class="content">
           <h2 style="color: #0f172a; margin-top: 0;">Verify Your Email Address</h2>
           <p style="color: #64748b;">Enter this 6-digit code to activate your admin account:</p>
-          <div class="code-box">${esc(code)}</div>
-          <p class="info"><strong>Login ID:</strong> ${esc(loginId)}</p>
+          <div class="code-box">${code}</div>
+          <p class="info"><strong>Login ID:</strong> ${loginId}</p>
           <p class="info">This code expires in 15 minutes. If you didn't request this, please ignore this email.</p>
           <div class="footer">
             <p><strong>Divine Lifting School</strong></p>
@@ -271,7 +230,7 @@ app.post('/api/send-announcement-email', async (req, res) => {
   const mailOptions = {
     from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
     to: recipients.join(', '),
-    subject: `New Announcement: ${esc(title)}`,
+    subject: `📢 New Announcement: ${title}`,
     html: `
     <!DOCTYPE html>
     <html>
@@ -295,9 +254,9 @@ app.post('/api/send-announcement-email', async (req, res) => {
           <p>New Announcement</p>
         </div>
         <div class="content">
-          <span class="audience-badge">For: ${esc(audience)}</span>
-          <h2>${esc(title)}</h2>
-          <div class="message">${esc(body)}</div>
+          <span class="audience-badge">For: ${audience}</span>
+          <h2>${title}</h2>
+          <div class="message">${body}</div>
           <div class="footer">
             <p><strong>Divine Lifting School</strong></p>
             <p>Ikorodu, Lagos, Nigeria</p>
@@ -330,7 +289,7 @@ app.post('/api/send-fee-invoice', async (req, res) => {
   const mailOptions = {
     from: `Divine Lifting School <${process.env.GMAIL_USER}>`,
     to: recipient,
-    subject: `Fee Invoice: ${esc(feeType)} for ${esc(studentName)}`,
+    subject: `Fee Invoice: ${feeType} for ${studentName}`,
     html: `
     <!DOCTYPE html>
     <html>
@@ -358,16 +317,16 @@ app.post('/api/send-fee-invoice', async (req, res) => {
         </div>
         <div class="content">
           <p>Dear Parent/Guardian,</p>
-          <p>This is an invoice for <strong>${esc(studentName)}</strong>.</p>
+          <p>This is an invoice for <strong>${studentName}</strong>.</p>
           
           <div class="invoice-box">
             <div class="invoice-row">
               <span class="invoice-label">Fee Type:</span>
-              <span class="invoice-value">${esc(feeType)}</span>
+              <span class="invoice-value">${feeType}</span>
             </div>
             <div class="invoice-row">
               <span class="invoice-label">Student:</span>
-              <span class="invoice-value">${esc(studentName)}</span>
+              <span class="invoice-value">${studentName}</span>
             </div>
             <div class="amount">₦${Number(amount).toLocaleString()}</div>
             <div class="due-date">Due Date: ${new Date(dueDate).toLocaleDateString()}</div>
@@ -409,12 +368,12 @@ app.post('/api/send-application-decision', async (req, res) => {
   const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const subject = isAccepted
-    ? `Admission Accepted - ${esc(studentName)} - Divine Lifting School`
-    : `Application Update - ${esc(studentName)} - Divine Lifting School`;
+    ? `Admission Accepted - ${studentName} - Divine Lifting School`
+    : `Application Update - ${studentName} - Divine Lifting School`;
 
   const bodyContent = isAccepted ? `
-    <p>We are pleased to inform you that <strong>${esc(studentName)}</strong> has been <span style="color:#10b981;font-weight:700;">accepted</span> into <strong>${esc(className || 'our school')}</strong> at <strong>Divine Lifting International School</strong>.</p>
-    <p>Application Number: <strong>${esc(applicationNumber)}</strong></p>
+    <p>We are pleased to inform you that <strong>${studentName}</strong> has been <span style="color:#10b981;font-weight:700;">accepted</span> into <strong>${className || 'our school'}</strong> at <strong>Divine Lifting International School</strong>.</p>
+    <p>Application Number: <strong>${applicationNumber}</strong></p>
     <div class="info-box">
       <p style="margin:0;font-weight:700;color:#1e293b;">Next Steps:</p>
       <ol style="margin:8px 0 0;padding-left:20px;color:#475569;">
@@ -427,12 +386,12 @@ app.post('/api/send-application-decision', async (req, res) => {
     <p>For any questions regarding the admission process, please contact the school office.</p>
   ` : `
     <p>Thank you for your interest in <strong>Divine Lifting International School</strong>.</p>
-    <p>After careful review of the application for <strong>${esc(studentName)}</strong> (Application #${esc(applicationNumber)}) for <strong>${esc(className || 'admission')}</strong>, we regret to inform you that your application has <span style="color:#ef4444;font-weight:700;">not been successful</span> at this time.</p>
+    <p>After careful review of the application for <strong>${studentName}</strong> (Application #${applicationNumber}) for <strong>${className || 'admission'}</strong>, we regret to inform you that your application has <span style="color:#ef4444;font-weight:700;">not been successful</span> at this time.</p>
     <p>We appreciate the time you took to apply and encourage you to consider applying again in the future.</p>
   `;
 
   const mailOptions = {
-    from: `Divine Lifting International School <${esc(schoolEmail)}>`,
+    from: `Divine Lifting International School <${schoolEmail}>`,
     to: recipient,
     subject,
     html: `<!DOCTYPE html><html><head><style>
@@ -452,7 +411,7 @@ app.post('/api/send-application-decision', async (req, res) => {
           <p>${isAccepted ? 'Admission Accepted' : 'Application Decision'}</p>
         </div>
         <div class="content">
-          <p style="color:#64748b;font-size:13px;">Date: ${esc(date)}</p>
+          <p style="color:#64748b;font-size:13px;">Date: ${date}</p>
           <p>Dear Parent/Guardian,</p>
           ${bodyContent}
           <p>Yours sincerely,</p>
@@ -462,7 +421,7 @@ app.post('/api/send-application-decision', async (req, res) => {
           <div class="footer">
             <p style="margin:0 0 4px;"><strong>Divine Lifting International School</strong></p>
             <p style="margin:0 0 2px;">Ikorodu, Lagos, Nigeria</p>
-            <p style="margin:0;">Email: ${esc(schoolEmail)}</p>
+            <p style="margin:0;">Email: ${schoolEmail}</p>
           </div>
         </div>
       </div>
@@ -476,64 +435,6 @@ app.post('/api/send-application-decision', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
-// ============ AUTH ENDPOINTS ============
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_KEY
-const authSupabase = supabaseUrl && serviceKey ? createSupabaseClient(supabaseUrl, serviceKey) : null
-
-app.post('/api/auth', async (req, res) => {
-  const { type } = req.body
-  try {
-    switch (type) {
-      case 'create-user': return await createAuthUser(req, res)
-      case 'reset-password': return await resetAuthPassword(req, res)
-      default: return res.status(400).json({ error: 'Invalid auth type' })
-    }
-  } catch (error) {
-    console.error(`Auth error [${type}]:`, error)
-    return res.status(500).json({ success: false, error: error.message })
-  }
-})
-
-async function createAuthUser(req, res) {
-  if (!authSupabase) return res.status(500).json({ success: false, error: 'Auth not configured' })
-  const { email, password, userData } = req.body
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Missing email or password' })
-  }
-  const { data, error } = await authSupabase.auth.admin.createUser({
-    email: email.trim().toLowerCase(),
-    password,
-    email_confirm: true,
-    user_metadata: userData || {},
-  })
-  if (error) {
-    if (error.message.includes('already been registered')) {
-      return res.json({ success: true, auth_id: null, alreadyExists: true })
-    }
-    return res.status(400).json({ success: false, error: error.message })
-  }
-  return res.json({ success: true, auth_id: data.user.id })
-}
-
-async function resetAuthPassword(req, res) {
-  if (!authSupabase) return res.status(500).json({ success: false, error: 'Auth not configured' })
-  const { email, newPassword, userId } = req.body
-  if (!newPassword) return res.status(400).json({ success: false, error: 'Missing password' })
-  let targetId = userId
-  if (!targetId) {
-    const { data: users, error } = await authSupabase.auth.admin.listUsers()
-    if (error) return res.status(400).json({ success: false, error: error.message })
-    const user = users.users.find(u => u.email === email?.trim()?.toLowerCase())
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' })
-    targetId = user.id
-  }
-  const { error } = await authSupabase.auth.admin.updateUserById(targetId, { password: newPassword })
-  if (error) return res.status(400).json({ success: false, error: error.message })
-  return res.json({ success: true })
-}
 
 // Start server
 app.listen(PORT, () => {

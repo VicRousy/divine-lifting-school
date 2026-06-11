@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { CardSkeleton } from '../Common/Skeleton'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'

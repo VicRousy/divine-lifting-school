@@ -59,42 +59,36 @@ function ClassList({ refreshTrigger, showToast }) { // Added showToast to props
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {filteredClasses.length === 0 ? (
-        <p className="text-dim" style={{ padding: '20px', textAlign: 'center' }}>
-          {searchTerm ? 'No classes match your search.' : 'No classes found.'}
-        </p>
-      ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th scope="col">Class Name</th>
-              <th scope="col">Status</th>
-              <th scope="col">Tuition Fee</th>
-              <th scope="col" style={{ textAlign: 'right' }}>Action</th>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th scope="col">Class Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">Tuition Fee</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredClasses.map(c => (
+            <tr key={c.id}>
+              <td>{c.class_name}</td>
+              <td className="text-accent">Active</td>
+              <td style={{ color: '#38bdf8', fontWeight: '500' }}>
+                ₦{Number(c.base_fee || 0).toLocaleString()}
+              </td>
+              <td className="action-group" style={{ textAlign: 'right' }}>
+                <button 
+                  className="btn-delete" 
+                  style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                  onClick={() => handleDeleteClick(c)}
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {filteredClasses.map(c => (
-              <tr key={c.id}>
-                <td>{c.class_name}</td>
-                <td className="text-accent">Active</td>
-                <td style={{ color: '#38bdf8', fontWeight: '500' }}>
-                  ₦{Number(c.base_fee || 0).toLocaleString()}
-                </td>
-                <td className="action-group" style={{ textAlign: 'right' }}>
-                  <button 
-                    className="btn-delete" 
-                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-                    onClick={() => handleDeleteClick(c)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
 
       <ConfirmModal 
         isOpen={showModal}
