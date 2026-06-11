@@ -13,39 +13,70 @@ export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified
     setError('')
     setLoading(true)
     try {
-      // Try Supabase Auth re-authentication first (works regardless of role switch)
-      const session = await supabase.auth.getSession()
-      const authUser = session?.data?.session?.user
-
-      if (authUser?.email) {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email: authUser.email,
-          password,
-        })
-        if (!signInErr) {
-          onVerified()
-          return
+      // Strategy 1: Lookup by login_id (stable across portal switches)
+      if (userInfo?.loginId) {
+        const tables = ['profiles', 'teachers', 'students', 'parents']
+        for (const table of tables) {
+          const { data, error: dbErr } = await supabase
+            .from(table)
+            .select('password')
+            .eq('login_id', userInfo.loginId)
+            .maybeSingle()
+          if (!dbErr && data) {
+            const valid = data.password === password || await bcrypt.compare(password, data.password)
+            if (valid) {
+              onVerified()
+              setLoading(false)
+              return
+            }
+          }
         }
       }
 
-      // Fallback: check via user's original table
+      // Strategy 2: Lookup by auth_id from current session
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const authId = authSession?.user?.id
+      if (authId) {
+        const tables = ['profiles', 'teachers', 'students', 'parents']
+        for (const table of tables) {
+          const { data, error: dbErr } = await supabase
+            .from(table)
+            .select('password')
+            .eq('auth_id', authId)
+            .maybeSingle()
+          if (!dbErr && data) {
+            const valid = data.password === password || await bcrypt.compare(password, data.password)
+            if (valid) {
+              onVerified()
+              setLoading(false)
+              return
+            }
+          }
+        }
+      }
+
+      // Strategy 3: Legacy fallback by id
       const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
       const table = TABLE_MAP[userRole]
-      if (!table) throw new Error('Invalid role')
+      if (table && userInfo?.id) {
+        const { data, error: dbError } = await supabase
+          .from(table)
+          .select('password')
+          .eq('id', userInfo.id)
+          .maybeSingle()
+        if (!dbError && data) {
+          const valid = data.password === password || await bcrypt.compare(password, data.password)
+          if (valid) {
+            onVerified()
+            setLoading(false)
+            return
+          }
+        }
+      }
 
-      const { data, error: dbError } = await supabase
-        .from(table)
-        .select('password')
-        .eq('id', userInfo.id)
-        .maybeSingle()
-
-      if (dbError || !data) throw new Error('Could not verify password')
-
-      const valid = data.password === password || await bcrypt.compare(password, data.password)
-      if (!valid) throw new Error('Password is incorrect')
-      onVerified()
+      setError('Could not verify password')
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Could not verify password')
     } finally {
       setLoading(false)
     }

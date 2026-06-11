@@ -72,30 +72,6 @@ function Login({ onLogin }) {
         return
       }
 
-      // If user has auth_id, try Supabase Auth sign-in
-      if (user.auth_id) {
-        if (user.is_first_login) {
-          setFirstLoginUser({ ...user, role, tableName })
-          setLoading(false)
-          return
-        }
-
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email: user.email,
-          password,
-        })
-        if (signInErr) {
-          // Password was verified locally — Supabase Auth may be out of sync.
-          // Try to sync it via the backend API.
-          try {
-            const { resetAuthPassword } = await import('../services/authApi')
-            await resetAuthPassword(user.email, password, user.auth_id)
-          } catch (_) {
-            // Non-critical: Auth account will be synced on next password change
-          }
-        }
-      }
-
       if (user.is_first_login) {
         setFirstLoginUser({ ...user, role, tableName })
         setLoading(false)
