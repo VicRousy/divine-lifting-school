@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
+import { getGradeInfo } from '../../utils/gradeUtils'
 
 function StudentProfile({ student, onBack }) {
   const [academicSquad, setAcademicSquad] = useState([])
@@ -16,16 +17,7 @@ function StudentProfile({ student, onBack }) {
     term: 'First Term 2026'
   })
 
-  // NEW LOGIC: Grading helper for the report
-  const getGrade = (total) => {
-    const score = Number(total);
-    if (score >= 80) return { grade: 'A+', remark: 'Distinction' };
-    if (score >= 70) return { grade: 'A1', remark: 'Excellent' };
-    if (score >= 60) return { grade: 'B',  remark: 'Very Good' };
-    if (score >= 50) return { grade: 'C',  remark: 'Credit' };
-    if (score >= 40) return { grade: 'D',  remark: 'Pass' };
-    return { grade: 'F', remark: 'Fail' };
-  };
+  const getGrade = getGradeInfo;
 
   const tuitionFee = student.classes?.base_fee || 50000
 

@@ -67,7 +67,6 @@ export default function GradeScale({ showToast }) {
       showToast?.('Grade scale saved to database.', 'success')
       setEditing(null)
     } catch (err) {
-      console.error('Grade scale save failed:', err)
       localStorage.setItem('dls_grade_scale', JSON.stringify(scale))
       showToast?.('Saved locally only. Database sync failed.', 'warning')
     } finally {

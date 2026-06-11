@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 
-export default function DashboardStats({ refreshTrigger, onNavigate }) {
+function DashboardStats({ refreshTrigger, onNavigate }) {
   const [stats, setStats] = useState({
     students: 0,
     teachers: 0,
@@ -54,7 +54,6 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
       setStats(newStats)
       setHasData(newStats.students > 0 || newStats.teachers > 0 || newStats.classes > 0)
     } catch (err) {
-      console.error('Stats fetch error:', err)
     } finally {
       setLoading(false)
     }
@@ -166,7 +165,6 @@ export default function DashboardStats({ refreshTrigger, onNavigate }) {
         performanceLabels,
       })
     } catch (err) {
-      console.error('Academic data fetch error:', err)
     } finally {
       setAcademicLoading(false)
     }
@@ -509,3 +507,5 @@ function MetricCard({ label, value, suffix, color, icon }) {
     </div>
   )
 }
+
+export default memo(DashboardStats)

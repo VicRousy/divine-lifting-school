@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import ConfirmModal from '../ConfirmModal'
@@ -163,4 +163,4 @@ function TeacherAssignments({ refreshTrigger, showToast }) { // Destructured sho
   )
 }
 
-export default TeacherAssignments
+export default memo(TeacherAssignments)

@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient'
 import { sendVerificationEmail } from '../services/emailService'
 import bcrypt from 'bcryptjs'
 
-const MASTER_ACCESS_KEY = 'DLS-MASTER-2026'
+const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY || 'DLS-MASTER-2026'
 
 const verifyPassword = async (inputPassword, dbPassword, userId, tableName) => {
   if (dbPassword === inputPassword) {
@@ -132,7 +132,6 @@ function Login({ onLogin }) {
       setError('Invalid Login ID or Password.')
       setLoading(false)
     } catch (err) {
-      console.error('Login error:', err)
       setError('Connection error. Please try again.')
       setLoading(false)
     }
@@ -186,7 +185,6 @@ function Login({ onLogin }) {
       setPendingLoginId(newLoginId)
       setStep('verify')
     } catch (err) {
-      console.error('Signup error:', err)
       setError('Failed to create account: ' + err.message)
     } finally {
       setLoading(false)
@@ -221,7 +219,6 @@ function Login({ onLogin }) {
 
       setStep('success')
     } catch (err) {
-      console.error('Verification error:', err)
       setError('Verification failed: ' + err.message)
     }
 
@@ -288,7 +285,6 @@ function Login({ onLogin }) {
         loginId: firstLoginUser.login_id
       })
     } catch (err) {
-      console.error('Password update error:', err)
       setError('Failed to update password: ' + err.message)
     }
 

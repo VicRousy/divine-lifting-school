@@ -48,7 +48,6 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
       setAssignments(assignmentData || []);
       
     } catch (err) {
-      console.error("Dashboard Fetch Error:", err.message);
     } finally {
       setLoading(false);
     }

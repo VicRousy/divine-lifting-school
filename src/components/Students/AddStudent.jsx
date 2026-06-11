@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
 
-const STUDENT_ACCESS_KEY = 'DLS-STUDENT-2026'
+const STUDENT_ACCESS_KEY = import.meta.env.VITE_STUDENT_ACCESS_KEY || 'DLS-STUDENT-2026'
 
 export default function AddStudent(props) {
   const [classes, setClasses] = useState([])
@@ -131,7 +131,6 @@ export default function AddStudent(props) {
       resetForm()
       if (props.onAdd) props.onAdd()
     } catch (err) {
-      console.error('Registration error:', err)
       props.showToast('Error: ' + err.message, 'error')
     }
 

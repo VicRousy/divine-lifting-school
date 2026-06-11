@@ -19,7 +19,6 @@ export default function AnnouncementsWidget({ role }) {
         if (error) throw error
         setAnnouncements(data || [])
       } catch (err) {
-        console.error('Failed to fetch announcements:', err)
       }
       setLoading(false)
     }

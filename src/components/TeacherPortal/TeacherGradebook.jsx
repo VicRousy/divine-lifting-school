@@ -108,7 +108,6 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
           setSelectedTermId(String(getPreferredTerm(normalizedTerms).id));
         }
       } catch (e) {
-        console.error("Gradebook setup error:", e);
         setLoadError(e.message || "Failed to load gradebook setup.");
         showToast?.("Failed to load gradebook setup.", "error");
       } finally {
@@ -196,7 +195,6 @@ export default function TeacherGradebook({ teacherId, showToast, onBack }) {
         setSubmissionStatus(submission?.status ?? "draft");
         setRejectionReason(submission?.rejection_reason ?? "");
       } catch (e) {
-        console.error("Gradebook data error:", e);
         setLoadError(e.message || "Failed to load gradebook data.");
         showToast?.("Failed to load gradebook data.", "error");
       } finally {

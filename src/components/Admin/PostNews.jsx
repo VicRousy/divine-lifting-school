@@ -68,7 +68,6 @@ export default function PostNews({ showToast }) {
       setImageFile(null)
       setImagePreview(null)
     } catch (err) {
-      console.error('Error posting news:', err)
       showToast('Failed to post news: ' + err.message, 'error')
     } finally {
       setLoading(false)

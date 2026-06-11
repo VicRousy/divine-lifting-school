@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import ConfirmModal from '../ConfirmModal'
@@ -120,4 +120,4 @@ function SubjectList({ refreshTrigger, showToast }) { // Destructured showToast 
   )
 }
 
-export default SubjectList
+export default memo(SubjectList)

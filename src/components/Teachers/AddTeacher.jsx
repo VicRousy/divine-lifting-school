@@ -3,7 +3,7 @@ import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { sendWelcomeEmail } from '../../services/emailService'
 
-const TEACHER_ACCESS_KEY = 'DLS-TEACHER-2026'
+const TEACHER_ACCESS_KEY = import.meta.env.VITE_TEACHER_ACCESS_KEY || 'DLS-TEACHER-2026'
 
 function AddTeacher(props) {
   const [firstName, setFirstName] = useState('')
@@ -60,7 +60,6 @@ function AddTeacher(props) {
 
       if (props.onAdd) props.onAdd()
     } catch (err) {
-      console.error('Registration error:', err)
       props.showToast('Error: ' + err.message, 'error')
     }
 
