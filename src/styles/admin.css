@@ -3,13 +3,16 @@
   100% { background-position: -200% 0; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 ::-webkit-scrollbar { display: none; }
 * { -ms-overflow-style: none; scrollbar-width: none; }
 body { margin: 0; overflow-x: hidden; }
 
 @media (max-width: 1024px) {
   .admin-layout { display: flex !important; flex-direction: column !important; }
-  @keyframes spin { to { transform: rotate(360deg); } }
   .hamburger-btn { display: block !important; }
   .mobile-close-btn { display: block !important; }
   .sidebar { position: fixed !important; top: 0 !important; left: 0 !important; height: 100vh !important; z-index: 1000 !important; transform: translateX(-100%) !important; transition: transform 0.3s ease !important; width: 280px !important; }
