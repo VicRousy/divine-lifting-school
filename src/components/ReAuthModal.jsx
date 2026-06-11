@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import bcrypt from 'bcryptjs'
 
-const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
-
 export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified, onClose }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -15,14 +13,34 @@ export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified
     setError('')
     setLoading(true)
     try {
+      // Try Supabase Auth re-authentication first (works regardless of role switch)
+      const session = await supabase.auth.getSession()
+      const authUser = session?.data?.session?.user
+
+      if (authUser?.email) {
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: authUser.email,
+          password,
+        })
+        if (!signInErr) {
+          onVerified()
+          return
+        }
+      }
+
+      // Fallback: check via user's original table
+      const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
       const table = TABLE_MAP[userRole]
       if (!table) throw new Error('Invalid role')
+
       const { data, error: dbError } = await supabase
         .from(table)
         .select('password')
         .eq('id', userInfo.id)
         .maybeSingle()
+
       if (dbError || !data) throw new Error('Could not verify password')
+
       const valid = data.password === password || await bcrypt.compare(password, data.password)
       if (!valid) throw new Error('Password is incorrect')
       onVerified()

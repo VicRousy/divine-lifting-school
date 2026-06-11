@@ -1,20 +1,18 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
-import { supabase } from './supabaseClient'
+import { supabase, lookupUserByAuthId, buildUserInfo } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
 import PasswordChangeModal from './components/PasswordChangeModal'
 import ReAuthModal from './components/ReAuthModal'
 
-const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
+const SESSION_DURATION_MS = 24 * 60 * 60 * 1000
 
-// Eager — needed immediately
 import ErrorBoundary from './components/Common/ErrorBoundary'
 import './styles/admin.css'
 import Sidebar from './components/Sidebar/Sidebar'
 import HeaderBar from './components/Common/HeaderBar'
 
-// Lazy-loaded route components
 const DashboardStats = lazy(() => import('./components/Dashboard/DashboardStats'))
 const RecentActivity = lazy(() => import('./components/Dashboard/RecentActivity'))
 const AdminAnnouncements = lazy(() => import('./components/Admin/Announcements'))
@@ -80,33 +78,51 @@ function App() {
     setToast({ message, type })
   }
 
+  const restoreSession = useCallback(async (authUser) => {
+    try {
+      const result = await lookupUserByAuthId(authUser.id)
+      if (result) {
+        const { user, role } = result
+        const info = buildUserInfo(role, user)
+        setSession({ role, userInfo: info, loginTime: new Date().toISOString() })
+        setUserRole(role)
+        setUserInfo(info)
+        setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
+      }
+    } catch (e) {
+      console.error('Session restore error:', e)
+    }
+  }, [])
+
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
     let mounted = true
 
-    const prepareApp = async () => {
+    const init = async () => {
       try {
-        // Check for force_login parameter to clear session (useful for testing)
-        const urlParams = new URLSearchParams(window.location.search)
-        if (urlParams.get('force_login') === 'true') {
-          localStorage.removeItem('dls_session')
+        // Try to restore from Supabase Auth session
+        const { data: { session: authSession } } = await supabase.auth.getSession()
+        if (authSession?.user) {
+          await restoreSession(authSession.user)
+          if (mounted) setLoading(false)
+          return
         }
 
+        // Fallback: check localStorage (legacy)
         const storedSession = localStorage.getItem('dls_session')
         if (storedSession) {
           const parsed = JSON.parse(storedSession)
           const elapsed = Date.now() - new Date(parsed.loginTime).getTime()
-          if (elapsed > SESSION_DURATION_MS) {
-            localStorage.removeItem('dls_session')
-            if (mounted) showToast('Session expired. Please login again.', 'warning')
-          } else {
+          if (elapsed < SESSION_DURATION_MS) {
             if (mounted) {
               setSession(parsed)
               setUserRole(parsed.role)
               setUserInfo(parsed.userInfo)
               setActiveTab(parsed.role === 'teacher' ? 'teacher-dashboard' : parsed.role === 'parent' ? 'overview' : 'overview')
             }
+          } else {
+            localStorage.removeItem('dls_session')
           }
         }
       } catch (error) {
@@ -116,9 +132,24 @@ function App() {
       }
     }
 
-    prepareApp()
-    return () => { mounted = false }
-  }, [])
+    init()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, authSession) => {
+      if (event === 'SIGNED_IN' && authSession?.user) {
+        await restoreSession(authSession.user)
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null)
+        setUserRole(null)
+        setUserInfo(null)
+        localStorage.removeItem('dls_session')
+      }
+    })
+
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
+    }
+  }, [restoreSession])
 
   const handleLogin = useCallback((role, userInfo) => {
     const sessionData = { role, userInfo, loginTime: new Date().toISOString() }
@@ -139,6 +170,7 @@ function App() {
 
   const handleLogout = useCallback(async () => {
     setShowLogoutConfirm(false)
+    await supabase.auth.signOut().catch(() => {})
     setSession(null)
     setUserRole(null)
     setUserInfo(null)
@@ -210,7 +242,6 @@ function App() {
 
   if (!session) return <Login onLogin={handleLogin} />
 
-  // Parent Portal
   if (userRole === 'parent') {
     return (
       <>
@@ -221,7 +252,6 @@ function App() {
     )
   }
 
-  // Student Portal
   if (userRole === 'student') {
     return (
       <>
@@ -234,7 +264,6 @@ function App() {
 
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
-
       <Sidebar
         userRole={userRole}
         activeTab={activeTab}
@@ -246,9 +275,8 @@ function App() {
         onSwitchPortal={switchPortal}
       />
 
-       {/* MAIN CONTENT */}
        <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        
+
         <HeaderBar
           title={getHeaderTitle()}
           userInfo={userInfo}
@@ -259,10 +287,8 @@ function App() {
           onLogoutClick={() => { setShowProfileMenu(false); setShowLogoutConfirm(true) }}
         />
 
-        {/* CONTENT AREA */}
         <div className="main-content" ref={contentRef} tabIndex={-1} style={{ flex: 1, padding: '30px' }}>
-          
-          {/* Search and Actions Bar (Only on Admin Dashboard) */}
+
           {activeTab === 'overview' && userRole === 'admin' && (
             <div className="responsive-actions" style={{ marginBottom: '30px' }}>
               <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..." style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
@@ -273,7 +299,6 @@ function App() {
             </div>
           )}
 
-          {/* DASHBOARD CONTENT */}
           <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Loading...</div>}>
           {userRole === 'admin' && (
             <>
