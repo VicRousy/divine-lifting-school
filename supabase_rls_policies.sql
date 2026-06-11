@@ -179,15 +179,14 @@ CREATE POLICY "Parents can view own profile" ON parents FOR SELECT USING (auth_i
 CREATE POLICY "Parents can view their children" ON students FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM parents p
-    WHERE p.auth_id = auth.uid()
-    AND (p.child1_id = students.id OR p.child2_id = students.id OR p.child3_id = students.id)
+    WHERE p.auth_id = auth.uid() AND p.id = students.parent_id
   )
 );
 -- Parents can view their children's grades
 CREATE POLICY "Parents can view children grades" ON exam_scores FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM students s
-    JOIN parents p ON (p.child1_id = s.id OR p.child2_id = s.id OR p.child3_id = s.id)
+    JOIN parents p ON p.id = s.parent_id
     WHERE p.auth_id = auth.uid() AND s.id = exam_scores.student_id
   )
 );
@@ -195,7 +194,7 @@ CREATE POLICY "Parents can view children grades" ON exam_scores FOR SELECT USING
 CREATE POLICY "Parents can view children attendance" ON attendance FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM students s
-    JOIN parents p ON (p.child1_id = s.id OR p.child2_id = s.id OR p.child3_id = s.id)
+    JOIN parents p ON p.id = s.parent_id
     WHERE p.auth_id = auth.uid() AND s.id = attendance.student_id
   )
 );
