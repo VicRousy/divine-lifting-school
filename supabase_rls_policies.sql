@@ -5,6 +5,7 @@
 
 -- 0. DROP EXISTING POLICIES (clean slate)
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Admins can manage profiles" ON profiles;
 DROP POLICY IF EXISTS "Admins have full access to students" ON students;
 DROP POLICY IF EXISTS "Teachers can view students in their classes" ON students;
