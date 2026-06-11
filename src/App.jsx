@@ -66,13 +66,6 @@ function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
   const contentRef = useRef(null)
-  const initTimeout = useRef(null)
-
-  useEffect(() => {
-    // Safety timeout: show Login after 4s if init hangs
-    initTimeout.current = setTimeout(() => setLoading(false), 4000)
-    return () => clearTimeout(initTimeout.current)
-  }, [])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -122,25 +115,21 @@ function App() {
 
     const init = async () => {
       try {
-        const authSession = await Promise.race([
-          supabase.auth.getSession().then(r => r.data?.session || null),
-          new Promise(res => setTimeout(() => res(null), 3000)),
-        ])
+        // Try to restore from Supabase Auth session
+        const { data: { session: authSession } } = await supabase.auth.getSession()
         if (authSession?.user) {
           await restoreSession(authSession.user)
-          clearTimeout(initTimeout.current)
           localStorage.removeItem('dls_session')
           if (mounted) setLoading(false)
           return
         }
-        clearTimeout(initTimeout.current)
+
+        // No Supabase Auth session — clear stale localStorage session
         localStorage.removeItem('dls_session')
       } catch (error) {
         console.error('Initialization error:', error)
-        clearTimeout(initTimeout.current)
         localStorage.removeItem('dls_session')
       } finally {
-        clearTimeout(initTimeout.current)
         if (mounted) setLoading(false)
       }
     }

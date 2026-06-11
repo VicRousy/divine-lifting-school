@@ -98,10 +98,7 @@ function Login({ onLogin }) {
           console.error('Supabase Auth sync error:', e)
         }
 
-        const { error: signInErr } = await Promise.race([
-          supabase.auth.signInWithPassword({ email, password }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
-        ]).catch(e => e?.message === 'timeout' ? { error: null } : { error: e })
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
         if (signInErr) console.error('signInWithPassword non-blocking:', signInErr)
       }
 
