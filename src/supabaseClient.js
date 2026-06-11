@@ -15,6 +15,21 @@ export const USER_TABLES = {
 export async function lookupUserByLoginId(loginId) {
   const input = loginId.trim().toUpperCase()
 
+  // Try RPC bypass first (needed when RLS blocks unauthenticated reads)
+  try {
+    const { data, error } = await supabase.rpc('lookup_user_by_login_id', { p_login_id: input })
+    if (!error && data) {
+      // Determine role by checking role-specific fields
+      if (data.staff_id) return { user: data, role: 'teacher' }
+      if (data.student_id) return { user: data, role: 'student' }
+      if (data.parent_id) return { user: data, role: 'parent' }
+      if (data.role === 'admin' || data.school_id) return { user: data, role: 'admin' }
+    }
+  } catch (_) {
+    // RPC not available, fall through to direct queries
+  }
+
+  // Fallback: direct table queries
   for (const [role, config] of Object.entries(USER_TABLES)) {
     const { data, error } = await supabase
       .from(config.table)
