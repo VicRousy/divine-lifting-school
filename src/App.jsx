@@ -171,13 +171,13 @@ function App() {
 
   const handleLogout = useCallback(async () => {
     setShowLogoutConfirm(false)
-    await supabase.auth.signOut().catch(() => {})
     setSession(null)
     setUserRole(null)
     setUserInfo(null)
     setActiveTab('overview')
     localStorage.removeItem('dls_session')
     showToast('Logged out successfully', 'success')
+    supabase.auth.signOut().catch(() => {})
   }, [])
 
   const doSwitchPortal = useCallback((mode) => {
