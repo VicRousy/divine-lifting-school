@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { supabase, lookupUserByLoginId, buildUserInfo } from '../supabaseClient'
+import { supabase, lookupUserByLoginId, lookupUserByAuthId, buildUserInfo } from '../supabaseClient'
 import { sendVerificationEmail } from '../services/emailService'
-import { createAuthUser } from '../services/authApi'
+import { createAuthUser, resetAuthPassword } from '../services/authApi'
 import bcrypt from 'bcryptjs'
 
 const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY || 'DLS-MASTER-2026'
@@ -78,21 +78,28 @@ function Login({ onLogin }) {
         return
       }
 
-      // Legacy user without auth_id — migrate
-      if (!user.auth_id && user.email) {
+      // Sync or create Supabase Auth account
+      const email = user.email?.trim().toLowerCase()
+      if (email) {
         try {
-          const result = await createAuthUser(user.email, password, {
-            full_name: `${user.first_name} ${user.last_name}`,
-            login_id: user.login_id,
-            role,
-          })
-          if (result.success && result.auth_id) {
-            await supabase.from(tableName).update({ auth_id: result.auth_id }).eq('id', user.id)
+          if (user.auth_id) {
+            await resetAuthPassword(email, password, user.auth_id)
+          } else {
+            const authResult = await createAuthUser(email, password, {
+              full_name: `${user.first_name} ${user.last_name}`,
+              login_id: user.login_id,
+              role,
+            })
+            if (authResult.success && authResult.auth_id) {
+              await supabase.from(tableName).update({ auth_id: authResult.auth_id }).eq('id', user.id)
+            }
           }
         } catch (e) {
-          // If migration fails, still proceed (they'll migrate next login)
-          console.error('Auth migration error:', e)
+          console.error('Supabase Auth sync error:', e)
         }
+
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInErr) console.error('signInWithPassword non-blocking:', signInErr)
       }
 
       onLogin(role, buildUserInfo(role, user))
