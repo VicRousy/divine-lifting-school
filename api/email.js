@@ -33,6 +33,11 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
+  const key = req.headers['x-api-key']
+  if (!key || key !== process.env.EMAIL_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
   const now = Date.now()
   if (RATE_LIMIT[ip] && RATE_LIMIT[ip].length >= MAX_PER_WINDOW && RATE_LIMIT[ip][0] > now - RATE_WINDOW) {
