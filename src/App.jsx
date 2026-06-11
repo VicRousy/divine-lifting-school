@@ -111,7 +111,9 @@ function App() {
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
+
     let mounted = true
+    const initTimeout = setTimeout(() => { if (mounted) setLoading(false) }, 4000)
 
     const init = async () => {
       try {
