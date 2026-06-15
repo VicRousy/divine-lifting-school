@@ -175,16 +175,29 @@ function App() {
     supabase.auth.signOut().catch(() => {})
   }, [])
 
-  const switchPortal = useCallback((mode) => {
+  const switchPortal = useCallback(async (mode) => {
+    let info = userInfo
+    if (mode === 'teacher') {
+      const { data } = await supabase.from('teachers').select('*').eq('email', userInfo.email).maybeSingle().catch(() => {})
+      if (data) {
+        info = buildUserInfo('teacher', data)
+      }
+    } else if (mode === 'admin' && session?.originalUserInfo) {
+      info = session.originalUserInfo
+    } else if (mode === 'admin') {
+      const { data } = await supabase.from('profiles').select('*').eq('email', userInfo.email).maybeSingle().catch(() => {})
+      if (data) info = buildUserInfo('admin', data)
+    }
     setUserRole(mode)
+    setUserInfo(info)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
     setSession(prev => {
-      const next = { ...prev, role: mode, loginTime: new Date().toISOString() }
+      const next = { ...prev, role: mode, userInfo: info, loginTime: new Date().toISOString(), originalUserInfo: prev.originalUserInfo || prev.userInfo }
       localStorage.setItem('dls_session', JSON.stringify(next))
       return next
     })
     showToast(`Switched to ${mode} portal`, 'success')
-  }, [])
+  }, [userInfo, session])
 
   const refreshData = () => setRefreshTrigger(prev => prev + 1)
 
