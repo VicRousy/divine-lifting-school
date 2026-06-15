@@ -80,7 +80,7 @@ function App() {
       if (result) {
         const { user, role } = result
         const info = buildUserInfo(role, user)
-        const sessionData = { role, userInfo: info, loginTime: new Date().toISOString() }
+        const sessionData = { role, userInfo: info, loginTime: new Date().toISOString(), originalRole: role }
         setSession(sessionData)
         setUserRole(role)
         setUserInfo(info)
@@ -148,7 +148,7 @@ function App() {
   }, [restoreSession])
 
   const handleLogin = useCallback((role, userInfo) => {
-    const sessionData = { role, userInfo, loginTime: new Date().toISOString() }
+    const sessionData = { role, userInfo, loginTime: new Date().toISOString(), originalRole: role }
     setSession(sessionData)
     setUserRole(role)
     setUserInfo(userInfo)
@@ -178,11 +178,13 @@ function App() {
   const switchPortal = useCallback((mode) => {
     setUserRole(mode)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
-    const sessionData = { role: mode, userInfo, loginTime: new Date().toISOString() }
-    setSession(sessionData)
-    localStorage.setItem('dls_session', JSON.stringify(sessionData))
+    setSession(prev => {
+      const next = { ...prev, role: mode, loginTime: new Date().toISOString() }
+      localStorage.setItem('dls_session', JSON.stringify(next))
+      return next
+    })
     showToast(`Switched to ${mode} portal`, 'success')
-  }, [userInfo])
+  }, [])
 
   const refreshData = () => setRefreshTrigger(prev => prev + 1)
 
@@ -259,6 +261,7 @@ function App() {
 
       <Sidebar
         userRole={userRole}
+        isAdmin={session?.originalRole === 'admin'}
         activeTab={activeTab}
         mobileMenuOpen={mobileMenuOpen}
         onTabChange={setActiveTab}

@@ -32,7 +32,7 @@ const SidebarItem = memo(function SidebarItem({ icon, label, active, onClick }) 
   )
 })
 
-export default function Sidebar({ userRole, activeTab, mobileMenuOpen, onTabChange, onMobileClose, onLogoutClick, onPasswordClick, onSwitchPortal }) {
+export default function Sidebar({ userRole, isAdmin, activeTab, mobileMenuOpen, onTabChange, onMobileClose, onLogoutClick, onPasswordClick, onSwitchPortal }) {
   return (
     <>
       {mobileMenuOpen && <div className="sidebar-overlay" onClick={onMobileClose} aria-hidden={true} />}
@@ -53,7 +53,7 @@ export default function Sidebar({ userRole, activeTab, mobileMenuOpen, onTabChan
             Back to Website
           </a>
 
-          {userRole === 'admin' && (
+          {isAdmin && (
             <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
               <button aria-label="Switch to admin portal"
                 onClick={() => onSwitchPortal('admin')}
