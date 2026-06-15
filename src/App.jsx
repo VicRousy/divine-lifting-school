@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
-import { supabase, lookupUserByAuthId, buildUserInfo } from './supabaseClient'
+import { supabase, lookupUserByEmail, buildUserInfo } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
@@ -76,7 +76,7 @@ function App() {
 
   const restoreSession = useCallback(async (authUser) => {
     try {
-      const result = await lookupUserByAuthId(authUser.id)
+      const result = await lookupUserByEmail(authUser.email)
       if (result) {
         const { user, role } = result
         const info = buildUserInfo(role, user)
