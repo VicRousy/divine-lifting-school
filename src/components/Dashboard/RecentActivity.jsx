@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+// Force Vercel deploy with correct author email
 
 function RecentActivity({ refreshTrigger }) {
   const [activities, setActivities] = useState([])
