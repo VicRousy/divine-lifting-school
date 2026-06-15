@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
+import { resetAuthPassword } from '../services/authApi'
 import bcrypt from 'bcryptjs'
 
 const TABLE_MAP = {
@@ -105,6 +106,12 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
         showToast('Failed to update password', 'error')
         return
       }
+
+      // Sync with Supabase Auth (non-blocking)
+      supabase.auth.updateUser({ password: newPassword }).catch(() => {
+        // Fallback: try API endpoint
+        resetAuthPassword(userInfo.email, newPassword).catch(() => {})
+      })
 
       showToast('Password changed successfully', 'success')
       onClose()

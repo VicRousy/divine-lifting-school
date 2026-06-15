@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
-import { supabase } from './supabaseClient'
+import { supabase, lookupUserByAuthId, buildUserInfo } from './supabaseClient'
 import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
@@ -74,6 +74,26 @@ function App() {
     setToast({ message, type })
   }
 
+  const restoreSession = useCallback(async (authUser) => {
+    try {
+      const result = await lookupUserByAuthId(authUser.id)
+      if (result) {
+        const { user, role } = result
+        const info = buildUserInfo(role, user)
+        const sessionData = { role, userInfo: info, loginTime: new Date().toISOString() }
+        setSession(sessionData)
+        setUserRole(role)
+        setUserInfo(info)
+        setActiveTab(role === 'teacher' ? 'teacher-dashboard' : role === 'parent' ? 'overview' : 'overview')
+        localStorage.setItem('dls_session', JSON.stringify(sessionData))
+        return true
+      }
+    } catch (e) {
+      console.error('Session restore error:', e)
+    }
+    return false
+  }, [])
+
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
@@ -81,7 +101,20 @@ function App() {
 
     const prepareApp = async () => {
       try {
-        // Check for force_login parameter to clear session (useful for testing)
+        // 1. Try Supabase Auth session (3s timeout)
+        const authSession = await Promise.race([
+          supabase.auth.getSession().then(r => r.data?.session ?? null),
+          new Promise(res => setTimeout(() => res(null), 3000)),
+        ])
+        if (authSession?.user) {
+          const restored = await restoreSession(authSession.user)
+          if (restored) {
+            if (mounted) setLoading(false)
+            return
+          }
+        }
+
+        // 2. Fallback: localStorage session
         const urlParams = new URLSearchParams(window.location.search)
         if (urlParams.get('force_login') === 'true') {
           localStorage.removeItem('dls_session')
@@ -112,7 +145,7 @@ function App() {
 
     prepareApp()
     return () => { mounted = false }
-  }, [])
+  }, [restoreSession])
 
   const handleLogin = useCallback((role, userInfo) => {
     const sessionData = { role, userInfo, loginTime: new Date().toISOString() }
@@ -139,6 +172,7 @@ function App() {
     setActiveTab('overview')
     localStorage.removeItem('dls_session')
     showToast('Logged out successfully', 'success')
+    supabase.auth.signOut().catch(() => {})
   }, [])
 
   const switchPortal = useCallback((mode) => {

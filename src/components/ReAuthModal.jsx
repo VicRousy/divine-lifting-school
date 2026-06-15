@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase, lookupUserByLoginId } from '../supabaseClient'
 import bcrypt from 'bcryptjs'
 
 export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified, onClose }) {
@@ -13,28 +13,24 @@ export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified
     setError('')
     setLoading(true)
     try {
-      // Strategy 1: Lookup by login_id (stable across portal switches)
+      // Strategy 1: Lookup by login_id via RPC (works with RLS)
       if (userInfo?.loginId) {
-        const tables = ['profiles', 'teachers', 'students', 'parents']
-        for (const table of tables) {
-          const { data, error: dbErr } = await supabase
-            .from(table)
-            .select('password')
-            .eq('login_id', userInfo.loginId)
-            .maybeSingle()
-          if (!dbErr && data) {
-            const valid = data.password === password || await bcrypt.compare(password, data.password)
-            if (valid) {
-              onVerified()
-              setLoading(false)
-              return
-            }
+        const result = await lookupUserByLoginId(userInfo.loginId)
+        if (result) {
+          const valid = result.user.password === password || await bcrypt.compare(password, result.user.password)
+          if (valid) {
+            onVerified()
+            setLoading(false)
+            return
           }
         }
       }
 
       // Strategy 2: Lookup by auth_id from current session
-      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const authSession = await Promise.race([
+        supabase.auth.getSession().then(r => r.data?.session ?? null),
+        new Promise(res => setTimeout(() => res(null), 3000)),
+      ])
       const authId = authSession?.user?.id
       if (authId) {
         const tables = ['profiles', 'teachers', 'students', 'parents']
