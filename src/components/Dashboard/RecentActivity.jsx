@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
 function RecentActivity({ refreshTrigger }) {
@@ -10,8 +10,8 @@ function RecentActivity({ refreshTrigger }) {
     try {
       // Parallel queries with minimal columns for speed
       const [{ data: students }, { data: teachers }] = await Promise.all([
-        supabase.from('students').select('first_name, last_name, created_at').order('created_at', { ascending: false }).limit(3),
-        supabase.from('teachers').select('first_name, last_name, created_at').order('created_at', { ascending: false }).limit(2)
+        supabase.from('students').select('id, first_name, last_name, created_at').order('created_at', { ascending: false }).limit(3),
+        supabase.from('teachers').select('id, first_name, last_name, created_at').order('created_at', { ascending: false }).limit(2)
       ])
 
       // Merge and sort them by date
@@ -22,6 +22,7 @@ function RecentActivity({ refreshTrigger }) {
 
       setActivities(combined.slice(0, 5)) // Keep top 5 latest overall
     } catch (err) {
+      console.error('Error fetching recent activity:', err);
     } finally {
       setLoading(false)
     }
@@ -55,8 +56,8 @@ function RecentActivity({ refreshTrigger }) {
       {loading ? (
         <p className="text-dim">Fetching updates...</p>
       ) : (
-        activities.map((act, index) => (
-          <div key={index} className="counter" style={{ 
+        activities.map((act) => (
+          <div key={act.id + act.type} className="counter" style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
@@ -69,7 +70,7 @@ function RecentActivity({ refreshTrigger }) {
           }}>
             <div>
               <span className="text-dim" style={{ marginRight: '8px' }}>
-                {act.type === 'STUDENT' ? '🎓' : '💼'}
+                {act.type === 'STUDENT' ? 'ðŸŽ“' : 'ðŸ’¼'}
               </span>
               <strong>{act.first_name} {act.last_name}</strong>
               <span className="text-dim"> was registered as {act.type.toLowerCase()}.</span>

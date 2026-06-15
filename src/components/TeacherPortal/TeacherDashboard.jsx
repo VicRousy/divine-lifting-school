@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
 import { formatDisplayName } from "../../utils/nameUtils";
 import { withTimeout } from "../../utils/asyncUtils";
@@ -48,6 +48,7 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
       setAssignments(assignmentData || []);
       
     } catch (err) {
+      console.error('Error fetching teacher data:', err);
     } finally {
       setLoading(false);
     }
@@ -147,21 +148,21 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
           }}
         >
           <ActionCard
-            icon="📋"
+            icon="ðŸ“‹"
             title="Mark Attendance"
             description="Take daily roll call"
             onClick={() => onNavigate("teacher-attendance")}
             color="#10b981"
           />
           <ActionCard
-            icon="📝"
+            icon="ðŸ“"
             title="Enter Scores"
             description="Gradebook with grades and comments"
             onClick={() => onNavigate("scores")}
             color="#38bdf8"
           />
           <ActionCard
-            icon="👥"
+            icon="ðŸ‘¥"
             title="View Classes"
             description="See your class rosters"
             onClick={() => onNavigate("roster")}
@@ -193,8 +194,8 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
                 </tr>
               </thead>
               <tbody>
-                {assignments.map((assignment, index) => (
-                  <tr key={index} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                {assignments.map((assignment) => (
+                  <tr key={assignment.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <td style={{ padding: "15px", color: "#38bdf8", fontWeight: "600" }}>
                       {assignment.classes?.class_name}
                     </td>
@@ -261,3 +262,5 @@ function ActionCard({ icon, title, description, onClick, color }) {
 }
 
 export default TeacherDashboard;
+
+
