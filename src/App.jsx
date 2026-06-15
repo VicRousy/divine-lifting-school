@@ -177,17 +177,19 @@ function App() {
 
   const switchPortal = useCallback(async (mode) => {
     let info = userInfo
-    if (mode === 'teacher') {
-      const { data } = await supabase.from('teachers').select('*').eq('email', userInfo.email).maybeSingle().catch(() => {})
-      if (data) {
-        info = buildUserInfo('teacher', data)
+    try {
+      if (mode === 'teacher') {
+        const { data } = await supabase.from('teachers').select('*').eq('email', userInfo.email).maybeSingle()
+        if (data) {
+          info = buildUserInfo('teacher', data)
+        }
+      } else if (mode === 'admin' && session?.originalUserInfo) {
+        info = session.originalUserInfo
+      } else if (mode === 'admin') {
+        const { data } = await supabase.from('profiles').select('*').eq('email', userInfo.email).maybeSingle()
+        if (data) info = buildUserInfo('admin', data)
       }
-    } else if (mode === 'admin' && session?.originalUserInfo) {
-      info = session.originalUserInfo
-    } else if (mode === 'admin') {
-      const { data } = await supabase.from('profiles').select('*').eq('email', userInfo.email).maybeSingle().catch(() => {})
-      if (data) info = buildUserInfo('admin', data)
-    }
+    } catch (_) {}
     setUserRole(mode)
     setUserInfo(info)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
