@@ -6,6 +6,19 @@ import bcrypt from 'bcryptjs'
 
 const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY
 
+const verifyPassword = async (inputPassword, dbPassword, userId, tableName) => {
+  if (dbPassword === inputPassword) {
+    try {
+      const hashedPassword = await bcrypt.hash(inputPassword, 10)
+      await supabase.from(tableName).update({ password: hashedPassword }).eq('id', userId)
+    } catch (e) {
+      console.error('Auto-migration error:', e)
+    }
+    return true
+  }
+  return bcrypt.compare(inputPassword, dbPassword)
+}
+
 function Login({ onLogin }) {
   const [isSignup, setIsSignup] = useState(false)
   const [step, setStep] = useState('form') // 'form' | 'verify' | 'success'
@@ -53,9 +66,7 @@ function Login({ onLogin }) {
       const { user, role } = result
       const tableName = role === 'admin' ? 'profiles' : role === 'teacher' ? 'teachers' : role === 'student' ? 'students' : 'parents'
 
-      const { data: verifyResult } = await supabase
-        .rpc('verify_login_password', { p_login_id: loginId, p_password: password })
-      if (!verifyResult?.valid) {
+      if (!(await verifyPassword(password, user.password, user.id, tableName))) {
         setError('Invalid Login ID or Password.')
         setLoading(false)
         return
