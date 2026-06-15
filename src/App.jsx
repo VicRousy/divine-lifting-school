@@ -194,7 +194,7 @@ function App() {
     setUserInfo(info)
     setActiveTab(mode === 'teacher' ? 'teacher-dashboard' : 'overview')
     setSession(prev => {
-      const next = { ...prev, role: mode, userInfo: info, loginTime: new Date().toISOString(), originalUserInfo: prev.originalUserInfo || prev.userInfo }
+      const next = { ...prev, role: mode, userInfo: info, loginTime: new Date().toISOString(), originalRole: prev.originalRole || prev.role, originalUserInfo: prev.originalUserInfo || prev.userInfo }
       localStorage.setItem('dls_session', JSON.stringify(next))
       return next
     })
@@ -276,7 +276,7 @@ function App() {
 
       <Sidebar
         userRole={userRole}
-        isAdmin={session?.originalRole === 'admin'}
+        isAdmin={session?.originalRole === 'admin' || userRole === 'admin'}
         activeTab={activeTab}
         mobileMenuOpen={mobileMenuOpen}
         onTabChange={setActiveTab}
