@@ -53,16 +53,18 @@ export default function Sidebar({ userRole, activeTab, mobileMenuOpen, onTabChan
             Back to Website
           </a>
 
-          <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
-            <button aria-label="Switch to admin portal"
-              onClick={() => onSwitchPortal('admin')}
-              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'admin' ? '#38bdf8' : 'transparent', color: userRole === 'admin' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-            >Admin</button>
-            <button aria-label="Switch to teacher portal"
-              onClick={() => onSwitchPortal('teacher')}
-              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'teacher' ? '#38bdf8' : 'transparent', color: userRole === 'teacher' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-            >Teacher</button>
-          </div>
+          {userRole === 'admin' && (
+            <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
+              <button aria-label="Switch to admin portal"
+                onClick={() => onSwitchPortal('admin')}
+                style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'admin' ? '#38bdf8' : 'transparent', color: userRole === 'admin' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >Admin</button>
+              <button aria-label="Switch to teacher portal"
+                onClick={() => onSwitchPortal('teacher')}
+                style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: userRole === 'teacher' ? '#38bdf8' : 'transparent', color: userRole === 'teacher' ? '#0f172a' : '#94a3b8', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >Teacher</button>
+            </div>
+          )}
         </div>
 
         <nav aria-label="Main navigation" style={{ flex: 1, padding: '20px 0' }}>
