@@ -148,21 +148,21 @@ function TeacherDashboard({ user, teacherId, onNavigate }) {
           }}
         >
           <ActionCard
-            icon="≡ƒôï"
+            icon="📋"
             title="Mark Attendance"
             description="Take daily roll call"
             onClick={() => onNavigate("teacher-attendance")}
             color="#10b981"
           />
           <ActionCard
-            icon="≡ƒô¥"
+            icon="📝"
             title="Enter Scores"
             description="Gradebook with grades and comments"
             onClick={() => onNavigate("scores")}
             color="#38bdf8"
           />
           <ActionCard
-            icon="≡ƒæÑ"
+            icon="👥"
             title="View Classes"
             description="See your class rosters"
             onClick={() => onNavigate("roster")}

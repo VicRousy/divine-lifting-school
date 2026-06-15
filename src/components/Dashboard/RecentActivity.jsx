@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
-// Force Vercel deploy with correct author email
 
 function RecentActivity({ refreshTrigger }) {
   const [activities, setActivities] = useState([])
@@ -71,7 +70,7 @@ function RecentActivity({ refreshTrigger }) {
           }}>
             <div>
               <span className="text-dim" style={{ marginRight: '8px' }}>
-                {act.type === 'STUDENT' ? '≡ƒÄô' : '≡ƒÆ╝'}
+                {act.type === 'STUDENT' ? '🎓' : '💼'}
               </span>
               <strong>{act.first_name} {act.last_name}</strong>
               <span className="text-dim"> was registered as {act.type.toLowerCase()}.</span>

@@ -201,22 +201,22 @@ function DashboardStats({ refreshTrigger, onNavigate }) {
   if (!hasData) {
     return (
       <div style={{ background: 'linear-gradient(135deg, rgba(56,189,248,0.1), rgba(168,85,247,0.1))', border: '1px solid #38bdf8', borderRadius: 16, padding: 40, textAlign: 'center', marginBottom: 40 }}>
-        <h2 style={{ margin: '0 0 10px', color: '#f8fafc' }}>≡ƒæï Welcome to Divine Lifting School Admin</h2>
+        <h2 style={{ margin: '0 0 10px', color: '#f8fafc' }}>👋 Welcome to Divine Lifting School Admin</h2>
         <p style={{ margin: '0 0 30px', color: '#94a3b8' }}>Your school management system is ready. Start by adding your first records.</p>
         
         <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
           <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 20, width: 200, textAlign: 'left' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 10 }}>1∩╕ÅΓâú</div>
+            <div style={{ fontSize: '2rem', marginBottom: 10 }}>1️⃣</div>
             <h4 style={{ margin: '0 0 5px', color: '#38bdf8' }}>Add Classes</h4>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Define your school structure (JSS1, SSS1, etc.)</p>
           </div>
           <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 20, width: 200, textAlign: 'left' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 10 }}>2∩╕ÅΓâú</div>
+            <div style={{ fontSize: '2rem', marginBottom: 10 }}>2️⃣</div>
             <h4 style={{ margin: '0 0 5px', color: '#a855f7' }}>Register Staff</h4>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Add teachers and assign them to subjects.</p>
           </div>
           <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, padding: 20, width: 200, textAlign: 'left' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 10 }}>3∩╕ÅΓâú</div>
+            <div style={{ fontSize: '2rem', marginBottom: 10 }}>3️⃣</div>
             <h4 style={{ margin: '0 0 5px', color: '#10b981' }}>Enroll Students</h4>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Register students and link them to parents.</p>
           </div>
@@ -229,18 +229,18 @@ function DashboardStats({ refreshTrigger, onNavigate }) {
     <>
       {/* Stats Grid - All Clickable */}
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        <StatCard title="Total Students" value={stats.students} color="#38bdf8" icon="≡ƒÄô" onClick={() => handleCardClick('student-list')} />
-        <StatCard title="Staff Members" value={stats.teachers} color="#a855f7" icon="≡ƒÆ╝" onClick={() => handleCardClick('teacher-list')} />
-        <StatCard title="Classrooms" value={stats.classes} color="#fbbf24" icon="≡ƒÅ½" onClick={() => handleCardClick('class-list')} />
+        <StatCard title="Total Students" value={stats.students} color="#38bdf8" icon="🎓" onClick={() => handleCardClick('student-list')} />
+        <StatCard title="Staff Members" value={stats.teachers} color="#a855f7" icon="💼" onClick={() => handleCardClick('teacher-list')} />
+        <StatCard title="Classrooms" value={stats.classes} color="#fbbf24" icon="🏫" onClick={() => handleCardClick('class-list')} />
         <StatCard title="Active Assignments" value={stats.assignments} color="#10b981" icon="" onClick={() => handleCardClick('assignments')} />
-        <StatCard title="Pending Fees" value={`Γéª${stats.feesPending.toLocaleString()}`} color="#ef4444" icon="≡ƒÆ░" onClick={() => handleCardClick('fees')} />
-        <StatCard title="Present Today" value={stats.attendanceToday} color="#22c55e" icon="Γ£à" onClick={() => handleCardClick('teacher-attendance')} />
+        <StatCard title="Pending Fees" value={`₦${stats.feesPending.toLocaleString()}`} color="#ef4444" icon="💰" onClick={() => handleCardClick('fees')} />
+        <StatCard title="Present Today" value={stats.attendanceToday} color="#22c55e" icon="✅" onClick={() => handleCardClick('teacher-attendance')} />
       </div>
 
       {/* Visual Chart Section */}
       <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 16, padding: expandedChart ? 40 : 30, marginBottom: 40, transition: 'all 0.3s' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>≡ƒôè School Overview Distribution</h3>
+          <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>📊 School Overview Distribution</h3>
           <button
             onClick={() => setExpandedChart(!expandedChart)}
             style={{
@@ -254,7 +254,7 @@ function DashboardStats({ refreshTrigger, onNavigate }) {
               fontSize: '0.85rem',
             }}
           >
-            {expandedChart ? 'Γ£ò Close Detailed View' : '≡ƒôê View Detailed Report'}
+            {expandedChart ? '✕ Close Detailed View' : '📈 View Detailed Report'}
           </button>
         </div>
 
@@ -384,21 +384,21 @@ function DashboardStats({ refreshTrigger, onNavigate }) {
                   value={academicData.averageGrade}
                   suffix="/4.0"
                   color="#38bdf8"
-                  icon="≡ƒôÜ"
+                  icon="📚"
                 />
                 <MetricCard
                   label="Classroom Activity Index"
                   value={academicData.activityIndex}
                   suffix="%"
                   color="#a855f7"
-                  icon="≡ƒÅ½"
+                  icon="🏫"
                 />
                 <MetricCard
                   label="Student Retention Rate"
                   value={academicData.retentionRate}
                   suffix="%"
                   color="#10b981"
-                  icon="≡ƒæÑ"
+                  icon="👥"
                 />
               </div>
             </div>
@@ -448,7 +448,7 @@ function StatCard({ title, value, color, icon, onClick }) {
       </div>
       {onClick && (
         <div style={{ fontSize: '0.75rem', color: color, marginTop: 4, fontWeight: 600 }}>
-          Click to view ΓåÆ
+          Click to view →
         </div>
       )}
     </div>
