@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
 function RecentActivity({ refreshTrigger }) {
@@ -70,7 +70,7 @@ function RecentActivity({ refreshTrigger }) {
           }}>
             <div>
               <span className="text-dim" style={{ marginRight: '8px' }}>
-                {act.type === 'STUDENT' ? 'ðŸŽ“' : 'ðŸ’¼'}
+                {act.type === 'STUDENT' ? '≡ƒÄô' : '≡ƒÆ╝'}
               </span>
               <strong>{act.first_name} {act.last_name}</strong>
               <span className="text-dim"> was registered as {act.type.toLowerCase()}.</span>
