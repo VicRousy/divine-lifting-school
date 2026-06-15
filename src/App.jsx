@@ -4,6 +4,7 @@ import Login from './components/Login'
 import ConfirmModal from './components/ConfirmModal'
 import Toast from './components/Toast'
 import PasswordChangeModal from './components/PasswordChangeModal'
+import ReAuthModal from './components/ReAuthModal'
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -60,6 +61,8 @@ function App() {
   const [toast, setToast] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [showReAuth, setShowReAuth] = useState(false)
+  const [pendingPortalMode, setPendingPortalMode] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
@@ -175,7 +178,7 @@ function App() {
     supabase.auth.signOut().catch(() => {})
   }, [])
 
-  const switchPortal = useCallback(async (mode) => {
+  const executeSwitch = useCallback(async (mode) => {
     let info = userInfo
     try {
       if (mode === 'teacher') {
@@ -200,6 +203,15 @@ function App() {
     })
     showToast(`Switched to ${mode} portal`, 'success')
   }, [userInfo, session])
+
+  const switchPortal = useCallback((mode) => {
+    if (mode === 'admin' && userRole !== 'admin') {
+      setPendingPortalMode(mode)
+      setShowReAuth(true)
+    } else {
+      executeSwitch(mode)
+    }
+  }, [userRole, executeSwitch])
 
   const refreshData = () => setRefreshTrigger(prev => prev + 1)
 
@@ -376,6 +388,7 @@ function App() {
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
       {showPasswordChange && <PasswordChangeModal userInfo={userInfo} userRole={userRole} onClose={() => setShowPasswordChange(false)} showToast={showToast} />}
+      {showReAuth && <ReAuthModal userRole={userRole} userInfo={userInfo} targetRole="admin" onVerified={() => { setShowReAuth(false); executeSwitch(pendingPortalMode) }} onClose={() => setShowReAuth(false)} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
