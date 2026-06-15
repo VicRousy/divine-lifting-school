@@ -4,24 +4,7 @@ import { sendVerificationEmail } from '../services/emailService'
 import { createAuthUser, resetAuthPassword } from '../services/authApi'
 import bcrypt from 'bcryptjs'
 
-const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY || 'DLS-MASTER-2026'
-
-const verifyPassword = async (inputPassword, dbPassword, userId, tableName) => {
-  if (dbPassword === inputPassword) {
-    try {
-      const hashedPassword = await bcrypt.hash(inputPassword, 10)
-      await supabase.from(tableName).update({ password: hashedPassword }).eq('id', userId)
-    } catch (e) {
-      console.error('Auto-migration error:', e)
-    }
-    return true
-  }
-  try {
-    return await bcrypt.compare(inputPassword, dbPassword)
-  } catch (e) {
-    return false
-  }
-}
+const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY
 
 function Login({ onLogin }) {
   const [isSignup, setIsSignup] = useState(false)
@@ -70,7 +53,9 @@ function Login({ onLogin }) {
       const { user, role } = result
       const tableName = role === 'admin' ? 'profiles' : role === 'teacher' ? 'teachers' : role === 'student' ? 'students' : 'parents'
 
-      if (!(await verifyPassword(password, user.password, user.id, tableName))) {
+      const { data: verifyResult } = await supabase
+        .rpc('verify_login_password', { p_login_id: loginId, p_password: password })
+      if (!verifyResult?.valid) {
         setError('Invalid Login ID or Password.')
         setLoading(false)
         return
@@ -119,6 +104,11 @@ function Login({ onLogin }) {
     setLoading(true)
     setError('')
 
+    if (!MASTER_ACCESS_KEY) {
+      setError('Admin signup is not configured. Contact system administrator.')
+      setLoading(false)
+      return
+    }
     if (masterKey !== MASTER_ACCESS_KEY) {
       setError('Invalid Master Access Key. Contact system administrator.')
       setLoading(false)
