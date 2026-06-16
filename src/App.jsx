@@ -63,15 +63,46 @@ function App() {
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [showReAuth, setShowReAuth] = useState(false)
   const [pendingPortalMode, setPendingPortalMode] = useState(null)
+  const [pendingAction, setPendingAction] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const initialized = useRef(false)
   const contentRef = useRef(null)
+  const sessionRef = useRef(session)
+  sessionRef.current = session
 
   useEffect(() => {
     window.scrollTo(0, 0)
     if (contentRef.current) contentRef.current.focus()
   }, [activeTab])
+
+  // Session expiry check every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentSession = sessionRef.current
+      if (!currentSession) return
+      const elapsed = Date.now() - new Date(currentSession.loginTime).getTime()
+      if (elapsed > SESSION_DURATION_MS) {
+        handleLogout()
+        showToast('Session expired. Please login again.', 'warning')
+      }
+    }, 60000)
+    return () => clearInterval(interval)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const requireReAuth = (description, callback) => {
+    setPendingAction({ description, callback })
+  }
+
+  const handleReAuthVerified = () => {
+    const action = pendingAction
+    setPendingAction(null)
+    action?.callback()
+  }
+
+  const handleReAuthClose = () => {
+    setPendingAction(null)
+  }
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -355,7 +386,7 @@ function App() {
               {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
               {activeTab === 'approval' && <GradeApproval showToast={showToast} />}
               {activeTab === 'reports' && <ReportCards showToast={showToast} />}
-              {activeTab === 'fees' && <FeeManagement showToast={showToast} />}
+              {activeTab === 'fees' && <FeeManagement showToast={showToast} requireReAuth={requireReAuth} />}
               {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
               {activeTab === 'reset-password' && <ResetPassword showToast={showToast} />}
               {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
@@ -388,7 +419,8 @@ function App() {
 
       <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
       {showPasswordChange && <PasswordChangeModal userInfo={userInfo} userRole={userRole} onClose={() => setShowPasswordChange(false)} showToast={showToast} />}
-      {showReAuth && <ReAuthModal userRole={userRole} userInfo={userInfo} targetRole="admin" onVerified={() => { setShowReAuth(false); executeSwitch(pendingPortalMode) }} onClose={() => setShowReAuth(false)} />}
+      {showReAuth && <ReAuthModal userInfo={userInfo} description="Enter your password to switch to Admin portal" onVerified={() => { setShowReAuth(false); executeSwitch(pendingPortalMode) }} onClose={() => setShowReAuth(false)} />}
+      {pendingAction && <ReAuthModal userInfo={userInfo} description={pendingAction.description} onVerified={handleReAuthVerified} onClose={handleReAuthClose} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )

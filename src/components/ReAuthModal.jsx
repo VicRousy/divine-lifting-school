@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export default function ReAuthModal({ userInfo, targetRole, onVerified, onClose }) {
+export default function ReAuthModal({ userInfo, description, onVerified, onClose }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,7 +40,7 @@ export default function ReAuthModal({ userInfo, targetRole, onVerified, onClose 
     <div onKeyDown={(e) => { if (e.key === 'Escape') onClose() }} tabIndex={-1} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
       <div style={{ background: '#1e293b', borderRadius: '12px', padding: '32px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
         <h2 style={{ color: '#f8fafc', margin: '0 0 8px', fontSize: '1.15rem' }}>Re-authentication Required</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 20px' }}>Enter your password to switch to <strong style={{ color: '#38bdf8' }}>{targetRole}</strong> portal</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 20px' }}>{description}</p>
         <form onSubmit={handleVerify}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '6px' }}>Password</label>

@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { API_URL } from '../../config/api'
 
-export default function FeeManagement({ showToast }) {
+export default function FeeManagement({ showToast, requireReAuth }) {
   const [classes, setClasses] = useState([])
   const [students, setStudents] = useState([])
   const [selectedClass, setSelectedClass] = useState('')
@@ -52,8 +52,7 @@ export default function FeeManagement({ showToast }) {
     setLoading(false)
   }
 
-  const recordPayment = async (e) => {
-    e.preventDefault()
+  const doRecordPayment = async () => {
     if (!selectedStudent || !amount || isNaN(Number(amount)) || Number(amount) < 0 || !dueDate) {
       showToast?.('Please fill in all required fields with valid values', 'error')
       return
@@ -74,11 +73,9 @@ export default function FeeManagement({ showToast }) {
 
       if (error) throw error
 
-      // Send Invoice Email if requested
       if (sendInvoice && status === 'pending') {
         showToast?.('Sending invoice email...', 'info')
         
-        // Fetch parent email
         const { data: studentData } = await supabase.from('students').select('parent_id').eq('id', Number(selectedStudent)).single()
         let parentEmail = null
         if (studentData?.parent_id) {
@@ -119,13 +116,42 @@ export default function FeeManagement({ showToast }) {
     setSaving(false)
   }
 
-  const markAsPaid = async (paymentId) => {
+  const recordPayment = (e) => {
+    e.preventDefault()
+    if (!selectedStudent || !amount || isNaN(Number(amount)) || Number(amount) < 0 || !dueDate) {
+      showToast?.('Please fill in all required fields with valid values', 'error')
+      return
+    }
+    if (requireReAuth) {
+      requireReAuth('Enter your password to record a payment', doRecordPayment)
+    } else {
+      doRecordPayment()
+    }
+  }
+
+  const markAsPaid = (paymentId) => {
+    if (requireReAuth) {
+      requireReAuth('Enter your password to mark payment as paid', () => doMarkAsPaid(paymentId))
+    } else {
+      doMarkAsPaid(paymentId)
+    }
+  }
+
+  const doMarkAsPaid = async (paymentId) => {
     await safeQuery(() => supabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', paymentId))
     showToast?.('Payment marked as paid', 'success')
     fetchPayments()
   }
 
-  const deletePayment = async (paymentId) => {
+  const deletePayment = (paymentId) => {
+    if (requireReAuth) {
+      requireReAuth('Enter your password to delete a payment', () => doDeletePayment(paymentId))
+    } else {
+      doDeletePayment(paymentId)
+    }
+  }
+
+  const doDeletePayment = async (paymentId) => {
     await safeQuery(() => supabase.from('payments').delete().eq('id', paymentId))
     showToast?.('Payment record deleted', 'success')
     fetchPayments()
