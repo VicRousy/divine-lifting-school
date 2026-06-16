@@ -169,6 +169,9 @@ async function sendAnnouncement(req, res) {
   if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
     return res.status(400).json({ success: false, error: 'Missing recipients' });
   }
+  if (recipients.length > 100) {
+    return res.status(400).json({ error: 'Too many recipients. Maximum is 100 per request.' });
+  }
   if (!title || !body) {
     return res.status(400).json({ success: false, error: 'Missing title or body' });
   }
