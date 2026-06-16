@@ -3,6 +3,7 @@ import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
+import bcrypt from 'bcryptjs'
 
 const STUDENT_ACCESS_KEY = import.meta.env.VITE_STUDENT_ACCESS_KEY
 
@@ -76,6 +77,8 @@ export default function AddStudent(props) {
 
     const studentId = generateStudentId()
     const parentId = generateParentId()
+    const hashedParentPassword = await bcrypt.hash(parentPassword, 10)
+    const hashedStudentPassword = await bcrypt.hash(studentPassword, 10)
 
     const fullParentName = `${parentFirstName} ${parentMiddleName} ${parentLastName}`.trim()
     const fullStudentName = `${firstName} ${middleName} ${lastName}`.trim()
@@ -90,9 +93,9 @@ export default function AddStudent(props) {
           last_name: parentLastName,
           email: parentEmail.trim().toLowerCase(),
           phone: parentPhone,
-          password: parentPassword,
+          password: hashedParentPassword,
         }])
-        .select()
+        .select('id')
         .single()
 
       if (parentError) throw parentError
@@ -107,7 +110,7 @@ export default function AddStudent(props) {
           login_id: studentId,
           class_id: Number(selectedClassId),
           parent_id: parentData.id,
-          password: studentPassword,
+          password: hashedStudentPassword,
           is_active: true,
         }])
 

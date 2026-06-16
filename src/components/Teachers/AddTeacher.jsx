@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { sendWelcomeEmail } from '../../services/emailService'
+import bcrypt from 'bcryptjs'
 
 const TEACHER_ACCESS_KEY = import.meta.env.VITE_TEACHER_ACCESS_KEY
 
@@ -34,6 +35,7 @@ function AddTeacher(props) {
     }
 
     const staffId = generateStaffId()
+    const hashedPassword = await bcrypt.hash(password, 10)
 
     try {
       const { error: insertError } = await supabase
@@ -45,7 +47,7 @@ function AddTeacher(props) {
           staff_id: staffId,
           login_id: staffId,
           email: email.trim().toLowerCase(),
-          password: password,
+          password: hashedPassword,
           is_first_login: true
         }])
 

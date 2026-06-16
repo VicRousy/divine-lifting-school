@@ -12,7 +12,7 @@ function TeacherList({ refreshTrigger, showToast }) {
   const fetchTeachers = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.from('teachers').select('*')
+      const { data, error } = await supabase.from('teachers').select('id, first_name, middle_name, last_name, email, login_id, staff_id, is_first_login')
       if (error) throw error
       setTeachers(data || [])
     } catch (err) {
