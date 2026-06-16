@@ -6,10 +6,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const USER_TABLES = {
-  admin: { table: 'profiles', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'school_id' },
-  teacher: { table: 'teachers', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'staff_id' },
-  student: { table: 'students', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'student_id' },
-  parent: { table: 'parents', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'parent_id' },
+  admin: { table: 'profiles', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'school_id', select: 'id,first_name,last_name,email,login_id,school_id,is_first_login' },
+  teacher: { table: 'teachers', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'staff_id', select: 'id,first_name,last_name,email,login_id,staff_id,is_first_login' },
+  student: { table: 'students', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'student_id', select: 'id,first_name,last_name,email,login_id,student_id,class_id,parent_id,is_first_login' },
+  parent: { table: 'parents', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'parent_id', select: 'id,first_name,last_name,email,login_id,parent_id' },
 }
 
 export async function lookupUserByLoginId(loginId) {
@@ -27,45 +27,52 @@ export async function lookupUserByLoginId(loginId) {
     // function doesn't exist yet — fall through
   }
 
-  // Fallback: direct table queries
-  for (const [role, config] of Object.entries(USER_TABLES)) {
-    const { data, error } = await supabase
-      .from(config.table)
-      .select('*')
-      .eq('login_id', input)
-      .maybeSingle()
-    if (error) throw error
-    if (data) return { user: data, role }
-  }
-  return null
+  // Fallback: direct table queries in parallel
+  const results = await Promise.all(
+    Object.entries(USER_TABLES).map(async ([role, config]) => {
+      const { data, error } = await supabase
+        .from(config.table)
+        .select(config.select)
+        .eq('login_id', input)
+        .maybeSingle()
+      if (error) throw error
+      if (data) return { user: data, role }
+      return null
+    })
+  )
+  return results.find(r => r !== null) || null
 }
 
 export async function lookupUserByAuthId(authId) {
-  for (const [role, config] of Object.entries(USER_TABLES)) {
-    const { data, error } = await supabase
-      .from(config.table)
-      .select('*')
-      .eq('auth_id', authId)
-      .maybeSingle()
-    if (error) continue // RLS may block some tables
-    if (data) return { user: data, role }
-  }
-  return null
+  const results = await Promise.all(
+    Object.entries(USER_TABLES).map(async ([role, config]) => {
+      const { data, error } = await supabase
+        .from(config.table)
+        .select(config.select)
+        .eq('auth_id', authId)
+        .maybeSingle()
+      if (error || !data) return null
+      return { user: data, role }
+    })
+  )
+  return results.find(r => r !== null) || null
 }
 
 export async function lookupUserByEmail(email) {
   const input = email.trim().toLowerCase()
 
-  for (const [role, config] of Object.entries(USER_TABLES)) {
-    const { data, error } = await supabase
-      .from(config.table)
-      .select('*')
-      .eq('email', input)
-      .maybeSingle()
-    if (error) continue
-    if (data) return { user: data, role }
-  }
-  return null
+  const results = await Promise.all(
+    Object.entries(USER_TABLES).map(async ([role, config]) => {
+      const { data, error } = await supabase
+        .from(config.table)
+        .select(config.select)
+        .eq('email', input)
+        .maybeSingle()
+      if (error || !data) return null
+      return { user: data, role }
+    })
+  )
+  return results.find(r => r !== null) || null
 }
 
 export function buildUserInfo(role, user) {

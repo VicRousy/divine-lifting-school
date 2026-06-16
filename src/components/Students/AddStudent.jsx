@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
 
-const STUDENT_ACCESS_KEY = import.meta.env.VITE_STUDENT_ACCESS_KEY || 'DLS-STUDENT-2026'
+const STUDENT_ACCESS_KEY = import.meta.env.VITE_STUDENT_ACCESS_KEY
 
 export default function AddStudent(props) {
   const [classes, setClasses] = useState([])
@@ -57,6 +57,11 @@ export default function AddStudent(props) {
     e.preventDefault()
     setSaving(true)
 
+    if (!STUDENT_ACCESS_KEY) {
+      props.showToast('Student registration is not configured. Contact system administrator.', 'error')
+      setSaving(false)
+      return
+    }
     if (accessKey !== STUDENT_ACCESS_KEY) {
       props.showToast('Invalid Student Access Key', 'error')
       setSaving(false)

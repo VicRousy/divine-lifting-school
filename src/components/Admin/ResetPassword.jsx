@@ -32,7 +32,7 @@ export default function ResetPassword({ showToast }) {
       const conditions = role.searchFields.map(f => `${f}.ilike.%${search.trim()}%`).join(',')
       const { data, error } = await supabase
         .from(role.table)
-        .select('*')
+        .select('id, first_name, last_name, login_id, student_id, staff_id, parent_id, school_id')
         .or(conditions)
 
       if (error) throw error

@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { supabase, lookupUserByLoginId } from '../supabaseClient'
-import bcrypt from 'bcryptjs'
+import { supabase } from '../supabaseClient'
 
-export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified, onClose }) {
+export default function ReAuthModal({ userInfo, targetRole, onVerified, onClose }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -13,64 +12,23 @@ export default function ReAuthModal({ userRole, userInfo, targetRole, onVerified
     setError('')
     setLoading(true)
     try {
-      // Strategy 1: Lookup by login_id via RPC (works with RLS)
-      if (userInfo?.loginId) {
-        const result = await lookupUserByLoginId(userInfo.loginId)
-        if (result) {
-          const valid = result.user.password === password || await bcrypt.compare(password, result.user.password)
-          if (valid) {
-            onVerified()
-            setLoading(false)
-            return
-          }
-        }
+      if (!userInfo?.loginId) {
+        setError('No login ID available')
+        return
       }
 
-      // Strategy 2: Lookup by auth_id from current session
-      const authSession = await Promise.race([
-        supabase.auth.getSession().then(r => r.data?.session ?? null),
-        new Promise(res => setTimeout(() => res(null), 3000)),
-      ])
-      const authId = authSession?.user?.id
-      if (authId) {
-        const tables = ['profiles', 'teachers', 'students', 'parents']
-        for (const table of tables) {
-          const { data, error: dbErr } = await supabase
-            .from(table)
-            .select('password')
-            .eq('auth_id', authId)
-            .maybeSingle()
-          if (!dbErr && data) {
-            const valid = data.password === password || await bcrypt.compare(password, data.password)
-            if (valid) {
-              onVerified()
-              setLoading(false)
-              return
-            }
-          }
-        }
+      const { data, error: rpcError } = await supabase.rpc('verify_login_password', {
+        p_login_id: userInfo.loginId,
+        p_password: password,
+      })
+
+      if (rpcError) throw rpcError
+      if (!data?.valid) {
+        setError('Incorrect password')
+        return
       }
 
-      // Strategy 3: Legacy fallback by id
-      const TABLE_MAP = { admin: 'profiles', teacher: 'teachers', student: 'students', parent: 'parents' }
-      const table = TABLE_MAP[userRole]
-      if (table && userInfo?.id) {
-        const { data, error: dbError } = await supabase
-          .from(table)
-          .select('password')
-          .eq('id', userInfo.id)
-          .maybeSingle()
-        if (!dbError && data) {
-          const valid = data.password === password || await bcrypt.compare(password, data.password)
-          if (valid) {
-            onVerified()
-            setLoading(false)
-            return
-          }
-        }
-      }
-
-      setError('Could not verify password')
+      onVerified()
     } catch (err) {
       setError(err.message || 'Could not verify password')
     } finally {

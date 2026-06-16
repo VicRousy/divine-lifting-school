@@ -79,19 +79,12 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
         return
       }
 
-      const { data, error } = await supabase
-        .from(table)
-        .select('password')
-        .eq(ID_FIELD_MAP[userRole], userInfo.id)
-        .single()
+      const { data, error: verifyError } = await supabase.rpc('verify_login_password', {
+        p_login_id: userInfo.loginId,
+        p_password: currentPassword,
+      })
 
-      if (error || !data) {
-        showToast('Could not verify current password', 'error')
-        return
-      }
-
-      const isValid = data.password === currentPassword || await bcrypt.compare(currentPassword, data.password)
-      if (!isValid) {
+      if (verifyError || !data?.valid) {
         showToast('Current password is incorrect', 'error')
         return
       }
@@ -109,7 +102,6 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
 
       // Sync with Supabase Auth (non-blocking)
       supabase.auth.updateUser({ password: newPassword }).catch(() => {
-        // Fallback: try API endpoint
         resetAuthPassword(userInfo.email, newPassword).catch(() => {})
       })
 

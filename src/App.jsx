@@ -182,14 +182,14 @@ function App() {
     let info = userInfo
     try {
       if (mode === 'teacher') {
-        const { data } = await supabase.from('teachers').select('*').eq('email', userInfo.email).maybeSingle()
+        const { data } = await supabase.from('teachers').select('id, first_name, last_name, email, staff_id, login_id').eq('email', userInfo.email).maybeSingle()
         if (data) {
           info = buildUserInfo('teacher', data)
         }
       } else if (mode === 'admin' && session?.originalUserInfo) {
         info = session.originalUserInfo
       } else if (mode === 'admin') {
-        const { data } = await supabase.from('profiles').select('*').eq('email', userInfo.email).maybeSingle()
+        const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, school_id, login_id').eq('email', userInfo.email).maybeSingle()
         if (data) info = buildUserInfo('admin', data)
       }
     } catch (_) {}

@@ -1,7 +1,34 @@
--- Recreate lookup_user_by_login_id WITHOUT password field
--- Password verify is now done server-side via verify_login_password RPC
+-- ============================================================
+-- RUN THIS IN SUPABASE SQL EDITOR
+-- https://supabase.com/dashboard/project/dxnsrxfpnbkwdrvkvfpo/sql/new
+-- ============================================================
+
+-- Bulk convert all plaintext passwords to bcrypt hashes via pgcrypto
+-- This ensures verify_login_password RPC works for every user immediately.
+
+-- Convert admin profiles
+UPDATE profiles
+SET password = crypt(password, gen_salt('bf'))
+WHERE password IS NOT NULL AND password !~ '^\$2[abxy]\$\d{2}\$';
+
+-- Convert teachers
+UPDATE teachers
+SET password = crypt(password, gen_salt('bf'))
+WHERE password IS NOT NULL AND password !~ '^\$2[abxy]\$\d{2}\$';
+
+-- Convert students
+UPDATE students
+SET password = crypt(password, gen_salt('bf'))
+WHERE password IS NOT NULL AND password !~ '^\$2[abxy]\$\d{2}\$';
+
+-- Convert parents
+UPDATE parents
+SET password = crypt(password, gen_salt('bf'))
+WHERE password IS NOT NULL AND password !~ '^\$2[abxy]\$\d{2}\$';
+
+-- Recreate lookup_user_by_login_id WITHOUT the password field
+-- Password should never leave the database now that server-side verify is the only path.
 DROP FUNCTION IF EXISTS lookup_user_by_login_id;
-DROP FUNCTION IF EXISTS verify_login_password;
 
 CREATE OR REPLACE FUNCTION lookup_user_by_login_id(p_login_id TEXT)
 RETURNS JSON
