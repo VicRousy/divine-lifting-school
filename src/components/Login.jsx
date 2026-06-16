@@ -247,7 +247,7 @@ function Login({ onLogin }) {
         .from(table)
         .update({ password: hashedPassword, is_first_login: false })
         .eq('id', firstLoginUser.id)
-        .select()
+        .select('id')
 
       if (updateError || !updateData || updateData.length === 0) throw new Error('Password update failed')
 
