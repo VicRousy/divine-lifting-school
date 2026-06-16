@@ -371,7 +371,7 @@ function App() {
               {activeTab === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
               {activeTab === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
               {activeTab === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
-              {activeTab === 'import' && <BulkImport showToast={showToast} />}
+              {activeTab === 'import' && <BulkImport showToast={showToast} requireReAuth={requireReAuth} />}
               {activeTab === 'student-list' && (
                 selectedStudentProfile ? (
                   <StudentProfile student={selectedStudentProfile} onBack={() => setSelectedStudentProfile(null)} />
@@ -383,11 +383,11 @@ function App() {
               {activeTab === 'class-list' && <ClassList refreshTrigger={refreshTrigger} onUpdate={refreshData} showToast={showToast} />}
               {activeTab === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
               {activeTab === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
-              {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} />}
-              {activeTab === 'approval' && <GradeApproval showToast={showToast} />}
+              {activeTab === 'score-entry' && <ScoreEntry showToast={showToast} requireReAuth={requireReAuth} />}
+              {activeTab === 'approval' && <GradeApproval showToast={showToast} requireReAuth={requireReAuth} />}
               {activeTab === 'reports' && <ReportCards showToast={showToast} />}
               {activeTab === 'fees' && <FeeManagement showToast={showToast} requireReAuth={requireReAuth} />}
-              {activeTab === 'settings' && <SchoolSettings showToast={showToast} />}
+              {activeTab === 'settings' && <SchoolSettings showToast={showToast} requireReAuth={requireReAuth} userInfo={userInfo} />}
               {activeTab === 'reset-password' && <ResetPassword showToast={showToast} />}
               {activeTab === 'announcements' && <AdminAnnouncements showToast={showToast} />}
               {activeTab === 'contact-messages' && <ContactMessages showToast={showToast} />}
@@ -396,7 +396,7 @@ function App() {
               {activeTab === 'manage-news' && <ManageNews showToast={showToast} />}
               
               {/* Placeholders */}
-              {activeTab === 'promote' && <ClassPromotion showToast={showToast} />}
+              {activeTab === 'promote' && <ClassPromotion showToast={showToast} requireReAuth={requireReAuth} />}
               {activeTab === 'scale' && <GradeScale showToast={showToast} />}
             </>
           )}

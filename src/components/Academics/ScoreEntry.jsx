@@ -17,7 +17,7 @@ function clampScore(value, max) {
   return Math.max(0, Math.min(max, num))
 }
 
-export default function ScoreEntry({ showToast }) {
+export default function ScoreEntry({ showToast, requireReAuth }) {
   const [classes, setClasses] = useState([])
   const [subjects, setSubjects] = useState([])
   const [terms, setTerms] = useState([])
@@ -84,16 +84,7 @@ export default function ScoreEntry({ showToast }) {
     setDirty(true)
   }
 
-  const saveAllScores = async () => {
-    if (!selectedSubject || !selectedClass || !selectedTermLabel || !selectedAcademicYear) {
-      showToast?.('Select class, subject, and term first.', 'error')
-      return
-    }
-    if (students.length === 0) {
-      showToast?.('No students in this class.', 'error')
-      return
-    }
-
+  const doSaveAllScores = async () => {
     setLoading(true)
     try {
       const payload = students.map((s) => ({
@@ -119,6 +110,22 @@ export default function ScoreEntry({ showToast }) {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveAllScores = () => {
+    if (!selectedSubject || !selectedClass || !selectedTermLabel || !selectedAcademicYear) {
+      showToast?.('Select class, subject, and term first.', 'error')
+      return
+    }
+    if (students.length === 0) {
+      showToast?.('No students in this class.', 'error')
+      return
+    }
+    if (requireReAuth) {
+      requireReAuth('Enter your password to save scores', doSaveAllScores)
+    } else {
+      doSaveAllScores()
     }
   }
 

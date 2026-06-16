@@ -12,7 +12,7 @@ const generatePassword = () => {
   return Array.from(array).map((n) => chars[n % chars.length]).join('')
 }
 
-function BulkImport({ showToast }) {
+function BulkImport({ showToast, requireReAuth }) {
   const [csvData, setCsvData] = useState([])
   const [headers, setHeaders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -52,12 +52,7 @@ function BulkImport({ showToast }) {
     reader.readAsText(file)
   }
 
-  const handleImport = async () => {
-    if (csvData.length === 0) {
-      showToast('No data to import.', 'error')
-      return
-    }
-
+  const doImport = async () => {
     setLoading(true)
     setErrors([])
     let studentCount = 0
@@ -165,6 +160,18 @@ function BulkImport({ showToast }) {
       showToast(`${importErrors.length} errors occurred. Check details below.`, 'error')
     }
     setDirty(false)
+  }
+
+  const handleImport = () => {
+    if (csvData.length === 0) {
+      showToast('No data to import.', 'error')
+      return
+    }
+    if (requireReAuth) {
+      requireReAuth('Enter your password to bulk import students', doImport)
+    } else {
+      doImport()
+    }
   }
 
   return (

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 
-export default function ClassPromotion({ showToast }) {
+export default function ClassPromotion({ showToast, requireReAuth }) {
   const [classes, setClasses] = useState([])
   const [students, setStudents] = useState([])
   const [selectedClass, setSelectedClass] = useState('')
@@ -60,7 +60,29 @@ export default function ClassPromotion({ showToast }) {
     setSelectedStudents(next)
   }
 
-  const handlePromote = async () => {
+  const doPromote = async () => {
+    setLoading(true)
+    try {
+      const ids = students.filter((s) => selectedStudents[s.id]).map((s) => s.id)
+      const { error } = await supabase
+        .from('students')
+        .update({ class_id: Number(targetClass), last_promotion_date: new Date().toISOString() })
+        .in('id', ids)
+
+      if (error) throw error
+
+      const count = ids.length
+      showToast?.(`${count} student(s) promoted successfully.`, 'success')
+      setSelectedClass('')
+      setTargetClass('')
+      setStudents([])
+    } catch (err) {
+      showToast?.('Promotion failed: ' + err.message, 'error')
+    }
+    setLoading(false)
+  }
+
+  const handlePromote = () => {
     if (!targetClass) {
       showToast?.('Select a target class first.', 'error')
       return
@@ -69,31 +91,16 @@ export default function ClassPromotion({ showToast }) {
       showToast?.('Source and target class cannot be the same.', 'error')
       return
     }
-
     const toPromote = students.filter((s) => selectedStudents[s.id])
     if (toPromote.length === 0) {
       showToast?.('No students selected for promotion.', 'error')
       return
     }
-
-    setLoading(true)
-    try {
-      const ids = toPromote.map((s) => s.id)
-      const { error } = await supabase
-        .from('students')
-        .update({ class_id: Number(targetClass), last_promotion_date: new Date().toISOString() })
-        .in('id', ids)
-
-      if (error) throw error
-
-      showToast?.(`${toPromote.length} student(s) promoted successfully.`, 'success')
-      setSelectedClass('')
-      setTargetClass('')
-      setStudents([])
-    } catch (err) {
-      showToast?.('Promotion failed: ' + err.message, 'error')
+    if (requireReAuth) {
+      requireReAuth('Enter your password to promote students', doPromote)
+    } else {
+      doPromote()
     }
-    setLoading(false)
   }
 
   const selectedCount = students.filter((s) => selectedStudents[s.id]).length

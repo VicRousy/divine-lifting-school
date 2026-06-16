@@ -6,10 +6,26 @@ import bcrypt from 'bcryptjs'
 
 const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY
 
+let cachedIp = ''
+const getClientIp = async () => {
+  if (cachedIp) return cachedIp
+  try {
+    const base = import.meta.env.VITE_API_URL || ''
+    const res = await fetch(`${base}/api/get-ip`, { signal: AbortSignal.timeout(3000) })
+    if (res.ok) {
+      const { ip } = await res.json()
+      cachedIp = ip
+    }
+  } catch {}
+  return cachedIp
+}
+
 const verifyPassword = async (inputPassword, loginId) => {
+  const ip = await getClientIp()
   const { data, error } = await supabase.rpc('verify_login_password', {
     p_login_id: loginId,
     p_password: inputPassword,
+    p_ip_address: ip || null,
   })
   if (error) throw error
   if (data?.rate_limited) throw new Error('Too many login attempts. Please wait 15 minutes.')
@@ -40,6 +56,13 @@ function Login({ onLogin }) {
   const [firstLoginUser, setFirstLoginUser] = useState(null)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  
+  // MFA State
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaFactorId, setMfaFactorId] = useState('')
+  const [mfaChallengeId, setMfaChallengeId] = useState('')
+  const [pendingUser, setPendingUser] = useState(null) // { role, user } after password verified, before MFA
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -77,6 +100,7 @@ function Login({ onLogin }) {
 
       // Sync or create Supabase Auth account
       const email = user.email?.trim().toLowerCase()
+      let authSession = null
       if (email) {
         try {
           if (user.auth_id) {
@@ -95,8 +119,28 @@ function Login({ onLogin }) {
           console.error('Supabase Auth sync error:', e)
         }
 
-        const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
-        if (signInErr) console.error('signInWithPassword non-blocking:', signInErr)
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInErr) {
+          console.error('signInWithPassword non-blocking:', signInErr)
+        } else {
+          authSession = signInData?.session
+        }
+      }
+
+      // Check MFA if signed in to Supabase Auth
+      if (authSession) {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aalData && aalData.nextLevel === 'aal2' && aalData.currentLevel !== 'aal2') {
+          const { data: factorData } = await supabase.auth.mfa.listFactors()
+          const verifiedFactors = (factorData?.all || []).filter(f => f.status === 'verified')
+          if (verifiedFactors.length > 0) {
+            setMfaFactorId(verifiedFactors[0].id)
+            setMfaRequired(true)
+            setPendingUser({ role, user })
+            setLoading(false)
+            return
+          }
+        }
       }
 
       onLogin(role, buildUserInfo(role, user))
@@ -105,6 +149,30 @@ function Login({ onLogin }) {
       setError(err.message || 'Connection error. Please try again.')
       setLoading(false)
     }
+  }
+
+  const handleMfaVerify = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const challengeRes = await supabase.auth.mfa.challenge({ factorId: mfaFactorId })
+      if (challengeRes.error) throw challengeRes.error
+
+      const verifyRes = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeRes.data.id,
+        code: mfaCode,
+      })
+      if (verifyRes.error) throw verifyRes.error
+
+      setMfaRequired(false)
+      setMfaCode('')
+      onLogin(pendingUser.role, buildUserInfo(pendingUser.role, pendingUser.user))
+    } catch (err) {
+      setError('MFA verification failed: ' + (err.message || 'Invalid code'))
+    }
+    setLoading(false)
   }
 
   const handleSignupSubmit = async (e) => {
@@ -288,6 +356,9 @@ function Login({ onLogin }) {
     setMasterKey('')
     setVerificationCode('')
     setPendingLoginId('')
+    setMfaRequired(false)
+    setMfaCode('')
+    setPendingUser(null)
     setError('')
   }
 
@@ -364,6 +435,34 @@ function Login({ onLogin }) {
             </button>
             <div onClick={() => { setIsSignup(true); setError('') }} style={{ marginTop: '20px', textAlign: 'center', color: '#38bdf8', fontSize: '0.9rem', cursor: 'pointer', fontWeight: 600 }}>
               Sign Up for Admin Access →
+            </div>
+          </form>
+        )}
+
+        {/* MFA VERIFICATION */}
+        {mfaRequired && (
+          <form onSubmit={handleMfaVerify} aria-describedby={error ? "login-error" : undefined}>
+            <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '20px', fontSize: '0.9rem' }}>
+              Enter the 6-digit code from your authenticator app
+            </p>
+            <input
+              type="text"
+              aria-label="MFA Code"
+              placeholder="000000"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              required
+              maxLength={6}
+              style={{ width: '100%', padding: '14px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: 'white', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '8px', boxSizing: 'border-box' }}
+            />
+            {error && (
+              <p id="login-error" style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '5px' }}>{error}</p>
+            )}
+            <button type="submit" disabled={loading || mfaCode.length !== 6} style={{ width: '100%', padding: '14px', background: loading || mfaCode.length !== 6 ? '#64748b' : 'linear-gradient(135deg, #10b981 0%, #38bdf8 100%)', color: loading || mfaCode.length !== 6 ? '#cbd5e1' : '#020617', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loading || mfaCode.length !== 6 ? 'not-allowed' : 'pointer', fontSize: '1rem' }}>
+              {loading ? 'Verifying...' : 'Verify Code'}
+            </button>
+            <div onClick={() => { setMfaRequired(false); setMfaCode(''); setPendingUser(null); setError('') }} style={{ marginTop: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', cursor: 'pointer', fontWeight: 600 }}>
+              ← Back to Login
             </div>
           </form>
         )}

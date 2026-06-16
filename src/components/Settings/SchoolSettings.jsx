@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import MfaSetup from './MfaSetup'
 
-export default function SchoolSettings({ showToast }) {
+export default function SchoolSettings({ showToast, requireReAuth }) {
   const [activeTab, setActiveTab] = useState('general')
   const [schoolName, setSchoolName] = useState('Divine Lifting School')
   const [schoolEmail, setSchoolEmail] = useState('')
@@ -25,7 +26,7 @@ export default function SchoolSettings({ showToast }) {
     }
   }
 
-  const saveGeneralSettings = async () => {
+  const doSaveGeneralSettings = async () => {
     setSaving(true)
     try {
       localStorage.setItem('dls_school_name', schoolName)
@@ -40,12 +41,15 @@ export default function SchoolSettings({ showToast }) {
     setSaving(false)
   }
 
-  const addTerm = async () => {
-    if (!newTermName || !newTermYear) {
-      showToast?.('Please fill in term name and academic year', 'error')
-      return
+  const saveGeneralSettings = () => {
+    if (requireReAuth) {
+      requireReAuth('Enter your password to save school settings', doSaveGeneralSettings)
+    } else {
+      doSaveGeneralSettings()
     }
+  }
 
+  const doAddTerm = async () => {
     setSaving(true)
     try {
       const { error } = await supabase.from('terms').insert({
@@ -65,7 +69,19 @@ export default function SchoolSettings({ showToast }) {
     setSaving(false)
   }
 
-  const toggleTermActive = async (termId, isActive) => {
+  const addTerm = () => {
+    if (!newTermName || !newTermYear) {
+      showToast?.('Please fill in term name and academic year', 'error')
+      return
+    }
+    if (requireReAuth) {
+      requireReAuth('Enter your password to add a term', doAddTerm)
+    } else {
+      doAddTerm()
+    }
+  }
+
+  const doToggleTermActive = async (termId, isActive) => {
     try {
       const { error } = await supabase.from('terms').update({ is_active: !isActive }).eq('id', termId)
       if (error) throw error
@@ -76,7 +92,15 @@ export default function SchoolSettings({ showToast }) {
     }
   }
 
-  const deleteTerm = async (termId) => {
+  const toggleTermActive = (termId, isActive) => {
+    if (requireReAuth) {
+      requireReAuth('Enter your password to change term status', () => doToggleTermActive(termId, isActive))
+    } else {
+      doToggleTermActive(termId, isActive)
+    }
+  }
+
+  const doDeleteTerm = async (termId) => {
     try {
       const { error } = await supabase.from('terms').delete().eq('id', termId)
       if (error) throw error
@@ -84,6 +108,14 @@ export default function SchoolSettings({ showToast }) {
       fetchSettings()
     } catch (err) {
       showToast?.('Failed to delete term', 'error')
+    }
+  }
+
+  const deleteTerm = (termId) => {
+    if (requireReAuth) {
+      requireReAuth('Enter your password to delete a term', () => doDeleteTerm(termId))
+    } else {
+      doDeleteTerm(termId)
     }
   }
 
@@ -101,6 +133,7 @@ export default function SchoolSettings({ showToast }) {
         {[
           { key: 'general', label: 'General Info' },
           { key: 'terms', label: 'Academic Terms' },
+          { key: 'mfa', label: 'Security (MFA)' },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -216,6 +249,11 @@ export default function SchoolSettings({ showToast }) {
             )}
           </div>
         </div>
+      )}
+
+      {/* MFA Settings */}
+      {activeTab === 'mfa' && (
+        <MfaSetup userInfo={userInfo} showToast={showToast} />
       )}
     </div>
   )

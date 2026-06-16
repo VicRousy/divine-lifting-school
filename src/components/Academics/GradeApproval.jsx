@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { getGradeInfo } from '../../utils/gradeUtils'
 
-export default function GradeApproval({ showToast }) {
+export default function GradeApproval({ showToast, requireReAuth }) {
   const [submissions, setSubmissions] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
@@ -33,7 +33,7 @@ export default function GradeApproval({ showToast }) {
     setLoading(false)
   }
 
-  const handleApprove = async (submissionId) => {
+  const doApprove = async (submissionId) => {
     await safeQuery(() => supabase
       .from('exam_scores')
       .update({
@@ -46,12 +46,15 @@ export default function GradeApproval({ showToast }) {
     loadSubmissions()
   }
 
-  const handleReject = async (submissionId) => {
-    if (!rejectionReason.trim()) {
-      showToast?.('Please provide a reason for rejection.', 'error')
-      return
+  const handleApprove = (submissionId) => {
+    if (requireReAuth) {
+      requireReAuth('Enter your password to approve a grade', () => doApprove(submissionId))
+    } else {
+      doApprove(submissionId)
     }
+  }
 
+  const doReject = async (submissionId) => {
     await safeQuery(() => supabase
       .from('exam_scores')
       .update({
@@ -63,6 +66,18 @@ export default function GradeApproval({ showToast }) {
     setRejectionReason('')
     setSelectedSubmission(null)
     loadSubmissions()
+  }
+
+  const handleReject = (submissionId) => {
+    if (!rejectionReason.trim()) {
+      showToast?.('Please provide a reason for rejection.', 'error')
+      return
+    }
+    if (requireReAuth) {
+      requireReAuth('Enter your password to reject a grade', () => doReject(submissionId))
+    } else {
+      doReject(submissionId)
+    }
   }
 
   const filteredSubmissions = submissions.filter((s) => {
