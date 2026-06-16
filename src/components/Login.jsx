@@ -12,6 +12,7 @@ const verifyPassword = async (inputPassword, loginId) => {
     p_password: inputPassword,
   })
   if (error) throw error
+  if (data?.rate_limited) throw new Error('Too many login attempts. Please wait 15 minutes.')
   return data?.valid === true
 }
 
@@ -101,7 +102,7 @@ function Login({ onLogin }) {
       onLogin(role, buildUserInfo(role, user))
       setLoading(false)
     } catch (err) {
-      setError('Connection error. Please try again.')
+      setError(err.message || 'Connection error. Please try again.')
       setLoading(false)
     }
   }
