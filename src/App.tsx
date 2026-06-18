@@ -99,7 +99,7 @@ function App() {
             const raw = result.user
             const displayName = `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.login_id
             setUserInfo({ ...raw, role: result.role, name: displayName, loginId: raw.login_id })
-            setUserRole(result.role)
+            setActiveRole((prev: string | null) => { if (!prev) setUserRole(result.role); return prev || result.role })
           } else {
             supabase.auth.signOut()
           }
@@ -115,7 +115,7 @@ function App() {
             const raw = result.user
             const displayName = `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.login_id
             setUserInfo({ ...raw, role: result.role, name: displayName, loginId: raw.login_id })
-            setUserRole(result.role)
+            setActiveRole((prev: string | null) => { if (!prev) { setUserRole(result.role); return result.role }; return prev })
           } else {
             supabase.auth.signOut()
           }
@@ -123,6 +123,7 @@ function App() {
       } else {
         setUserInfo(null)
         setUserRole(null)
+        setActiveRole(null)
       }
     })
 
@@ -236,7 +237,7 @@ function App() {
     )
   }
 
-  if (userRole === 'parent') {
+  if ((activeRole || userRole) === 'parent') {
     return (
       <ErrorBoundary>
         {toast && <Toast message={toast.msg} type={toast.type} />}
@@ -246,7 +247,7 @@ function App() {
     )
   }
 
-  if (userRole === 'student') {
+  if ((activeRole || userRole) === 'student') {
     return (
       <ErrorBoundary>
         {toast && <Toast message={toast.msg} type={toast.type} />}
@@ -261,7 +262,7 @@ function App() {
       <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
         <Sidebar
           userInfo={userInfo}
-          role={userRole || userInfo.role}
+          role={activeRole || userRole || userInfo.role}
           activePage={activePage}
           onNavigate={setActivePage}
           isOpen={sidebarOpen}
@@ -316,7 +317,7 @@ function App() {
               )}
 
               <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Loading...</div>}>
-                {activePage === 'dashboard' && userRole === 'admin' && (
+              {activePage === 'dashboard' && (activeRole || userRole) === 'admin' && (
                   <div>
                     <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
                     <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActivePage} showToast={showToast} />
@@ -324,7 +325,7 @@ function App() {
                   </div>
                 )}
 
-                {userRole === 'admin' && (
+                {(activeRole || userRole) === 'admin' && (
                   <>
                     {activePage === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
                     {activePage === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
@@ -360,7 +361,7 @@ function App() {
                   </>
                 )}
 
-                {userRole === 'teacher' && (
+                {(activeRole || userRole) === 'teacher' && (
                   <>
                     {activePage === 'teacher-dashboard' && <TeacherDashboard userInfo={userInfo} onNavigate={setActivePage} onLogout={handleLogout} showToast={showToast} />}
                     {activePage === 'scores' && <TeacherGradebook teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
@@ -373,7 +374,7 @@ function App() {
                   </>
                 )}
 
-                {!['admin', 'teacher', 'student', 'parent'].includes(userRole || '') && (
+                {!['admin', 'teacher', 'student', 'parent'].includes(activeRole || userRole || '') && (
                   <NotFound message="Unauthorized role" />
                 )}
               </Suspense>
