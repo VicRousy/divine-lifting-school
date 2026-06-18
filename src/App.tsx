@@ -268,6 +268,8 @@ function App() {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           onSwitchPortal={switchPortal}
+          onLogout={() => setShowLogoutConfirm(true)}
+          onPasswordChange={() => setShowPasswordChange(true)}
         />
 
         <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
