@@ -2,10 +2,12 @@ import { memo } from 'react'
 
 interface SidebarProps {
   userInfo: any
+  role: string
   activePage: string
   onNavigate: (page: string) => void
   isOpen: boolean
   onClose: () => void
+  onSwitchPortal?: () => void
 }
 
 const SidebarGroup = memo(function SidebarGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -42,8 +44,7 @@ const SidebarItem = memo(function SidebarItem({ icon, label, page, active, onCli
   )
 })
 
-const Sidebar = memo(function Sidebar({ userInfo, activePage, onNavigate, isOpen, onClose }: SidebarProps) {
-  const role = userInfo?.role
+const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, isOpen, onClose, onSwitchPortal }: SidebarProps) {
 
   const link = (page: string, label: string, icon: string = '') => (
     <SidebarItem key={page} icon={icon} label={label} page={page}
@@ -87,6 +88,16 @@ const Sidebar = memo(function Sidebar({ userInfo, activePage, onNavigate, isOpen
         {link('settings', 'Settings', '⚙️')}
         {link('mfa', 'MFA Setup', '🔐')}
       </SidebarGroup>
+      {onSwitchPortal && (
+        <div style={{ padding: '8px 20px' }}>
+          <div role="button" tabIndex={0} onClick={() => { onSwitchPortal(); onClose() }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onSwitchPortal(); onClose() } }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', cursor: 'pointer', color: '#38bdf8', fontSize: '0.9rem' }}>
+            <span>🔄</span>
+            <span>Switch to Teacher Portal</span>
+          </div>
+        </div>
+      )}
     </>
   )
 

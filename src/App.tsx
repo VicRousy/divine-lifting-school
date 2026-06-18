@@ -34,6 +34,7 @@ function App() {
   const [userInfo, setUserInfo] = useState<any>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePage, setActivePage] = useState('dashboard')
+  const [activeRole, setActiveRole] = useState<string | null>(null)
   const [reAuthDescription, setReAuthDescription] = useState('')
   const [pendingAction, setPendingAction] = useState<any>(null)
   const [showReAuth, setShowReAuth] = useState(false)
@@ -110,8 +111,14 @@ function App() {
     setSession(null)
     setUserInfo(null)
     setActivePage('dashboard')
+    setActiveRole(null)
     window.location.reload()
   }, [])
+
+  const switchPortal = useCallback(() => {
+    setActiveRole(activeRole === 'teacher' ? userInfo.role : 'teacher')
+    setActivePage('dashboard')
+  }, [activeRole, userInfo])
 
   const [loadingTimeout, setLoadingTimeout] = useState(false)
   const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -150,7 +157,7 @@ function App() {
   }
 
   const renderPage = () => {
-    switch (userInfo.role) {
+    switch (activeRole || userInfo.role) {
       case 'teacher':
         switch (activePage) {
           case 'dashboard': return <TeacherDashboard userInfo={userInfo} onLogout={handleLogout} showToast={showToast} />
@@ -193,10 +200,12 @@ function App() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a' }}>
         <Sidebar
           userInfo={userInfo}
+          role={activeRole || userInfo.role}
           activePage={activePage}
           onNavigate={setActivePage}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          onSwitchPortal={userInfo.role === 'admin' ? switchPortal : undefined}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, marginLeft: 260 }}>
           <HeaderBar
