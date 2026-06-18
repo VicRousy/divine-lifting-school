@@ -1,48 +1,76 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
-import { supabase } from './supabaseClient'
-import { useFocusTrap } from './utils/useFocusTrap'
-import { lookupUserByAuthId } from './supabaseClient'
-import ReAuthModal from './components/ReAuthModal'
+import { supabase, lookupUserByAuthId } from './supabaseClient'
 import Login from './components/Login'
 import Sidebar from './components/Sidebar/Sidebar'
 import HeaderBar from './components/Common/HeaderBar'
-import AnnouncementsWidget from './components/Common/AnnouncementsWidget'
 import Toast from './components/Toast'
-import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
-import TeacherGradebook from './components/TeacherPortal/TeacherGradebook'
-import QuickAttendance from './components/TeacherPortal/QuickAttendance'
-import AttendanceMarking from './components/Academics/AttendanceMarking'
-import ScoreEntry from './components/Academics/ScoreEntry'
-import ClassRoster from './components/TeacherPortal/ClassRoster'
-import HomeworkManager from './components/TeacherPortal/HomeworkManager'
-import TeacherComms from './components/TeacherPortal/TeacherComms'
-import { TeacherNotifications } from './components/TeacherPortal/TeacherComms'
-import StudentPortal from './components/StudentPortal/StudentPortal'
-import ParentDashboard from './components/ParentPortal/ParentDashboard'
 import ErrorBoundary from './components/Common/ErrorBoundary'
-import './styles/admin.css'
-import NotFound from './components/Common/NotFound'
+import ConfirmModal from './components/ConfirmModal'
 import PasswordChangeModal from './components/PasswordChangeModal'
-import { useServerPagination } from './utils/useServerPagination'
+import ReAuthModal from './components/ReAuthModal'
+import NotFound from './components/Common/NotFound'
+import './styles/admin.css'
 
-const AdminPanel = lazy(() => import('./components/Admin/AdminPanel'))
+const DashboardStats = lazy(() => import('./components/Dashboard/DashboardStats'))
+const RecentActivity = lazy(() => import('./components/Dashboard/RecentActivity'))
+const AddStudent = lazy(() => import('./components/Students/AddStudent'))
+const StudentList = lazy(() => import('./components/Students/StudentList'))
+const StudentProfile = lazy(() => import('./components/Students/StudentProfile'))
+const BulkImport = lazy(() => import('./components/Students/BulkImport'))
+const AddTeacher = lazy(() => import('./components/Teachers/AddTeacher'))
+const TeacherList = lazy(() => import('./components/Teachers/TeacherList'))
+const TeacherAssignments = lazy(() => import('./components/Teachers/TeacherAssignments'))
+const AddClass = lazy(() => import('./components/Classes/AddClass'))
+const ClassList = lazy(() => import('./components/Classes/ClassList'))
+const SubjectList = lazy(() => import('./components/Subjects/SubjectList'))
+const ScoreEntry = lazy(() => import('./components/Academics/ScoreEntry'))
+const GradeApproval = lazy(() => import('./components/Academics/GradeApproval'))
+const ReportCards = lazy(() => import('./components/Academics/ReportCards'))
+const ClassPromotion = lazy(() => import('./components/Academics/ClassPromotion'))
+const GradeScale = lazy(() => import('./components/Academics/GradeScale'))
+const AttendanceMarking = lazy(() => import('./components/Academics/AttendanceMarking'))
+const FeeManagement = lazy(() => import('./components/Finance/FeeManagement'))
+const ContactMessages = lazy(() => import('./components/Admin/ContactMessages'))
+const Applications = lazy(() => import('./components/Admin/Applications'))
+const Announcements = lazy(() => import('./components/Admin/Announcements'))
+const PostNews = lazy(() => import('./components/Admin/PostNews'))
+const ManageNews = lazy(() => import('./components/Admin/ManageNews'))
+const ResetPassword = lazy(() => import('./components/Admin/ResetPassword'))
+const SchoolSettings = lazy(() => import('./components/Settings/SchoolSettings'))
+const MfaSetup = lazy(() => import('./components/Settings/MfaSetup'))
+const TeacherDashboard = lazy(() => import('./components/TeacherPortal/TeacherDashboard'))
+const TeacherGradebook = lazy(() => import('./components/TeacherPortal/TeacherGradebook'))
+const ClassRoster = lazy(() => import('./components/TeacherPortal/ClassRoster'))
+import QuickAttendance from './components/TeacherPortal/QuickAttendance'
+import HomeworkManager from './components/TeacherPortal/HomeworkManager'
+import TeacherComms, { TeacherNotifications } from './components/TeacherPortal/TeacherComms'
+const ParentDashboard = lazy(() => import('./components/ParentPortal/ParentDashboard'))
+const StudentPortal = lazy(() => import('./components/StudentPortal/StudentPortal'))
 
 const SESSION_CHECK_INTERVAL = 60000
 
 function App() {
   const [session, setSession] = useState<any>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePage, setActivePage] = useState('dashboard')
-  const [activeRole, setActiveRole] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [studentProfile, setStudentProfile] = useState<any>(null)
+  const [toast, setToast] = useState<{ msg: string; type: string } | null>(null)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [showReAuth, setShowReAuth] = useState(false)
   const [reAuthDescription, setReAuthDescription] = useState('')
   const [pendingAction, setPendingAction] = useState<any>(null)
-  const [showReAuth, setShowReAuth] = useState(false)
-  const [showPasswordChange, setShowPasswordChange] = useState(false)
-  const [toast, setToast] = useState<{ msg: string; type: string } | null>(null)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
-  const [notificationCount, setNotificationCount] = useState(0)
-  const [studentProfile, setStudentProfile] = useState<any>(null)
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    contentRef.current?.focus()
+  }, [activePage])
 
   const showToast = useCallback((msg: string, type: string = 'success') => {
     setToast({ msg, type })
@@ -69,8 +97,10 @@ function App() {
       if (s?.user) {
         lookupUserByAuthId(s.user.id).then((result: any) => {
           if (result?.user) {
-            setUserInfo({ ...result.user, role: result.role })
-            setNotificationCount(result.role === 'teacher' ? 1 : 0)
+            const raw = result.user
+            const displayName = `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.login_id
+            setUserInfo({ ...raw, role: result.role, name: displayName, loginId: raw.login_id })
+            setUserRole(result.role)
           } else {
             supabase.auth.signOut()
           }
@@ -82,11 +112,18 @@ function App() {
       setSession(session)
       if (session?.user) {
         lookupUserByAuthId(session.user.id).then((result: any) => {
-          if (result?.user) setUserInfo({ ...result.user, role: result.role })
-          else supabase.auth.signOut()
+          if (result?.user) {
+            const raw = result.user
+            const displayName = `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.login_id
+            setUserInfo({ ...raw, role: result.role, name: displayName, loginId: raw.login_id })
+            setUserRole(result.role)
+          } else {
+            supabase.auth.signOut()
+          }
         }).catch(() => supabase.auth.signOut())
       } else {
         setUserInfo(null)
+        setUserRole(null)
       }
     })
 
@@ -100,28 +137,12 @@ function App() {
       if (!current) {
         setSession(null)
         setUserInfo(null)
+        setUserRole(null)
         showToast('Session expired. Please login again.', 'error')
       }
     }, SESSION_CHECK_INTERVAL)
     return () => clearInterval(interval)
   }, [session, showToast])
-
-  const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut()
-    setSession(null)
-    setUserInfo(null)
-    setActivePage('dashboard')
-    setActiveRole(null)
-    window.location.reload()
-  }, [])
-
-  const switchPortal = useCallback(() => {
-    setActiveRole(activeRole === 'teacher' ? userInfo.role : 'teacher')
-    setActivePage('dashboard')
-  }, [activeRole, userInfo])
-
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
-  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!session || userInfo) {
@@ -134,6 +155,61 @@ function App() {
       if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
     }
   }, [session, userInfo])
+
+  const handleLogout = useCallback(async () => {
+    setShowLogoutConfirm(false)
+    await supabase.auth.signOut()
+    setSession(null)
+    setUserInfo(null)
+    setUserRole(null)
+    setActivePage('dashboard')
+    window.location.reload()
+  }, [])
+
+  const switchPortal = useCallback((mode: string) => {
+    setUserRole(mode)
+    setActivePage(mode === 'teacher' ? 'teacher-dashboard' : 'dashboard')
+    showToast(`Switched to ${mode} portal`, 'success')
+  }, [showToast])
+
+  const refreshData = useCallback(() => setRefreshTrigger((v: number) => v + 1), [])
+
+  const getHeaderTitle = () => {
+    if (activePage === 'student-profile' && studentProfile) return 'Student Detailed Record'
+    const titles: Record<string, string> = {
+      'dashboard': 'Dashboard Overview',
+      'teachers': 'Teacher Registration',
+      'classes': 'Classroom Setup',
+      'students': 'Student Admission',
+      'student-list': 'Student Master List',
+      'teacher-list': 'Staff Directory',
+      'class-list': 'Classroom Manager',
+      'subjects': 'Subject Curriculum',
+      'assignments': 'Teacher Assignments',
+      'score-entry': 'Result Manager & Gradebook',
+      'teacher-dashboard': 'My Dashboard',
+      'scores': 'Gradebook',
+      'roster': 'Class Roster',
+      'attendance': 'Attendance Marking',
+      'full-attendance': 'Attendance Marking',
+      'comms': 'Announcements',
+      'promotion': 'Class Promotion',
+      'bulk-import': 'Bulk Import',
+      'grade-approval': 'Grade Approval',
+      'report-cards': 'Report Cards',
+      'grade-scale': 'Grade Scale',
+      'fees': 'Fee Management',
+      'post-news': 'Post News',
+      'manage-news': 'Manage News',
+      'messages': 'Contact Messages',
+      'applications': 'Admission Applications',
+      'reset-password': 'Reset Password',
+      'announcements': 'Announcements',
+      'settings': 'School Settings',
+      'mfa': 'MFA Setup',
+    }
+    return titles[activePage] || activePage.charAt(0).toUpperCase() + activePage.slice(1).replace(/-/g, ' ')
+  }
 
   if (!session) {
     return <ErrorBoundary><Login onLogin={() => window.location.reload()} /></ErrorBoundary>
@@ -156,89 +232,137 @@ function App() {
     )
   }
 
-  const renderPage = () => {
-    switch (activeRole || userInfo.role) {
-      case 'teacher':
-        switch (activePage) {
-          case 'dashboard': return <TeacherDashboard userInfo={userInfo} onLogout={handleLogout} showToast={showToast} />
-          case 'gradebook': return <TeacherGradebook teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />
-          case 'attendance': return <QuickAttendance teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />
-          case 'full-attendance': return <AttendanceMarking teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />
-          case 'scores': return <ScoreEntry showToast={showToast} requireReAuth={requireReAuth} />
-          case 'roster': return <ClassRoster teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />
-          case 'homework': return <HomeworkManager teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />
-          case 'comms': return <TeacherComms />
-          case 'notifications': return <TeacherNotifications teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />
-          default: return <TeacherDashboard userInfo={userInfo} onLogout={handleLogout} showToast={showToast} />
-        }
-      case 'student':
-        return <StudentPortal userInfo={userInfo} onLogout={handleLogout} />
-      case 'parent':
-        return <ParentDashboard userInfo={userInfo} onLogout={handleLogout} />
-      case 'admin':
-        return (
-          <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading admin panel...</div>}>
-            <AdminPanel
-              activePage={activePage}
-              showToast={showToast}
-              requireReAuth={requireReAuth}
-              refreshTrigger={refreshTrigger}
-              triggerRefresh={() => setRefreshTrigger(v => v + 1)}
-              studentProfile={studentProfile}
-              setStudentProfile={setStudentProfile}
-              setActivePage={setActivePage}
-            />
-          </Suspense>
-        )
-      default:
-        return <NotFound message="Unauthorized role" />
-    }
+  if (userRole === 'parent') {
+    return (
+      <ErrorBoundary>
+        {toast && <Toast message={toast.msg} type={toast.type} />}
+        <ParentDashboard userInfo={userInfo} onLogout={() => setShowLogoutConfirm(true)} />
+        <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+      </ErrorBoundary>
+    )
+  }
+
+  if (userRole === 'student') {
+    return (
+      <ErrorBoundary>
+        {toast && <Toast message={toast.msg} type={toast.type} />}
+        <StudentPortal userInfo={userInfo} onLogout={() => setShowLogoutConfirm(true)} />
+        <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+      </ErrorBoundary>
+    )
   }
 
   return (
     <ErrorBoundary>
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a' }}>
+      <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc' }}>
         <Sidebar
           userInfo={userInfo}
-          role={activeRole || userInfo.role}
+          role={userRole || userInfo.role}
           activePage={activePage}
           onNavigate={setActivePage}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          onSwitchPortal={userInfo.role === 'admin' ? switchPortal : undefined}
+          onSwitchPortal={userInfo.role === 'admin' ? () => switchPortal('teacher') : undefined}
         />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, marginLeft: 260 }}>
+
+        <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <HeaderBar
+            title={getHeaderTitle()}
             userInfo={userInfo}
-            onToggleSidebar={() => setSidebarOpen(v => !v)}
-            onLogout={handleLogout}
-            notificationCount={notificationCount}
+            onToggleSidebar={() => setSidebarOpen((v: boolean) => !v)}
+            onLogout={() => setShowLogoutConfirm(true)}
             onPasswordChange={() => setShowPasswordChange(true)}
           />
-          <main style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-            {renderPage()}
-          </main>
-        </div>
+
+          <ErrorBoundary>
+            <div className="main-content" ref={contentRef} tabIndex={-1} style={{ flex: 1, padding: '30px' }}>
+              {activePage === 'dashboard' && userRole === 'admin' && (
+                <div className="responsive-actions" style={{ marginBottom: '30px' }}>
+                  <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..."
+                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setActivePage('student-list') }} />
+                  <button aria-label="Add new student" onClick={() => setActivePage('students')}
+                    style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+                  <button aria-label="Open fee management" onClick={() => setActivePage('fees')}
+                    style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
+                </div>
+              )}
+
+              <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Loading...</div>}>
+                {activePage === 'dashboard' && userRole === 'admin' && (
+                  <div>
+                    <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
+                    <DashboardStats refreshTrigger={refreshTrigger} onNavigate={setActivePage} showToast={showToast} />
+                    <RecentActivity refreshTrigger={refreshTrigger} />
+                  </div>
+                )}
+
+                {userRole === 'admin' && (
+                  <>
+                    {activePage === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
+                    {activePage === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
+                    {activePage === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
+                    {activePage === 'bulk-import' && <BulkImport showToast={showToast} />}
+                    {activePage === 'student-list' && (
+                      studentProfile ? (
+                        <StudentProfile student={studentProfile} onBack={() => setStudentProfile(null)} />
+                      ) : (
+                        <StudentList refreshTrigger={refreshTrigger} onUpdate={refreshData} onStudentSelect={setStudentProfile} showToast={showToast} />
+                      )
+                    )}
+                    {activePage === 'teacher-list' && <TeacherList refreshTrigger={refreshTrigger} showToast={showToast} />}
+                    {activePage === 'class-list' && <ClassList refreshTrigger={refreshTrigger} showToast={showToast} />}
+                    {activePage === 'subjects' && <SubjectList refreshTrigger={refreshTrigger} showToast={showToast} />}
+                    {activePage === 'assignments' && <TeacherAssignments refreshTrigger={refreshTrigger} showToast={showToast} />}
+                    {activePage === 'score-entry' && <ScoreEntry showToast={showToast} requireReAuth={requireReAuth} />}
+                    {activePage === 'grade-approval' && <GradeApproval showToast={showToast} requireReAuth={requireReAuth} />}
+                    {activePage === 'report-cards' && <ReportCards showToast={showToast} />}
+                    {activePage === 'promotion' && <ClassPromotion showToast={showToast} requireReAuth={requireReAuth} />}
+                    {activePage === 'grade-scale' && <GradeScale showToast={showToast} />}
+                    {activePage === 'fees' && <FeeManagement showToast={showToast} requireReAuth={requireReAuth} />}
+                    {activePage === 'attendance' && <AttendanceMarking showToast={showToast} />}
+                    {activePage === 'full-attendance' && <AttendanceMarking showToast={showToast} />}
+                    {activePage === 'reset-password' && <ResetPassword showToast={showToast} />}
+                    {activePage === 'messages' && <ContactMessages showToast={showToast} />}
+                    {activePage === 'applications' && <Applications showToast={showToast} />}
+                    {activePage === 'announcements' && <Announcements showToast={showToast} />}
+                    {activePage === 'post-news' && <PostNews showToast={showToast} />}
+                    {activePage === 'manage-news' && <ManageNews showToast={showToast} />}
+                    {activePage === 'settings' && <SchoolSettings showToast={showToast} />}
+                    {activePage === 'mfa' && <MfaSetup />}
+                  </>
+                )}
+
+                {userRole === 'teacher' && (
+                  <>
+                    {activePage === 'teacher-dashboard' && <TeacherDashboard userInfo={userInfo} onLogout={handleLogout} showToast={showToast} />}
+                    {activePage === 'scores' && <TeacherGradebook teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
+                    {activePage === 'attendance' && <QuickAttendance teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
+                    {activePage === 'full-attendance' && <AttendanceMarking teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
+                    {activePage === 'roster' && <ClassRoster teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
+                    {activePage === 'homework' && <HomeworkManager teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
+                    {activePage === 'comms' && <TeacherComms />}
+                    {activePage === 'notifications' && <TeacherNotifications teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
+                  </>
+                )}
+
+                {!['admin', 'teacher', 'student', 'parent'].includes(userRole || '') && (
+                  <NotFound message="Unauthorized role" />
+                )}
+              </Suspense>
+            </div>
+          </ErrorBoundary>
+        </main>
+
+        <ConfirmModal isOpen={showLogoutConfirm} title="Confirm Logout" message="Are you sure?" confirmText="Logout" onConfirm={handleLogout} onCancel={() => setShowLogoutConfirm(false)} type="danger" />
+        {showPasswordChange && (
+          <PasswordChangeModal userInfo={userInfo} userRole={userRole!} onClose={() => setShowPasswordChange(false)} showToast={showToast} />
+        )}
+        {showReAuth && (
+          <ReAuthModal description={reAuthDescription} onSuccess={handleReAuthSuccess} onCancel={() => { setShowReAuth(false); setPendingAction(null) }} />
+        )}
+        {toast && <Toast message={toast.msg} type={toast.type} />}
       </div>
-
-      {showReAuth && (
-        <ReAuthModal
-          description={reAuthDescription}
-          onSuccess={handleReAuthSuccess}
-          onCancel={() => { setShowReAuth(false); setPendingAction(null) }}
-        />
-      )}
-
-      {showPasswordChange && (
-        <PasswordChangeModal
-          userInfo={userInfo}
-          userRole={userInfo.role}
-          onClose={() => setShowPasswordChange(false)}
-          showToast={showToast}
-        />
-      )}
-
-      {toast && <Toast message={toast.msg} type={toast.type} />}
     </ErrorBoundary>
   )
 }

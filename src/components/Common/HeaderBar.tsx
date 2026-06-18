@@ -1,15 +1,15 @@
 import { memo, useState } from 'react'
-import type { UserInfo } from '../../supabaseClient'
 
 interface HeaderBarProps {
-  userInfo?: UserInfo | null
+  title?: string
+  userInfo?: any | null
   notificationCount?: number
   onToggleSidebar: () => void
   onLogout: () => void
   onPasswordChange: () => void
 }
 
-const HeaderBar = memo(function HeaderBar({ userInfo, notificationCount, onToggleSidebar, onLogout, onPasswordChange }: HeaderBarProps) {
+const HeaderBar = memo(function HeaderBar({ title, userInfo, notificationCount, onToggleSidebar, onLogout, onPasswordChange }: HeaderBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   return (
@@ -17,8 +17,17 @@ const HeaderBar = memo(function HeaderBar({ userInfo, notificationCount, onToggl
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <button onClick={onToggleSidebar} aria-label="Open menu" className="hamburger-btn" style={{ background: 'none', border: 'none', color: '#f8fafc', fontSize: '1.5rem', cursor: 'pointer' }}>☰</button>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
-          <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+          {title ? (
+            <>
+              <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>{title}</h1>
+              <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Divine Lifting School</p>
+            </>
+          ) : (
+            <>
+              <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
+              <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -33,7 +42,7 @@ const HeaderBar = memo(function HeaderBar({ userInfo, notificationCount, onToggl
           {showProfileMenu && (
             <div style={{ position: 'absolute', right: 0, top: 48, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: 16, minWidth: 200, boxShadow: '0 10px 40px rgba(0,0,0,0.4)', zIndex: 100 }}>
               <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#f8fafc', marginBottom: 4 }}>{userInfo?.name || 'User'}</div>
-              <div style={{ fontSize: '0.8rem', color: '#38bdf8', marginBottom: 12 }}>{userInfo?.staffId || userInfo?.loginId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
+              <div style={{ fontSize: '0.8rem', color: '#38bdf8', marginBottom: 12 }}>{userInfo?.loginId || userInfo?.login_id || userInfo?.staffId || userInfo?.schoolId || userInfo?.studentId || userInfo?.parentId || 'ID'}</div>
               <div style={{ borderTop: '1px solid #334155', paddingTop: 10 }}>
                 <button onClick={onPasswordChange} aria-label="Change Password" style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.background = '#334155' }} onMouseOut={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>Change Password</button>
                 <button onClick={onLogout} aria-label="Logout" style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', textAlign: 'left', borderRadius: 6, fontSize: '0.85rem' }} onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.background = '#334155' }} onMouseOut={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>Logout</button>

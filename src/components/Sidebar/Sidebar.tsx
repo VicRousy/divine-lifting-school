@@ -94,7 +94,7 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onSwitchPortal(); onClose() } }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', cursor: 'pointer', color: '#38bdf8', fontSize: '0.9rem' }}>
             <span>🔄</span>
-            <span>Switch to Teacher Portal</span>
+            <span>Switch to {role === 'teacher' ? 'Admin' : 'Teacher'} Portal</span>
           </div>
         </div>
       )}
@@ -104,11 +104,11 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
   const teacherLinks = (
     <>
       <SidebarGroup label="Portal">
-        {link('dashboard', 'Dashboard', '📊')}
-        {link('gradebook', 'Gradebook', '📚')}
+        {link('teacher-dashboard', 'Dashboard', '📊')}
+        {link('scores', 'Gradebook', '📚')}
         {link('attendance', 'Attendance', '📋')}
         {link('full-attendance', 'Full Attendance', '📋')}
-        {link('scores', 'Score Entry', '✏️')}
+        {link('score-entry', 'Score Entry', '✏️')}
         {link('roster', 'Class Roster', '👨‍🎓')}
         {link('homework', 'Homework', '📝')}
         {link('comms', 'Announcements', '📢')}
@@ -141,7 +141,7 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
         </nav>
         <div style={{ padding: '12px 20px', borderTop: '1px solid #334155' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {userInfo?.first_name ? `${userInfo.first_name} ${userInfo.last_name || ''}`.trim() : userInfo?.login_id}
+            {userInfo?.name || userInfo?.login_id || userInfo?.loginId}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#475569', textTransform: 'capitalize' }}>{role}</div>
         </div>
