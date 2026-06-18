@@ -28,7 +28,7 @@ const GradeApproval = lazy(() => import('./components/Academics/GradeApproval'))
 const ReportCards = lazy(() => import('./components/Academics/ReportCards'))
 const ClassPromotion = lazy(() => import('./components/Academics/ClassPromotion'))
 const GradeScale = lazy(() => import('./components/Academics/GradeScale'))
-const AttendanceMarking = lazy(() => import('./components/Academics/AttendanceMarking'))
+import AttendanceMarking from './components/Academics/AttendanceMarking'
 const FeeManagement = lazy(() => import('./components/Finance/FeeManagement'))
 const ContactMessages = lazy(() => import('./components/Admin/ContactMessages'))
 const Applications = lazy(() => import('./components/Admin/Applications'))
@@ -38,8 +38,8 @@ const ManageNews = lazy(() => import('./components/Admin/ManageNews'))
 const ResetPassword = lazy(() => import('./components/Admin/ResetPassword'))
 const SchoolSettings = lazy(() => import('./components/Settings/SchoolSettings'))
 const MfaSetup = lazy(() => import('./components/Settings/MfaSetup'))
-const TeacherGradebook = lazy(() => import('./components/TeacherPortal/TeacherGradebook'))
-const ClassRoster = lazy(() => import('./components/TeacherPortal/ClassRoster'))
+import TeacherGradebook from './components/TeacherPortal/TeacherGradebook'
+import ClassRoster from './components/TeacherPortal/ClassRoster'
 import QuickAttendance from './components/TeacherPortal/QuickAttendance'
 import HomeworkManager from './components/TeacherPortal/HomeworkManager'
 import TeacherComms, { TeacherNotifications } from './components/TeacherPortal/TeacherComms'
