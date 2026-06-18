@@ -70,7 +70,6 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
 
           <a aria-label="Visit public website"
             href="https://divine-lifting-website.vercel.app"
-            target="_blank" rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '15px', padding: '8px', borderRadius: '6px', background: '#334155', color: '#f8fafc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', transition: 'background 0.2s' }}>
             Back to Website
           </a>
