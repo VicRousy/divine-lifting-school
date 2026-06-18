@@ -47,8 +47,6 @@ import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
 const ParentDashboard = lazy(() => import('./components/ParentPortal/ParentDashboard'))
 const StudentPortal = lazy(() => import('./components/StudentPortal/StudentPortal'))
 
-const SESSION_CHECK_INTERVAL = 60000
-
 function App() {
   const [session, setSession] = useState<any>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -141,7 +139,7 @@ function App() {
         setUserRole(null)
         showToast('Session expired. Please login again.', 'error')
       }
-    }, SESSION_CHECK_INTERVAL)
+    }, 600000)
     return () => clearInterval(interval)
   }, [session, showToast])
 
