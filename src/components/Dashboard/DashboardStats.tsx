@@ -65,7 +65,7 @@ function DashboardStats({ refreshTrigger, onNavigate, showToast }: DashboardStat
 
       if (error) throw error
 
-      const result = typeof data === 'string' ? JSON.parse(data) : data
+      const result = typeof data === 'string' ? JSON.parse(data || '{}') : (data || {})
 
       const newStats: StatItem = {
         students: result.students || 0,
