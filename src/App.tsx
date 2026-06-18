@@ -40,6 +40,7 @@ function App() {
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [notificationCount, setNotificationCount] = useState(0)
+  const [studentProfile, setStudentProfile] = useState<any>(null)
 
   const showToast = useCallback((msg: string, type: string = 'success') => {
     setToast({ msg, type })
@@ -185,8 +186,6 @@ function App() {
         return <NotFound message="Unauthorized role" />
     }
   }
-
-  const [studentProfile, setStudentProfile] = useState<any>(null)
 
   return (
     <ErrorBoundary>
