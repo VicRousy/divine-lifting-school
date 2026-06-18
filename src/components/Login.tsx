@@ -77,16 +77,28 @@ export default function Login({ onLogin }: LoginProps) {
   }
 
   const doCreateAuthUser = async (userRecord: any, login_id: string) => {
-    const { data: existing }: any = await supabase.auth.admin.listUsers()
-    const found = existing?.users?.find((u: any) => u.email?.toLowerCase() === `${login_id}@dls.edu`)
-    if (found) return found
+    const email = `${login_id}@dls.edu`
+
+    const { data: signIn } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (signIn?.user) return signIn.user
 
     const { data: newUser, error: createErr }: any = await supabase.auth.admin.createUser({
-      email: `${login_id}@dls.edu`,
-      password: password,
+      email,
+      password,
       email_confirm: true,
     })
-    if (createErr) throw createErr
+    if (createErr) {
+      const msg = (createErr?.message || '').toLowerCase()
+      if (msg.includes('already been registered')) {
+        const { data: listData }: any = await supabase.auth.admin.listUsers()
+        const found = listData?.users?.find((u: any) => u.email === email)
+        if (found) return found
+      }
+      throw createErr
+    }
     const uid = newUser?.user?.id
     if (uid && userRecord) {
       await supabase.from(userRecord.table).update({ auth_id: uid }).eq('id', userRecord.id)
