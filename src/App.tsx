@@ -38,12 +38,12 @@ const ManageNews = lazy(() => import('./components/Admin/ManageNews'))
 const ResetPassword = lazy(() => import('./components/Admin/ResetPassword'))
 const SchoolSettings = lazy(() => import('./components/Settings/SchoolSettings'))
 const MfaSetup = lazy(() => import('./components/Settings/MfaSetup'))
-const TeacherDashboard = lazy(() => import('./components/TeacherPortal/TeacherDashboard'))
 const TeacherGradebook = lazy(() => import('./components/TeacherPortal/TeacherGradebook'))
 const ClassRoster = lazy(() => import('./components/TeacherPortal/ClassRoster'))
 import QuickAttendance from './components/TeacherPortal/QuickAttendance'
 import HomeworkManager from './components/TeacherPortal/HomeworkManager'
 import TeacherComms, { TeacherNotifications } from './components/TeacherPortal/TeacherComms'
+import TeacherDashboard from './components/TeacherPortal/TeacherDashboard'
 const ParentDashboard = lazy(() => import('./components/ParentPortal/ParentDashboard'))
 const StudentPortal = lazy(() => import('./components/StudentPortal/StudentPortal'))
 
@@ -180,6 +180,7 @@ function App() {
   const refreshData = useCallback(() => setRefreshTrigger((v: number) => v + 1), [])
 
   const getHeaderTitle = () => {
+    if (activePage === 'dashboard' || activePage === 'teacher-dashboard') return ''
     if (activePage === 'student-profile' && studentProfile) return 'Student Detailed Record'
     const titles: Record<string, string> = {
       'dashboard': 'Dashboard Overview',

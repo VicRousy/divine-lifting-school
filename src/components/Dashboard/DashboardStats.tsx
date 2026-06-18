@@ -308,21 +308,21 @@ function DashboardStats({ refreshTrigger, onNavigate, showToast }: DashboardStat
                   value={academicData.averageGrade}
                   suffix="/4.0"
                   color="#38bdf8"
-                  icon="G"
+                  icon="🎓"
                 />
                 <MetricCard
                   label="Classroom Activity Index"
                   value={academicData.activityIndex}
                   suffix="%"
                   color="#a855f7"
-                  icon="A"
+                  icon="📈"
                 />
                 <MetricCard
                   label="Student Retention Rate"
                   value={academicData.retentionRate}
                   suffix="%"
                   color="#10b981"
-                  icon="R"
+                  icon="📊"
                 />
               </div>
             </div>

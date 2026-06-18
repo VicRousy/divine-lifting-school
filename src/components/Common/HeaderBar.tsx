@@ -24,8 +24,8 @@ const HeaderBar = memo(function HeaderBar({ title, userInfo, notificationCount, 
             </>
           ) : (
             <>
-              <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Divine Lifting School</h1>
-              <p style={{ margin: '5px 0 0', color: '#94a3b8' }}>Academic Management Portal</p>
+              <h1 style={{ margin: 0, fontSize: '2rem', background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 800 }}>Divine Lifting School</h1>
+              <p style={{ margin: '5px 0 0', color: '#94a3b8', fontSize: '0.9rem' }}>Academic Management Portal</p>
             </>
           )}
         </div>
