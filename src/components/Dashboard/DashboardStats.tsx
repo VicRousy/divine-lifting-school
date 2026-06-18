@@ -158,12 +158,12 @@ function DashboardStats({ refreshTrigger, onNavigate, showToast }: DashboardStat
   return (
     <>
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        <StatCard title="Total Students" value={stats.students} color="#38bdf8" icon="S" onClick={() => handleCardClick('student-list')} />
-        <StatCard title="Staff Members" value={stats.teachers} color="#a855f7" icon="T" onClick={() => handleCardClick('teacher-list')} />
-        <StatCard title="Classrooms" value={stats.classes} color="#fbbf24" icon="C" onClick={() => handleCardClick('class-list')} />
-        <StatCard title="Active Assignments" value={stats.assignments} color="#10b981" icon="A" onClick={() => handleCardClick('assignments')} />
-        <StatCard title="Pending Fees" value={`N${stats.feesPending.toLocaleString()}`} color="#ef4444" icon="F" onClick={() => handleCardClick('fees')} />
-        <StatCard title="Present Today" value={stats.attendanceToday} color="#22c55e" icon="P" onClick={() => handleCardClick('teacher-attendance')} />
+        <StatCard title="Total Students" value={stats.students} color="#38bdf8" icon="👨‍🎓" onClick={() => handleCardClick('student-list')} />
+        <StatCard title="Staff Members" value={stats.teachers} color="#a855f7" icon="👩‍🏫" onClick={() => handleCardClick('teacher-list')} />
+        <StatCard title="Classrooms" value={stats.classes} color="#fbbf24" icon="🏫" onClick={() => handleCardClick('class-list')} />
+        <StatCard title="Active Assignments" value={stats.assignments} color="#10b981" icon="📝" onClick={() => handleCardClick('assignments')} />
+        <StatCard title="Pending Fees" value={`N${stats.feesPending.toLocaleString()}`} color="#ef4444" icon="💰" onClick={() => handleCardClick('fees')} />
+        <StatCard title="Present Today" value={stats.attendanceToday} color="#22c55e" icon="✅" onClick={() => handleCardClick('attendance')} />
       </div>
 
       <div style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid #334155', borderRadius: 16, padding: expandedChart ? 40 : 30, marginBottom: 40, transition: 'all 0.3s' }}>

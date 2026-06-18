@@ -55,6 +55,7 @@ function App() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePage, setActivePage] = useState('dashboard')
+  const [activeRole, setActiveRole] = useState<string | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [studentProfile, setStudentProfile] = useState<any>(null)
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null)
@@ -163,14 +164,18 @@ function App() {
     setUserInfo(null)
     setUserRole(null)
     setActivePage('dashboard')
+    setActiveRole(null)
     window.location.reload()
   }, [])
 
-  const switchPortal = useCallback((mode: string) => {
-    setUserRole(mode)
-    setActivePage(mode === 'teacher' ? 'teacher-dashboard' : 'dashboard')
-    showToast(`Switched to ${mode} portal`, 'success')
-  }, [showToast])
+  const switchPortal = useCallback(() => {
+    const currentRole = activeRole || userInfo?.role
+    const newRole = currentRole === 'teacher' ? 'admin' : 'teacher'
+    setUserRole(newRole)
+    setActiveRole(newRole)
+    setActivePage(newRole === 'teacher' ? 'teacher-dashboard' : 'dashboard')
+    showToast(`Switched to ${newRole} portal`, 'success')
+  }, [activeRole, userInfo, showToast])
 
   const refreshData = useCallback(() => setRefreshTrigger((v: number) => v + 1), [])
 
@@ -262,7 +267,7 @@ function App() {
           onNavigate={setActivePage}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          onSwitchPortal={userInfo.role === 'admin' ? () => switchPortal('teacher') : undefined}
+          onSwitchPortal={switchPortal}
         />
 
         <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

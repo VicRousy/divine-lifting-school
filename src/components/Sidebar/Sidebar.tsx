@@ -54,62 +54,83 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
 
   const adminLinks = (
     <>
-      <SidebarGroup label="School">
-        {link('dashboard', 'Dashboard', '📊')}
-        {link('announcements', 'Announcements', '📢')}
-        {link('messages', 'Messages', '💬')}
-        {link('applications', 'Applications', '📋')}
-      </SidebarGroup>
-      <SidebarGroup label="Academics">
-        {link('subjects', 'Subjects', '📚')}
-        {link('classes', 'Classes', '🏫')}
-        {link('scores', 'Score Entry', '✏️')}
-        {link('grade-approval', 'Grade Approval', '✅')}
-        {link('grade-scale', 'Grade Scale', '⚖️')}
-        {link('report-cards', 'Report Cards', '📄')}
-        {link('promotion', 'Promotion', '🎓')}
-      </SidebarGroup>
-      <SidebarGroup label="People">
-        {link('students', 'Students', '👨‍🎓')}
-        {link('add-student', 'Add Student', '➕')}
-        {link('bulk-import', 'Bulk Import', '📥')}
-        {link('teachers', 'Teachers', '👩‍🏫')}
-        {link('add-teacher', 'Add Teacher', '➕')}
-        {link('assignments', 'Assignments', '📝')}
-      </SidebarGroup>
-      <SidebarGroup label="Finance">
-        {link('fees', 'Fee Management', '💰')}
-      </SidebarGroup>
-      <SidebarGroup label="System">
-        {link('reset-password', 'Reset Password', '🔑')}
-        {link('post-news', 'Post News', '📰')}
-        {link('manage-news', 'Manage News', '📰')}
-        {link('attendance', 'Attendance', '📋')}
-        {link('settings', 'Settings', '⚙️')}
-        {link('mfa', 'MFA Setup', '🔐')}
-      </SidebarGroup>
       {onSwitchPortal && (
-        <div style={{ padding: '8px 20px' }}>
+        <div style={{ padding: '0 20px 12px', borderBottom: '1px solid #334155', marginBottom: 8 }}>
           <div role="button" tabIndex={0} onClick={() => { onSwitchPortal(); onClose() }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onSwitchPortal(); onClose() } }}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', cursor: 'pointer', color: '#38bdf8', fontSize: '0.9rem' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer', background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#38bdf8', fontSize: '0.85rem', fontWeight: 600 }}>
             <span>🔄</span>
             <span>Switch to {role === 'teacher' ? 'Admin' : 'Teacher'} Portal</span>
           </div>
         </div>
       )}
+      <SidebarGroup label="Main">
+        {link('dashboard', 'Dashboard', '📊')}
+      </SidebarGroup>
+      <SidebarGroup label="Students">
+        {link('student-list', 'Student List', '👨‍🎓')}
+        {link('students', 'Add Student', '➕')}
+        {link('bulk-import', 'Bulk Import', '📥')}
+      </SidebarGroup>
+      <SidebarGroup label="Teachers & Staff">
+        {link('teacher-list', 'Staff Directory', '👩‍🏫')}
+        {link('teachers', 'Add Teacher', '➕')}
+        {link('assignments', 'Assignments', '📝')}
+      </SidebarGroup>
+      <SidebarGroup label="Academics">
+        {link('subjects', 'Subjects', '📚')}
+        {link('classes', 'Classes', '🏫')}
+        {link('add-class', 'Add Class', '➕')}
+        {link('score-entry', 'Score Entry', '✏️')}
+        {link('grade-approval', 'Grade Approval', '✅')}
+        {link('grade-scale', 'Grade Scale', '⚖️')}
+        {link('report-cards', 'Report Cards', '📄')}
+        {link('promotion', 'Promotion', '🎓')}
+        {link('attendance', 'Attendance', '📋')}
+      </SidebarGroup>
+      <SidebarGroup label="Finance">
+        {link('fees', 'Fee Management', '💰')}
+      </SidebarGroup>
+      <SidebarGroup label="Communications">
+        {link('announcements', 'Manage Announcements', '📢')}
+        {link('post-news', 'Post News', '📰')}
+        {link('manage-news', 'Manage News', '📰')}
+        {link('messages', 'Contact Messages', '💬')}
+        {link('applications', 'Applications', '📋')}
+      </SidebarGroup>
+      <SidebarGroup label="System">
+        {link('reset-password', 'Reset Password', '🔑')}
+        {link('settings', 'Settings', '⚙️')}
+        {link('mfa', 'MFA Setup', '🔐')}
+      </SidebarGroup>
     </>
   )
 
   const teacherLinks = (
     <>
-      <SidebarGroup label="Portal">
+      {onSwitchPortal && (
+        <div style={{ padding: '0 20px 12px', borderBottom: '1px solid #334155', marginBottom: 8 }}>
+          <div role="button" tabIndex={0} onClick={() => { onSwitchPortal(); onClose() }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onSwitchPortal(); onClose() } }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer', background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#38bdf8', fontSize: '0.85rem', fontWeight: 600 }}>
+            <span>🔄</span>
+            <span>Switch to {role === 'teacher' ? 'Admin' : 'Teacher'} Portal</span>
+          </div>
+        </div>
+      )}
+      <SidebarGroup label="Main">
         {link('teacher-dashboard', 'Dashboard', '📊')}
+      </SidebarGroup>
+      <SidebarGroup label="Teaching">
         {link('scores', 'Gradebook', '📚')}
-        {link('attendance', 'Attendance', '📋')}
-        {link('full-attendance', 'Full Attendance', '📋')}
         {link('score-entry', 'Score Entry', '✏️')}
         {link('roster', 'Class Roster', '👨‍🎓')}
+      </SidebarGroup>
+      <SidebarGroup label="Attendance">
+        {link('attendance', 'Quick Attendance', '📋')}
+        {link('full-attendance', 'Full Attendance', '📋')}
+      </SidebarGroup>
+      <SidebarGroup label="Communication">
         {link('homework', 'Homework', '📝')}
         {link('comms', 'Announcements', '📢')}
         {link('notifications', 'Notifications', '🔔')}
