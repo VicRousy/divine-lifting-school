@@ -1,9 +1,20 @@
-ALTER TABLE login_attempts ADD COLUMN IF NOT EXISTS ip_address TEXT;
+-- Create login_attempts table if missing
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id BIGSERIAL PRIMARY KEY,
+  login_id TEXT NOT NULL,
+  attempted_at TIMESTAMPTZ DEFAULT NOW(),
+  success BOOLEAN DEFAULT FALSE,
+  ip_address TEXT DEFAULT NULL
+);
 
+CREATE INDEX IF NOT EXISTS idx_login_attempts_login_id ON login_attempts(login_id);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_attempted_at ON login_attempts(attempted_at);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip_address);
 
+-- Drop old function
 DROP FUNCTION IF EXISTS verify_login_password;
 
+-- Create updated function with is_first_login support
 CREATE OR REPLACE FUNCTION verify_login_password(p_login_id TEXT, p_password TEXT, p_ip_address TEXT DEFAULT NULL)
 RETURNS JSON
 LANGUAGE plpgsql
