@@ -277,15 +277,36 @@ function App() {
           <ErrorBoundary>
             <div className="main-content" ref={contentRef} tabIndex={-1} style={{ flex: 1, padding: '30px' }}>
               {activePage === 'dashboard' && userRole === 'admin' && (
-                <div className="responsive-actions" style={{ marginBottom: '30px' }}>
-                  <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..."
-                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') setActivePage('student-list') }} />
-                  <button aria-label="Add new student" onClick={() => setActivePage('students')}
-                    style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
-                  <button aria-label="Open fee management" onClick={() => setActivePage('fees')}
-                    style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
-                </div>
+                <>
+                  <div style={{
+                    background: 'rgba(30, 41, 59, 0.95)',
+                    borderRadius: '16px',
+                    padding: '24px 30px',
+                    marginBottom: '24px',
+                    border: '1px solid #334155',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}>
+                    <div>
+                      <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#f8fafc' }}>Welcome, {userInfo?.name || 'Administrator'}</h1>
+                      <p style={{ margin: '4px 0 0', color: '#38bdf8', fontSize: '0.85rem' }}>ID: {userInfo?.login_id || userInfo?.loginId || 'N/A'}</p>
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#94a3b8' }}>
+                      <div>Role: Administrator</div>
+                    </div>
+                  </div>
+
+                  <div className="responsive-actions" style={{ marginBottom: '30px' }}>
+                    <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..."
+                      style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setActivePage('student-list') }} />
+                    <button aria-label="Add new student" onClick={() => setActivePage('students')}
+                      style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+                    <button aria-label="Open fee management" onClick={() => setActivePage('fees')}
+                      style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
+                  </div>
+                </>
               )}
 
               <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>Loading...</div>}>
@@ -335,7 +356,7 @@ function App() {
 
                 {userRole === 'teacher' && (
                   <>
-                    {activePage === 'teacher-dashboard' && <TeacherDashboard userInfo={userInfo} onLogout={handleLogout} showToast={showToast} />}
+                    {activePage === 'teacher-dashboard' && <TeacherDashboard userInfo={userInfo} onNavigate={setActivePage} onLogout={handleLogout} showToast={showToast} />}
                     {activePage === 'scores' && <TeacherGradebook teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
                     {activePage === 'attendance' && <QuickAttendance teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}
                     {activePage === 'full-attendance' && <AttendanceMarking teacherId={userInfo.login_id || userInfo.id} showToast={showToast} />}

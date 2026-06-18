@@ -141,7 +141,10 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
         </nav>
         <div style={{ padding: '12px 20px', borderTop: '1px solid #334155' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {userInfo?.name || userInfo?.login_id || userInfo?.loginId}
+            {userInfo?.name || 'User'}
+          </div>
+          <div style={{ fontSize: '0.65rem', color: '#38bdf8' }}>
+            {userInfo?.login_id || userInfo?.loginId || userInfo?.staff_id || userInfo?.staffId || 'ID'}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#475569', textTransform: 'capitalize' }}>{role}</div>
         </div>
