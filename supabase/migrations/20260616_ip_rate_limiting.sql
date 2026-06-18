@@ -14,6 +14,7 @@ DECLARE
   user_pass TEXT;
   user_role TEXT;
   user_id_val UUID;
+  user_is_first_login BOOLEAN := FALSE;
   login_attempt_count INT;
   ip_attempt_count INT;
   password_valid BOOLEAN := FALSE;
@@ -42,21 +43,21 @@ BEGIN
   END IF;
 
   -- Check profiles (admin)
-  SELECT id, password, 'admin'::text INTO user_id_val, user_pass, user_role
+  SELECT id, password, 'admin'::text, COALESCE(is_first_login, FALSE) INTO user_id_val, user_pass, user_role, user_is_first_login
   FROM profiles WHERE LOWER(login_id) = LOWER(p_login_id) LIMIT 1;
 
   IF NOT FOUND THEN
-    SELECT id, password, 'teacher'::text INTO user_id_val, user_pass, user_role
+    SELECT id, password, 'teacher'::text, COALESCE(is_first_login, FALSE) INTO user_id_val, user_pass, user_role, user_is_first_login
     FROM teachers WHERE LOWER(login_id) = LOWER(p_login_id) LIMIT 1;
   END IF;
 
   IF NOT FOUND THEN
-    SELECT id, password, 'student'::text INTO user_id_val, user_pass, user_role
+    SELECT id, password, 'student'::text, COALESCE(is_first_login, FALSE) INTO user_id_val, user_pass, user_role, user_is_first_login
     FROM students WHERE LOWER(login_id) = LOWER(p_login_id) LIMIT 1;
   END IF;
 
   IF NOT FOUND THEN
-    SELECT id, password, 'parent'::text INTO user_id_val, user_pass, user_role
+    SELECT id, password, 'parent'::text, FALSE INTO user_id_val, user_pass, user_role, user_is_first_login
     FROM parents WHERE LOWER(login_id) = LOWER(p_login_id) LIMIT 1;
   END IF;
 
@@ -72,7 +73,7 @@ BEGIN
 
   -- Return result
   IF password_valid THEN
-    RETURN json_build_object('valid', true, 'user_id', user_id_val, 'role', user_role);
+    RETURN json_build_object('valid', true, 'user_id', user_id_val, 'role', user_role, 'is_first_login', user_is_first_login);
   ELSE
     RETURN json_build_object('valid', false, 'rate_limited', false);
   END IF;

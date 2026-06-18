@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error(`Auth error [${type}]:`, error)
-    return res.status(500).json({ success: false, error: error.message })
+    return res.status(500).json({ success: false, error: 'Internal server error' })
   }
 }
 
@@ -62,7 +62,7 @@ async function createUser(req, res) {
     if (error.message.includes('already been registered')) {
       return res.json({ success: true, auth_id: null, alreadyExists: true })
     }
-    return res.status(400).json({ success: false, error: error.message })
+    return res.status(400).json({ success: false, error: 'Failed to create user' })
   }
 
   return res.json({ success: true, auth_id: data.user.id })
@@ -77,7 +77,7 @@ async function resetPassword(req, res) {
   let targetId = userId
   if (!targetId) {
     const { data: users, error: listErr } = await supabase.auth.admin.listUsers()
-    if (listErr) return res.status(400).json({ success: false, error: listErr.message })
+    if (listErr) return res.status(400).json({ success: false, error: 'Failed to find user' })
     const user = users.users.find(u => u.email === email?.trim()?.toLowerCase())
     if (!user) return res.status(404).json({ success: false, error: 'User not found' })
     targetId = user.id
@@ -87,7 +87,7 @@ async function resetPassword(req, res) {
     password: newPassword,
   })
 
-  if (error) return res.status(400).json({ success: false, error: error.message })
+  if (error) return res.status(400).json({ success: false, error: 'Failed to reset password' })
   return res.json({ success: true })
 }
 
@@ -96,13 +96,13 @@ async function deleteUser(req, res) {
   let targetId = userId
   if (!targetId) {
     const { data: users, error: listErr } = await supabase.auth.admin.listUsers()
-    if (listErr) return res.status(400).json({ success: false, error: listErr.message })
+    if (listErr) return res.status(400).json({ success: false, error: 'Failed to find user' })
     const user = users.users.find(u => u.email === email?.trim()?.toLowerCase())
     if (!user) return res.status(404).json({ success: false, error: 'User not found' })
     targetId = user.id
   }
 
   const { error } = await supabase.auth.admin.deleteUser(targetId)
-  if (error) return res.status(400).json({ success: false, error: error.message })
+  if (error) return res.status(400).json({ success: false, error: 'Failed to delete user' })
   return res.json({ success: true })
 }

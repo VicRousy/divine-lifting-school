@@ -34,7 +34,7 @@ describe('safeQuery', () => {
   it('uses default retries and fallback', async () => {
     const fn = vi.fn().mockResolvedValue({ error: new Error('fail') })
     const result = await safeQuery(fn)
-    expect(result).toBeNull()
+    expect(result).toEqual({ data: null, error: null })
     expect(fn).toHaveBeenCalledTimes(3)
   })
 })

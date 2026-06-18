@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   }
 
   const origin = req.headers.origin || req.headers.referer || ''
-  if (origin && !ALLOWED.some(a => origin.startsWith(a))) {
+  if (origin && !ALLOWED.some(a => origin.startsWith(a) && origin.length === a.length)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error(`Email error [${type}]:`, error);
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }
 
