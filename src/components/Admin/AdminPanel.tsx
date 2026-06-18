@@ -45,7 +45,22 @@ export default function AdminPanel({ activePage, showToast, requireReAuth, refre
 
   switch (activePage) {
     case 'dashboard':
-      return <><DashboardStats showToast={showToast} /><RecentActivity showToast={showToast} refreshTrigger={refreshTrigger} /></>
+      return (
+        <>
+          <div className="responsive-actions" style={{ marginBottom: '30px' }}>
+            <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..."
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
+              onKeyDown={(e) => { if (e.key === 'Enter') setActivePage('students') }} />
+            <button aria-label="Add new student" onClick={() => setActivePage('add-student')}
+              style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+            <button aria-label="Open fee management" onClick={() => setActivePage('fees')}
+              style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
+          </div>
+          <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
+          <DashboardStats showToast={showToast} />
+          <RecentActivity showToast={showToast} refreshTrigger={refreshTrigger} />
+        </>
+      )
     case 'students':
       return <StudentList showToast={showToast} requireReAuth={requireReAuth} onStudentSelect={(s: any) => setProfile(s)} />
     case 'add-student':
@@ -97,6 +112,21 @@ export default function AdminPanel({ activePage, showToast, requireReAuth, refre
     case 'mfa':
       return <MfaSetup />
     default:
-      return <><DashboardStats showToast={showToast} /><RecentActivity showToast={showToast} refreshTrigger={refreshTrigger} /></>
+      return (
+        <>
+          <div className="responsive-actions" style={{ marginBottom: '30px' }}>
+            <input type="text" aria-label="Search students, staff, or classes" placeholder="Search students, staff, or classes..."
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b', color: 'white' }}
+              onKeyDown={(e) => { if (e.key === 'Enter') setActivePage('students') }} />
+            <button aria-label="Add new student" onClick={() => setActivePage('add-student')}
+              style={{ padding: '12px 20px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>+ Student</button>
+            <button aria-label="Open fee management" onClick={() => setActivePage('fees')}
+              style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Fee</button>
+          </div>
+          <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Welcome, Administrator. Here is the current state of the school.</p>
+          <DashboardStats showToast={showToast} />
+          <RecentActivity showToast={showToast} refreshTrigger={refreshTrigger} />
+        </>
+      )
   }
 }

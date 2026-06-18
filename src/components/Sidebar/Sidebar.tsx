@@ -130,7 +130,7 @@ const Sidebar = memo(function Sidebar({ userInfo, activePage, onNavigate, isOpen
         </nav>
         <div style={{ padding: '12px 20px', borderTop: '1px solid #334155' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {userInfo?.name || userInfo?.login_id}
+            {userInfo?.first_name ? `${userInfo.first_name} ${userInfo.last_name || ''}`.trim() : userInfo?.login_id}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#475569', textTransform: 'capitalize' }}>{role}</div>
         </div>
