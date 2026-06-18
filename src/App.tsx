@@ -198,7 +198,7 @@ function App() {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, marginLeft: 260 }}>
           <HeaderBar
             userInfo={userInfo}
             onToggleSidebar={() => setSidebarOpen(v => !v)}
