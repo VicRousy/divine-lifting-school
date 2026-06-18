@@ -79,31 +79,33 @@ export default function Login({ onLogin }: LoginProps) {
   const doCreateAuthUser = async (userRecord: any, login_id: string) => {
     const email = `${login_id}@dls.edu`
 
-    const { data: signIn } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (signIn?.user) return signIn.user
-
-    const { data: newUser, error: createErr }: any = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    })
-    if (createErr) {
-      const msg = (createErr?.message || '').toLowerCase()
-      if (msg.includes('already been registered')) {
-        const { data: listData }: any = await supabase.auth.admin.listUsers()
-        const found = listData?.users?.find((u: any) => u.email === email)
-        if (found) return found
-      }
-      throw createErr
+    try {
+      const { data: signIn } = await supabase.auth.signInWithPassword({ email, password })
+      if (signIn?.user) return signIn.user
+    } catch {
+      // auth user doesn't exist — create via API
     }
-    const uid = newUser?.user?.id
+
+    const apiBase = import.meta.env.VITE_API_URL || ''
+    const apiKey = import.meta.env.VITE_EMAIL_API_KEY
+    const res = await fetch(`${apiBase}/api/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(apiKey ? { 'x-api-key': apiKey } : {}) },
+      body: JSON.stringify({ type: 'create-user', email, password }),
+    })
+    const result = await res.json()
+    if (!result.success) throw new Error(result.error || 'Failed to create auth user')
+
+    if (result.alreadyExists) {
+      const { data: signIn2 } = await supabase.auth.signInWithPassword({ email, password })
+      return signIn2?.user
+    }
+
+    const uid = result.auth_id
     if (uid && userRecord) {
       await supabase.from(userRecord.table).update({ auth_id: uid }).eq('id', userRecord.id)
     }
-    return newUser?.user
+    return uid ? { id: uid } : null
   }
 
   const handleSetNewPassword = async () => {
