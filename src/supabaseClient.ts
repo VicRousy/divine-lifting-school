@@ -41,6 +41,25 @@ export const USER_TABLES: Record<UserRole, UserTableConfig> = {
   parent: { table: 'parents', idField: 'id', nameField: ['first_name', 'last_name'], extraField: 'parent_id', select: 'id,first_name,last_name,email,login_id,parent_id' },
 }
 
+async function lookupInAllTables(field: string, value: string): Promise<UserLookupResult | null> {
+  const results = await Promise.all(
+    Object.entries(USER_TABLES).map(async ([role, config]) => {
+      try {
+        const { data, error } = await supabase
+          .from(config.table)
+          .select(config.select)
+          .eq(field, value)
+          .maybeSingle()
+        if (error || !data) return null
+        return { user: data as unknown as UserRow, role: role as UserRole }
+      } catch {
+        return null
+      }
+    })
+  )
+  return results.find(r => r !== null) || null
+}
+
 export async function lookupUserByLoginId(loginId: string): Promise<UserLookupResult | null> {
   const input = loginId.trim().toUpperCase()
 
@@ -55,51 +74,15 @@ export async function lookupUserByLoginId(loginId: string): Promise<UserLookupRe
     // function doesn't exist yet — fall through
   }
 
-  const results = await Promise.all(
-    Object.entries(USER_TABLES).map(async ([role, config]) => {
-      const { data, error } = await supabase
-        .from(config.table)
-        .select(config.select)
-        .eq('login_id', input)
-        .maybeSingle()
-      if (error) throw error
-      if (data) return { user: data as unknown as UserRow, role: role as UserRole }
-      return null
-    })
-  )
-  return results.find(r => r !== null) || null
+  return lookupInAllTables('login_id', input)
 }
 
 export async function lookupUserByAuthId(authId: string): Promise<UserLookupResult | null> {
-  const results = await Promise.all(
-    Object.entries(USER_TABLES).map(async ([role, config]) => {
-      const { data, error } = await supabase
-        .from(config.table)
-        .select(config.select)
-        .eq('auth_id', authId)
-        .maybeSingle()
-      if (error || !data) return null
-      return { user: data as unknown as UserRow, role: role as UserRole }
-    })
-  )
-  return results.find(r => r !== null) || null
+  return lookupInAllTables('auth_id', authId)
 }
 
 export async function lookupUserByEmail(email: string): Promise<UserLookupResult | null> {
-  const input = email.trim().toLowerCase()
-
-  const results = await Promise.all(
-    Object.entries(USER_TABLES).map(async ([role, config]) => {
-      const { data, error } = await supabase
-        .from(config.table)
-        .select(config.select)
-        .eq('email', input)
-        .maybeSingle()
-      if (error || !data) return null
-      return { user: data as unknown as UserRow, role: role as UserRole }
-    })
-  )
-  return results.find(r => r !== null) || null
+  return lookupInAllTables('email', email.trim().toLowerCase())
 }
 
 export interface UserInfo {

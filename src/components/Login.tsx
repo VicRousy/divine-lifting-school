@@ -81,7 +81,12 @@ export default function Login({ onLogin }: LoginProps) {
 
     try {
       const { data: signIn } = await supabase.auth.signInWithPassword({ email, password })
-      if (signIn?.user) return signIn.user
+      if (signIn?.user) {
+        if (userRecord) {
+          await supabase.from(userRecord.table).update({ auth_id: signIn.user.id }).eq('id', userRecord.id)
+        }
+        return signIn.user
+      }
     } catch {
       // auth user doesn't exist — create via API
     }
@@ -98,6 +103,9 @@ export default function Login({ onLogin }: LoginProps) {
 
     if (result.alreadyExists) {
       const { data: signIn2 } = await supabase.auth.signInWithPassword({ email, password })
+      if (signIn2?.user && userRecord) {
+        await supabase.from(userRecord.table).update({ auth_id: signIn2.user.id }).eq('id', userRecord.id)
+      }
       return signIn2?.user
     }
 

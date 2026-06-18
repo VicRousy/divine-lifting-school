@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { supabase } from './supabaseClient'
 import { useFocusTrap } from './utils/useFocusTrap'
 import { lookupUserByAuthId } from './supabaseClient'
@@ -65,11 +65,13 @@ function App() {
       setSession(s)
       if (s?.user) {
         lookupUserByAuthId(s.user.id).then((result: any) => {
-          if (result?.userInfo) {
-            setUserInfo(result.userInfo)
-            setNotificationCount(result.userInfo.role === 'teacher' ? 1 : 0)
+          if (result?.user) {
+            setUserInfo({ ...result.user, role: result.role })
+            setNotificationCount(result.role === 'teacher' ? 1 : 0)
+          } else {
+            supabase.auth.signOut()
           }
-        })
+        }).catch(() => supabase.auth.signOut())
       }
     })
 
@@ -77,8 +79,9 @@ function App() {
       setSession(session)
       if (session?.user) {
         lookupUserByAuthId(session.user.id).then((result: any) => {
-          if (result?.userInfo) setUserInfo(result.userInfo)
-        })
+          if (result?.user) setUserInfo({ ...result.user, role: result.role })
+          else supabase.auth.signOut()
+        }).catch(() => supabase.auth.signOut())
       } else {
         setUserInfo(null)
       }
@@ -108,14 +111,38 @@ function App() {
     window.location.reload()
   }, [])
 
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!session || userInfo) {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
+      setLoadingTimeout(false)
+      return
+    }
+    loadingTimerRef.current = setTimeout(() => setLoadingTimeout(true), 5000)
+    return () => {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
+    }
+  }, [session, userInfo])
+
   if (!session) {
     return <ErrorBoundary><Login onLogin={() => window.location.reload()} /></ErrorBoundary>
   }
 
   if (!userInfo) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#94a3b8' }}>
-        Loading user data...
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#94a3b8' }}>
+        {loadingTimeout ? (
+          <>
+            <p style={{ marginBottom: '16px' }}>Could not load user data. Please try logging in again.</p>
+            <button onClick={() => supabase.auth.signOut()} style={{ padding: '10px 24px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+              Back to Login
+            </button>
+          </>
+        ) : (
+          'Loading user data...'
+        )}
       </div>
     )
   }

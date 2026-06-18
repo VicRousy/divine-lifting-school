@@ -109,25 +109,25 @@ ALTER TABLE grade_scale ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 
--- ===== PROFILES TABLE (admin accounts, linked to auth.users via id+auth_id) =====
+-- ===== PROFILES TABLE (admin accounts, linked to auth.users via auth_id) =====
 CREATE POLICY "profiles_admin_all" ON profiles FOR ALL USING (
   auth.role() = 'authenticated' AND EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
+    SELECT 1 FROM profiles p WHERE p.auth_id = auth.uid() AND p.role = 'admin'
   )
 );
-CREATE POLICY "profiles_self_read" ON profiles FOR SELECT USING (id = auth.uid());
-CREATE POLICY "profiles_self_update" ON profiles FOR UPDATE USING (id = auth.uid());
+CREATE POLICY "profiles_self_read" ON profiles FOR SELECT USING (auth_id = auth.uid());
+CREATE POLICY "profiles_self_update" ON profiles FOR UPDATE USING (auth_id = auth.uid());
 
 -- ===== TEACHERS TABLE =====
 CREATE POLICY "teachers_admin_all" ON teachers FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "teachers_self_read" ON teachers FOR SELECT USING (auth_id = auth.uid());
 CREATE POLICY "teachers_self_update" ON teachers FOR UPDATE USING (auth_id = auth.uid());
 
 -- ===== STUDENTS TABLE =====
 CREATE POLICY "students_admin_all" ON students FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "students_teacher_view" ON students FOR SELECT USING (
   EXISTS (
@@ -145,25 +145,25 @@ CREATE POLICY "students_parent_view" ON students FOR SELECT USING (
 
 -- ===== PARENTS TABLE =====
 CREATE POLICY "parents_admin_all" ON parents FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "parents_self_read" ON parents FOR SELECT USING (auth_id = auth.uid());
 
 -- ===== CLASSES TABLE =====
 CREATE POLICY "classes_admin_all" ON classes FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "classes_auth_read" ON classes FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ===== SUBJECTS TABLE =====
 CREATE POLICY "subjects_admin_all" ON subjects FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "subjects_auth_read" ON subjects FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ===== TEACHER ASSIGNMENTS =====
 CREATE POLICY "ta_admin_all" ON teacher_assignments FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "ta_teacher_view" ON teacher_assignments FOR SELECT USING (
   EXISTS (
@@ -173,7 +173,7 @@ CREATE POLICY "ta_teacher_view" ON teacher_assignments FOR SELECT USING (
 
 -- ===== EXAM SCORES =====
 CREATE POLICY "scores_admin_all" ON exam_scores FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "scores_teacher_manage" ON exam_scores FOR ALL USING (
   EXISTS (
@@ -195,7 +195,7 @@ CREATE POLICY "scores_parent_view" ON exam_scores FOR SELECT USING (
 
 -- ===== ATTENDANCE =====
 CREATE POLICY "att_admin_all" ON attendance FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "att_teacher_manage" ON attendance FOR ALL USING (
   EXISTS (
@@ -218,7 +218,7 @@ CREATE POLICY "att_parent_view" ON attendance FOR SELECT USING (
 
 -- ===== PAYMENTS =====
 CREATE POLICY "pay_admin_all" ON payments FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "pay_student_view" ON payments FOR SELECT USING (
   EXISTS (SELECT 1 FROM students s WHERE s.auth_id = auth.uid() AND s.id = payments.student_id)
@@ -233,13 +233,13 @@ CREATE POLICY "pay_parent_view" ON payments FOR SELECT USING (
 
 -- ===== ANNOUNCEMENTS =====
 CREATE POLICY "ann_admin_all" ON announcements FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "ann_auth_read" ON announcements FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ===== HOMEWORKS =====
 CREATE POLICY "hw_admin_all" ON homeworks FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "hw_teacher_view" ON homeworks FOR SELECT USING (
   EXISTS (
@@ -256,18 +256,18 @@ CREATE POLICY "hw_student_view" ON homeworks FOR SELECT USING (
 
 -- ===== GRADE SCALE =====
 CREATE POLICY "gs_admin_all" ON grade_scale FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "gs_auth_read" ON grade_scale FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ===== CONTACT MESSAGES =====
 CREATE POLICY "cm_admin_all" ON contact_messages FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 
 -- ===== APPLICATIONS =====
 CREATE POLICY "app_admin_all" ON applications FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE auth_id = auth.uid() AND role = 'admin')
 );
 
 -- ===== PUBLIC NEWS =====
