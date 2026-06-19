@@ -270,6 +270,7 @@ function App() {
           onSwitchPortal={switchPortal}
           onLogout={() => setShowLogoutConfirm(true)}
           onPasswordChange={() => setShowPasswordChange(true)}
+          onBackToWebsite={() => { supabase.auth.signOut(); window.location.href = 'https://divine-lifting-website.vercel.app' }}
         />
 
         <main className="main-layout" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

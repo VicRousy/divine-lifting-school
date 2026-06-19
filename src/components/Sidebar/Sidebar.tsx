@@ -44,9 +44,10 @@ interface SidebarProps {
   onSwitchPortal?: () => void
   onLogout?: () => void
   onPasswordChange?: () => void
+  onBackToWebsite?: () => void
 }
 
-const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, isOpen, onClose, onSwitchPortal, onLogout, onPasswordChange }: SidebarProps) {
+const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, isOpen, onClose, onSwitchPortal, onLogout, onPasswordChange, onBackToWebsite }: SidebarProps) {
   const link = (page: string, label: string, icon: string = '') => (
     <SidebarItem key={page} icon={icon} label={label}
       active={activePage === page || (activePage === 'dashboard' && page === 'dashboard')}
@@ -68,11 +69,11 @@ const Sidebar = memo(function Sidebar({ userInfo, role, activePage, onNavigate, 
               style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer', display: 'none' }}>✕</button>
           </div>
 
-          <a aria-label="Visit public website"
-            href="https://divine-lifting-website.vercel.app"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '15px', padding: '8px', borderRadius: '6px', background: '#334155', color: '#f8fafc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', transition: 'background 0.2s' }}>
+          <span role="button" aria-label="Visit public website" tabIndex={0}
+            onClick={onBackToWebsite} onKeyDown={(e) => { if (e.key === 'Enter') onBackToWebsite?.() }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '15px', padding: '8px', borderRadius: '6px', background: '#334155', color: '#f8fafc', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', transition: 'background 0.2s', cursor: 'pointer' }}>
             Back to Website
-          </a>
+          </span>
 
           {onSwitchPortal && (
             <div style={{ display: 'flex', background: '#0f172a', borderRadius: '8px', padding: '4px', marginTop: '20px' }}>
