@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import bcrypt from 'bcryptjs'
+import { resetAuthPassword } from '../../services/authApi'
 
 const ROLES = [
   { key: 'student', label: 'Student', table: 'students', idField: 'id', searchFields: ['first_name', 'last_name', 'student_id', 'login_id'], nameField: ['first_name', 'last_name'] as const },
@@ -74,6 +75,10 @@ export default function ResetPassword({ showToast }: ResetPasswordProps) {
         .select()
 
       if (error || !data || data.length === 0) throw new Error('Update failed')
+
+      const loginId = user.login_id || user.school_id || user.student_id || user.staff_id || user.parent_id
+      if (!loginId) throw new Error('User has no login ID')
+      await resetAuthPassword(`${loginId}@dls.edu`, tempPassword)
 
       const name = role.nameField.map((f: string) => user[f]).filter(Boolean).join(' ')
       setResetResult({ name, loginId: user.login_id || user.school_id || user.student_id || user.staff_id || user.parent_id || user.id, tempPassword })

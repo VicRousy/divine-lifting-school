@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mockSupabase } from '../utils/__mocks__/supabaseData'
 
 vi.mock('../config/api', () => ({ API_URL: 'http://test.local' }))
+vi.mock('@supabase/supabase-js', () => ({ createClient: () => mockSupabase }))
 
 import { sendWelcomeEmail, sendVerificationEmail, sendAnnouncementEmail, sendFeeInvoice, sendApplicationDecision } from './emailService'
 
 beforeEach(() => {
   vi.restoreAllMocks()
+  mockSupabase.auth.getSession = (() => Promise.resolve({ data: { session: { access_token: 'test-token' } }, error: null })) as any
 })
 
 function mockFetch(ok: boolean, data: any) {
@@ -47,6 +50,9 @@ describe('sendAnnouncementEmail', () => {
     mockFetch(true, { success: true })
     const result = await sendAnnouncementEmail(['a@b.com', 'c@d.com'], 'Title', 'Body', 'all')
     expect(result.success).toBe(true)
+    expect(globalThis.fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
+    }))
   })
 
   it('handles failure', async () => {

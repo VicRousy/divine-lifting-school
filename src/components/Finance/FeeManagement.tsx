@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
-import { API_URL } from '../../config/api'
+import { sendFeeInvoice } from '../../services/emailService'
 
 interface FeeManagementProps {
   showToast: (msg: string, type?: string) => void
@@ -89,19 +89,8 @@ export default function FeeManagement({ showToast, requireReAuth }: FeeManagemen
         }
 
         if (parentEmail) {
-           const response = await fetch(`${API_URL}/api/email`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-               type: 'fee-invoice',
-               recipient: parentEmail,
-              studentName: selectedStudentName,
-              feeType,
-              amount: Number(amount),
-              dueDate,
-            })
-          })
-          if (!response.ok) throw new Error('Failed to send invoice email')
+          const result = await sendFeeInvoice(parentEmail, selectedStudentName, feeType, Number(amount), dueDate)
+          if (!result.success) throw new Error(result.error || 'Failed to send invoice email')
           showToast?.('Invoice email sent to parent!', 'success')
         } else {
           showToast?.('Payment recorded, but no parent email found for invoice.', 'warning')

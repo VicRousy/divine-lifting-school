@@ -3,9 +3,8 @@ import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
+import { createAuthUser } from '../../services/authApi'
 import bcrypt from 'bcryptjs'
-
-const STUDENT_ACCESS_KEY = import.meta.env.VITE_STUDENT_ACCESS_KEY
 
 interface AddStudentProps {
   showToast: (msg: string, type?: string) => void
@@ -28,7 +27,6 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
   const [parentPhone, setParentPhone] = useState('')
   const [parentPassword, setParentPassword] = useState('')
 
-  const [accessKey, setAccessKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   useUnsavedChanges(dirty)
@@ -56,23 +54,11 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
     setParentEmail('')
     setParentPhone('')
     setParentPassword('')
-    setAccessKey('')
   }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-
-    if (!STUDENT_ACCESS_KEY) {
-      showToast('Student registration is not configured. Contact system administrator.', 'error')
-      setSaving(false)
-      return
-    }
-    if (accessKey !== STUDENT_ACCESS_KEY) {
-      showToast('Invalid Student Access Key', 'error')
-      setSaving(false)
-      return
-    }
 
     if (!selectedClassId) {
       showToast('Please select a class', 'error')
@@ -93,6 +79,7 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
         .from('parents')
         .insert([{
           parent_id: parentId,
+          login_id: parentId,
           first_name: parentFirstName,
           middle_name: parentMiddleName || '-',
           last_name: parentLastName,
@@ -105,7 +92,15 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
 
       if (parentError) throw parentError
 
-      const { error: studentError } = await supabase
+      const parentAuth = await createAuthUser(`${parentId}@dls.edu`, parentPassword)
+      if (!parentAuth.auth_id) throw new Error('Failed to provision secure parent access')
+      const { error: parentAuthLinkError } = await supabase
+        .from('parents')
+        .update({ auth_id: parentAuth.auth_id })
+        .eq('id', parentData.id)
+      if (parentAuthLinkError) throw parentAuthLinkError
+
+      const { data: studentData, error: studentError } = await supabase
         .from('students')
         .insert([{
           first_name: firstName,
@@ -118,8 +113,18 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
           password: hashedStudentPassword,
           is_active: true,
         }])
+        .select('id')
+        .single()
 
       if (studentError) throw studentError
+
+      const studentAuth = await createAuthUser(`${studentId}@dls.edu`, studentPassword)
+      if (!studentAuth.auth_id) throw new Error('Failed to provision secure student access')
+      const { error: studentAuthLinkError } = await supabase
+        .from('students')
+        .update({ auth_id: studentAuth.auth_id })
+        .eq('id', studentData.id)
+      if (studentAuthLinkError) throw studentAuthLinkError
 
       await sendWelcomeEmail(
         parentEmail.trim().toLowerCase(),
@@ -274,17 +279,6 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
               style={{ width: '100%', padding: 10, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', outline: 'none' }}
             />
           </div>
-        </div>
-
-        <div className="responsive-card" style={{ background: '#1e293b', padding: 24, borderRadius: 14, border: '1px solid #334155' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 10, fontWeight: 600 }}>Student Access Key</label>
-          <input
-            type="password"
-            value={accessKey}
-            onChange={(e) => { setAccessKey(e.target.value); setDirty(true) }}
-            required
-            style={{ width: '100%', padding: 14, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', outline: 'none', fontSize: '1rem' }}
-          />
         </div>
 
         <button

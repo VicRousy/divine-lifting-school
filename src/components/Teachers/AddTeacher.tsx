@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { sendWelcomeEmail } from '../../services/emailService'
+import { createAuthUser } from '../../services/authApi'
 import bcrypt from 'bcryptjs'
-
-const TEACHER_ACCESS_KEY = import.meta.env.VITE_TEACHER_ACCESS_KEY
 
 interface AddTeacherProps {
   showToast: (msg: string, type?: string) => void
@@ -17,7 +16,6 @@ function AddTeacher({ showToast, onAdd }: AddTeacherProps) {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [accessKey, setAccessKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   useUnsavedChanges(dirty)
@@ -28,22 +26,11 @@ function AddTeacher({ showToast, onAdd }: AddTeacherProps) {
     e.preventDefault()
     setSaving(true)
 
-    if (!TEACHER_ACCESS_KEY) {
-      showToast('Teacher registration is not configured. Contact system administrator.', 'error')
-      setSaving(false)
-      return
-    }
-    if (accessKey !== TEACHER_ACCESS_KEY) {
-      showToast('Invalid Teacher Access Key', 'error')
-      setSaving(false)
-      return
-    }
-
     const staffId = generateStaffId()
     const hashedPassword = await bcrypt.hash(password, 10)
 
     try {
-      const { error: insertError } = await supabase
+      const { data: teacher, error: insertError } = await supabase
         .from('teachers')
         .insert([{
           first_name: firstName,
@@ -55,8 +42,18 @@ function AddTeacher({ showToast, onAdd }: AddTeacherProps) {
           password: hashedPassword,
           is_first_login: true
         }])
+        .select('id')
+        .single()
 
       if (insertError) throw insertError
+
+      const authResult = await createAuthUser(`${staffId}@dls.edu`, password)
+      if (!authResult.auth_id) throw new Error('Failed to provision secure portal access')
+      const { error: authLinkError } = await supabase
+        .from('teachers')
+        .update({ auth_id: authResult.auth_id })
+        .eq('id', teacher.id)
+      if (authLinkError) throw authLinkError
 
       await sendWelcomeEmail(email.trim().toLowerCase(), staffId, password, 'teacher')
 
@@ -68,7 +65,6 @@ function AddTeacher({ showToast, onAdd }: AddTeacherProps) {
       setLastName('')
       setEmail('')
       setPassword('')
-      setAccessKey('')
 
       if (onAdd) onAdd()
     } catch (err) {
@@ -141,19 +137,6 @@ function AddTeacher({ showToast, onAdd }: AddTeacherProps) {
               placeholder="Set initial password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setDirty(true) }}
-              required
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label className="text-dim" style={{ fontSize: '0.8rem' }}>Teacher Access Key</label>
-            <input
-              className="counter"
-              type="password"
-              style={{ background: '#1e293b', padding: '12px', color: 'white', width: '100%' }}
-              placeholder="Enter authorized access key"
-              value={accessKey}
-              onChange={(e) => { setAccessKey(e.target.value); setDirty(true) }}
               required
             />
           </div>

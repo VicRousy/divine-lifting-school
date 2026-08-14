@@ -63,6 +63,8 @@ export default function PasswordChangeModal({ userInfo, userRole, onClose, showT
         return
       }
       const hashed = await bcrypt.hash(newPassword, 10)
+      const { error: authError } = await supabase.auth.updateUser({ password: newPassword })
+      if (authError) throw authError
       const table = tableMap[userRole] || 'profiles'
       const { error: updateErr } = await supabase
         .from(table)

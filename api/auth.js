@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from './_authorization.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const serviceKey = process.env.SUPABASE_SERVICE_KEY
@@ -21,10 +22,8 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const key = req.headers['x-api-key']
-  if (!key || key !== process.env.EMAIL_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
+  const authorization = await requireAdmin(req, res)
+  if (!authorization) return
 
   const { type } = req.body
 
@@ -60,7 +59,10 @@ async function createUser(req, res) {
 
   if (error) {
     if (error.message.includes('already been registered')) {
-      return res.json({ success: true, auth_id: null, alreadyExists: true })
+      const { data: users, error: usersError } = await supabase.auth.admin.listUsers()
+      if (usersError) return res.status(400).json({ success: false, error: 'Failed to find existing user' })
+      const existingUser = users.users.find(user => user.email === email.trim().toLowerCase())
+      return res.json({ success: true, auth_id: existingUser?.id || null, alreadyExists: true })
     }
     return res.status(400).json({ success: false, error: 'Failed to create user' })
   }

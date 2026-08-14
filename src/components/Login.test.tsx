@@ -51,8 +51,8 @@ describe('Login component', () => {
     await waitFor(() => expect(screen.getByText(/invalid login id or password/i)).toBeInTheDocument(), { timeout: 3000 })
   })
 
-  it('shows master access link', () => {
+  it('does not expose a master access bypass', () => {
     render(<Login onLogin={noop} />)
-    expect(screen.getAllByText(/master access/i).length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText(/master access/i)).not.toBeInTheDocument()
   })
 })

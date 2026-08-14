@@ -1,8 +1,26 @@
 import { API_URL } from '../config/api';
+import { supabase } from '../supabaseClient'
 
 interface EmailResult {
   success: boolean;
   error?: string;
+}
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Your session has expired. Please sign in again.')
+  return { Authorization: `Bearer ${session.access_token}` }
+}
+
+async function emailRequest(payload: Record<string, unknown>) {
+  const response = await fetch(`${API_URL}/api/email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+    body: JSON.stringify(payload),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Email sending failed')
+  return data
 }
 
 export async function sendWelcomeEmail(
@@ -14,15 +32,7 @@ export async function sendWelcomeEmail(
   studentName: string | null = null,
 ): Promise<EmailResult> {
   try {
-    const response = await fetch(`${API_URL}/api/email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'welcome', userEmail, uniqueId, password, accountType, parentName, studentName }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || 'Email sending failed');
+    await emailRequest({ type: 'welcome', userEmail, uniqueId, password, accountType, parentName, studentName })
 
     return { success: true };
   } catch (error: any) {
@@ -33,15 +43,7 @@ export async function sendWelcomeEmail(
 
 export async function sendVerificationEmail(userEmail: string, code: string, loginId: string): Promise<EmailResult> {
   try {
-    const response = await fetch(`${API_URL}/api/email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'verification', userEmail, code, loginId }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || 'Verification email failed');
+    await emailRequest({ type: 'verification', userEmail, code, loginId })
 
     return { success: true };
   } catch (error: any) {
@@ -52,15 +54,7 @@ export async function sendVerificationEmail(userEmail: string, code: string, log
 
 export async function sendAnnouncementEmail(recipients: string[], title: string, body: string, audience: string): Promise<EmailResult> {
   try {
-    const response = await fetch(`${API_URL}/api/email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'announcement', recipients, title, body, audience }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || 'Announcement email failed');
+    await emailRequest({ type: 'announcement', recipients, title, body, audience })
 
     return { success: true };
   } catch (error: any) {
@@ -71,15 +65,7 @@ export async function sendAnnouncementEmail(recipients: string[], title: string,
 
 export async function sendFeeInvoice(recipient: string, studentName: string, feeType: string, amount: number, dueDate: string): Promise<EmailResult> {
   try {
-    const response = await fetch(`${API_URL}/api/email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'fee-invoice', recipient, studentName, feeType, amount, dueDate }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || 'Fee invoice email failed');
+    await emailRequest({ type: 'fee-invoice', recipient, studentName, feeType, amount, dueDate })
 
     return { success: true };
   } catch (error: any) {
@@ -90,15 +76,7 @@ export async function sendFeeInvoice(recipient: string, studentName: string, fee
 
 export async function sendApplicationDecision(recipient: string, studentName: string, applicationNumber: string, decision: string, className: string): Promise<EmailResult> {
   try {
-    const response = await fetch(`${API_URL}/api/email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'application-decision', recipient, studentName, applicationNumber, decision, className }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) throw new Error(data.error || 'Application decision email failed');
+    await emailRequest({ type: 'application-decision', recipient, studentName, applicationNumber, decision, className })
 
     return { success: true };
   } catch (error: any) {

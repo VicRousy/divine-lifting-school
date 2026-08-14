@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import bcrypt from 'bcryptjs'
 
-const MASTER_ACCESS_KEY = import.meta.env.VITE_MASTER_ACCESS_KEY
-
 interface LoginProps {
   onLogin: () => void
 }
@@ -15,15 +13,11 @@ export default function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState('')
   const [mfaRequired, setMfaRequired] = useState(false)
   const [mfaCode, setMfaCode] = useState('')
-  const [mfaFactorId, setMfaFactorId] = useState('')
   const [mfaFactorsAll, setMfaFactorsAll] = useState<any>(null)
-  const [authId, setAuthId] = useState('')
   const [showSetPassword, setShowSetPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showMasterLogin, setShowMasterLogin] = useState(false)
-  const [masterAccessKey, setMasterAccessKey] = useState('')
   const [setPasswordFor, setSetPasswordFor] = useState<any>(null)
 
   useEffect(() => {
@@ -91,29 +85,7 @@ export default function Login({ onLogin }: LoginProps) {
       // auth user doesn't exist — create via API
     }
 
-    const apiBase = import.meta.env.VITE_API_URL || ''
-    const apiKey = import.meta.env.VITE_EMAIL_API_KEY
-    const res = await fetch(`${apiBase}/api/auth`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(apiKey ? { 'x-api-key': apiKey } : {}) },
-      body: JSON.stringify({ type: 'create-user', email, password }),
-    })
-    const result = await res.json()
-    if (!result.success) throw new Error(result.error || 'Failed to create auth user')
-
-    if (result.alreadyExists) {
-      const { data: signIn2 } = await supabase.auth.signInWithPassword({ email, password })
-      if (signIn2?.user && userRecord) {
-        await supabase.from(userRecord.table).update({ auth_id: signIn2.user.id }).eq('id', userRecord.id)
-      }
-      return signIn2?.user
-    }
-
-    const uid = result.auth_id
-    if (uid && userRecord) {
-      await supabase.from(userRecord.table).update({ auth_id: uid }).eq('id', userRecord.id)
-    }
-    return uid ? { id: uid } : null
+    throw new Error('This account has not been provisioned for secure portal access. Please contact the school administrator.')
   }
 
   const handleSetNewPassword = async () => {
@@ -128,6 +100,8 @@ export default function Login({ onLogin }: LoginProps) {
     setLoading(true)
     try {
       const hashed = await bcrypt.hash(newPassword, 10)
+      const { error: authError } = await supabase.auth.updateUser({ password: newPassword })
+      if (authError) throw authError
       const { error: updateErr } = await supabase
         .from(setPasswordFor.table)
         .update({ password: hashed, is_first_login: false })
@@ -138,35 +112,6 @@ export default function Login({ onLogin }: LoginProps) {
       onLogin()
     } catch {
       setError('Failed to set password. Please try again.')
-    }
-    setLoading(false)
-  }
-
-  const handleMasterLogin = async () => {
-    if (!MASTER_ACCESS_KEY) {
-      setError('Master access not configured')
-      return
-    }
-    if (masterAccessKey !== MASTER_ACCESS_KEY) {
-      setError('Invalid master access key')
-      return
-    }
-    setLoading(true)
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email, login_id, role')
-        .eq('login_id', 'ADM-258448')
-        .single()
-      if (profile) {
-        const { data: session }: any = await supabase.auth.signInWithPassword({
-          email: 'admin@dls.edu',
-          password: password,
-        })
-        if (session?.session) onLogin()
-      }
-    } catch (err: any) {
-      setError('Master login failed')
     }
     setLoading(false)
   }
@@ -206,6 +151,9 @@ export default function Login({ onLogin }: LoginProps) {
         return
       }
 
+      const authUser = await doCreateAuthUser({ id: data.user_id, table: data.role === 'admin' ? 'profiles' : data.role + 's' }, loginId.trim())
+      if (!authUser) throw new Error('Failed to create auth session')
+
       const { data: factorsData }: any = await supabase.auth.mfa.listFactors()
       const factorsAll = factorsData?.all || []
       setMfaFactorsAll(factorsAll)
@@ -215,7 +163,6 @@ export default function Login({ onLogin }: LoginProps) {
       if (needsMfa) {
         const totpFactor = factorsAll.find((f: any) => f.factor_type === 'totp' && f.status === 'verified')
         if (totpFactor) {
-          setMfaFactorId(totpFactor.id)
           setMfaRequired(true)
           if (data.is_first_login) {
             setSetPasswordFor({ id: data.user_id, table: data.role === 'admin' ? 'profiles' : data.role + 's' })
@@ -232,12 +179,7 @@ export default function Login({ onLogin }: LoginProps) {
         return
       }
 
-      const authUser = await doCreateAuthUser({ id: data.user_id, table: data.role === 'admin' ? 'profiles' : data.role + 's' }, loginId.trim())
-      if (authUser) {
-        onLogin()
-      } else {
-        setError('Failed to create auth session')
-      }
+      onLogin()
     } catch {
       setError('Login failed. Please try again.')
     }
@@ -315,26 +257,6 @@ export default function Login({ onLogin }: LoginProps) {
           )}
         </div>
 
-        {!showSetPassword && !mfaRequired && (
-          <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            <button role="button" tabIndex={0} onClick={() => setShowMasterLogin(!showMasterLogin)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowMasterLogin(!showMasterLogin) }}
-              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px' }}>
-              {showMasterLogin ? 'Cancel' : 'Master Access'}
-            </button>
-          </div>
-        )}
-
-        {showMasterLogin && !showSetPassword && !mfaRequired && (
-          <div style={{ marginTop: '12px', padding: '20px', background: '#1e293b', borderRadius: '14px', border: '1px solid #334155' }}>
-            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '12px' }}>Master access key required.</p>
-            <input type="password" value={masterAccessKey} onChange={(e) => setMasterAccessKey(e.target.value)} placeholder="Enter master key"
-              style={{ width: '100%', padding: '10px 14px', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#f8fafc', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-            <button onClick={handleMasterLogin} disabled={loading || !masterAccessKey}
-              style={{ width: '100%', padding: '10px', marginTop: '12px', background: loading ? '#334155' : '#f59e0b', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}>
-              {loading ? 'Authenticating...' : 'Authenticate'}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )

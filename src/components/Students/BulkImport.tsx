@@ -3,6 +3,8 @@ import { useUnsavedChanges } from '../../utils/useUnsavedChanges'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
 import { sendWelcomeEmail } from '../../services/emailService'
+import { createAuthUser } from '../../services/authApi'
+import bcrypt from 'bcryptjs'
 
 const CHUNK_SIZE = 20
 const EMAIL_CONCURRENCY = 5
@@ -96,6 +98,10 @@ function BulkImport({ showToast, requireReAuth }: BulkImportProps) {
         const parentId = generateId('PAR')
         const studentPassword = generatePassword()
         const parentPassword = generatePassword()
+        const [hashedStudentPassword, hashedParentPassword] = await Promise.all([
+          bcrypt.hash(studentPassword, 10),
+          bcrypt.hash(parentPassword, 10),
+        ])
         const fullStudentName = `${firstName} ${middleName || ''} ${lastName}`.trim()
         const parentEmailAddr = (parentEmail || `${firstName.toLowerCase()}.${lastName.toLowerCase()}@school.com`).trim().toLowerCase()
 
@@ -103,12 +109,13 @@ function BulkImport({ showToast, requireReAuth }: BulkImportProps) {
           .from('parents')
           .insert([{
             parent_id: parentId,
+            login_id: parentId,
             first_name: parentFirstName || firstName,
             middle_name: '-',
             last_name: parentLastName || lastName,
             email: parentEmailAddr,
             phone: parentPhone || '',
-            password: parentPassword,
+            password: hashedParentPassword,
           }])
           .select('id, email')
           .single()
@@ -117,7 +124,19 @@ function BulkImport({ showToast, requireReAuth }: BulkImportProps) {
           return { error: `Row ${rowIndex + 1}: Parent insert failed - ${parentError.message}`, parentData: null, row }
         }
 
-        const { error: studentError } = await supabase
+        const parentAuth = await createAuthUser(`${parentId}@dls.edu`, parentPassword)
+        if (!parentAuth.auth_id) {
+          return { error: `Row ${rowIndex + 1}: Parent secure-access setup failed`, parentData: null, row }
+        }
+        const { error: parentAuthLinkError } = await supabase
+          .from('parents')
+          .update({ auth_id: parentAuth.auth_id })
+          .eq('id', parentData.id)
+        if (parentAuthLinkError) {
+          return { error: `Row ${rowIndex + 1}: Parent secure-access link failed`, parentData: null, row }
+        }
+
+        const { data: studentData, error: studentError } = await supabase
           .from('students')
           .insert([{
             first_name: firstName,
@@ -127,12 +146,26 @@ function BulkImport({ showToast, requireReAuth }: BulkImportProps) {
             login_id: studentId,
             class_id: classId,
             parent_id: parentData.id,
-            password: studentPassword,
+            password: hashedStudentPassword,
             is_active: true,
           }])
+          .select('id')
+          .single()
 
         if (studentError) {
           return { error: `Row ${rowIndex + 1}: Student insert failed - ${studentError.message}`, parentData: null, row }
+        }
+
+        const studentAuth = await createAuthUser(`${studentId}@dls.edu`, studentPassword)
+        if (!studentAuth.auth_id) {
+          return { error: `Row ${rowIndex + 1}: Student secure-access setup failed`, parentData: null, row }
+        }
+        const { error: studentAuthLinkError } = await supabase
+          .from('students')
+          .update({ auth_id: studentAuth.auth_id })
+          .eq('id', studentData.id)
+        if (studentAuthLinkError) {
+          return { error: `Row ${rowIndex + 1}: Student secure-access link failed`, parentData: null, row }
         }
 
         emailQueue.push({

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { CardSkeleton } from '../Common/Skeleton'
 import { supabase } from '../../supabaseClient'
 import { safeQuery } from '../../utils/safeQuery'
-import { API_URL } from '../../config/api'
+import { sendAnnouncementEmail } from '../../services/emailService'
 
 interface AnnouncementsProps {
   showToast: (msg: string, type?: string) => void
@@ -69,12 +69,8 @@ export default function AdminAnnouncements({ showToast }: AnnouncementsProps) {
         emails = [...new Set(emails)]
 
         if (emails.length > 0) {
-          const response = await fetch(`${API_URL}/api/email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'announcement', recipients: emails, title, body, audience })
-          })
-          if (!response.ok) throw new Error('Failed to send emails')
+          const result = await sendAnnouncementEmail(emails, title, body, audience)
+          if (!result.success) throw new Error(result.error || 'Failed to send emails')
         }
       }
 

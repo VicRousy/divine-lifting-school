@@ -1,6 +1,11 @@
 import { API_URL } from '../config/api'
 
-const API_KEY = import.meta.env.VITE_EMAIL_API_KEY
+async function getAuthHeaders() {
+  const { supabase } = await import('../supabaseClient')
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Your session has expired. Please sign in again.')
+  return { Authorization: `Bearer ${session.access_token}` }
+}
 
 interface ApiFetchBody {
   type: string
@@ -19,7 +24,7 @@ interface ApiResponse {
 async function apiFetch(body: ApiFetchBody): Promise<ApiResponse> {
   const response = await fetch(`${API_URL}/api/auth`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
     body: JSON.stringify(body),
   })
   const data: ApiResponse = await response.json()

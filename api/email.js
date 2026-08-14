@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { requireAdmin } from './_authorization.js'
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -41,6 +42,9 @@ export default async function handler(req, res) {
   if (!RATE_LIMIT[ip]) RATE_LIMIT[ip] = []
   RATE_LIMIT[ip].push(now)
   RATE_LIMIT[ip] = RATE_LIMIT[ip].filter(t => t > now - RATE_WINDOW)
+
+  const authorization = await requireAdmin(req, res)
+  if (!authorization) return
 
   const { type } = req.body;
 

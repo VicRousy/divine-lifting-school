@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mockSupabase } from '../utils/__mocks__/supabaseData'
 
 vi.mock('../config/api', () => ({ API_URL: 'http://test.local' }))
+vi.mock('@supabase/supabase-js', () => ({ createClient: () => mockSupabase }))
 
 import { createAuthUser, resetAuthPassword, deleteAuthUser } from './authApi'
 
 beforeEach(() => {
   vi.restoreAllMocks()
+  mockSupabase.auth.getSession = (() => Promise.resolve({ data: { session: { access_token: 'test-token' } }, error: null })) as any
 })
 
 describe('createAuthUser', () => {
@@ -23,10 +26,10 @@ describe('createAuthUser', () => {
   it('throws on non-ok response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: false,
-      json: () => Promise.resolve({ error: 'API key invalid' }),
+      json: () => Promise.resolve({ error: 'Administrator access required' }),
     } as any)
 
-    await expect(createAuthUser('test@school.com', 'pw', {})).rejects.toThrow('API key invalid')
+    await expect(createAuthUser('test@school.com', 'pw', {})).rejects.toThrow('Administrator access required')
   })
 
   it('sends correct headers and body', async () => {
@@ -39,7 +42,7 @@ describe('createAuthUser', () => {
 
     const callArgs = fetchSpy.mock.calls[0]
     expect(callArgs[0]).toContain('/api/auth')
-    expect(callArgs[1]?.headers).toMatchObject({ 'x-api-key': expect.any(String) })
+    expect(callArgs[1]?.headers).toMatchObject({ Authorization: 'Bearer test-token' })
 
     const body = JSON.parse(callArgs[1]?.body as string)
     expect(body.type).toBe('create-user')
