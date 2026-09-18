@@ -2,7 +2,7 @@ import { useState, useMemo, memo } from 'react'
 import { supabase } from '../../supabaseClient'
 import { useServerPagination } from '../../utils/useServerPagination'
 import { sendApplicationDecision } from '../../services/emailService'
-import { FileText, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react'
+import { FileText, RefreshCw, Trash2, Eye, EyeOff, UserPlus } from 'lucide-react'
 import Pagination from '../Common/Pagination'
 import { CardSkeleton } from '../Common/Skeleton'
 
@@ -17,9 +17,10 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }
 
 interface ApplicationsProps {
   showToast?: (msg: string, type: string) => void
+  onEnroll?: (application: any) => void
 }
 
-function Applications({ showToast }: ApplicationsProps) {
+function Applications({ showToast, onEnroll }: ApplicationsProps) {
   const [expanded, setExpanded] = useState<number | null>(null)
 
   const fetchData = useMemo(() => (rangeStart: number, rangeEnd: number) => {
@@ -187,6 +188,15 @@ function Applications({ showToast }: ApplicationsProps) {
                     </button>
                   ))}
                 </div>
+
+                {app.status === 'accepted' && (
+                  <button
+                    onClick={() => onEnroll?.(app)}
+                    style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(16, 185, 129, 0.14)', border: '1px solid #10b981', borderRadius: '8px', color: '#6ee7b7', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '12px' }}
+                  >
+                    <UserPlus size={15} /> Enroll Student
+                  </button>
+                )}
 
                 {isExpanded && (
                   <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #334155' }}>

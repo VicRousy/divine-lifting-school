@@ -56,6 +56,7 @@ function App() {
   const [activeRole, setActiveRole] = useState<string | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [studentProfile, setStudentProfile] = useState<any>(null)
+  const [applicationForEnrollment, setApplicationForEnrollment] = useState<any>(null)
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
@@ -330,7 +331,7 @@ function App() {
                   <>
                     {activePage === 'teachers' && <AddTeacher onAdd={refreshData} showToast={showToast} />}
                     {activePage === 'classes' && <AddClass onAdd={refreshData} showToast={showToast} />}
-                    {activePage === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} />}
+                    {activePage === 'students' && <AddStudent onAdd={refreshData} showToast={showToast} application={applicationForEnrollment} onEnrollmentComplete={() => setApplicationForEnrollment(null)} />}
                     {activePage === 'bulk-import' && <BulkImport showToast={showToast} />}
                     {activePage === 'student-list' && (
                       studentProfile ? (
@@ -353,7 +354,7 @@ function App() {
                     {activePage === 'full-attendance' && <AttendanceMarking showToast={showToast} />}
                     {activePage === 'reset-password' && <ResetPassword showToast={showToast} />}
                     {activePage === 'messages' && <ContactMessages showToast={showToast} />}
-                    {activePage === 'applications' && <Applications showToast={showToast} />}
+                    {activePage === 'applications' && <Applications showToast={showToast} onEnroll={(application: any) => { setApplicationForEnrollment(application); setActivePage('students') }} />}
                     {activePage === 'announcements' && <Announcements showToast={showToast} />}
                     {activePage === 'post-news' && <PostNews showToast={showToast} />}
                     {activePage === 'manage-news' && <ManageNews showToast={showToast} />}

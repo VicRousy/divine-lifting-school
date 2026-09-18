@@ -9,9 +9,11 @@ import bcrypt from 'bcryptjs'
 interface AddStudentProps {
   showToast: (msg: string, type?: string) => void
   onAdd?: () => void
+  application?: any
+  onEnrollmentComplete?: () => void
 }
 
-export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
+export default function AddStudent({ showToast, onAdd, application, onEnrollmentComplete }: AddStudentProps) {
   const [classes, setClasses] = useState<any[]>([])
 
   const [firstName, setFirstName] = useState('')
@@ -38,6 +40,26 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
     }
     fetchClasses()
   }, [])
+
+  useEffect(() => {
+    if (!application) return
+
+    const guardianName = application.father_name || application.mother_name || ''
+    const nameParts = guardianName.trim().split(/\s+/).filter(Boolean)
+    const guardianFirstName = nameParts.shift() || ''
+    const guardianLastName = nameParts.pop() || ''
+    const guardianMiddleName = nameParts.join(' ')
+
+    setFirstName(application.student_first_name || '')
+    setMiddleName('')
+    setLastName(application.student_last_name || '')
+    setParentFirstName(guardianFirstName)
+    setParentMiddleName(guardianMiddleName)
+    setParentLastName(guardianLastName)
+    setParentEmail((application.father_email || application.mother_email || '').toLowerCase())
+    setParentPhone(application.father_phone || application.mother_phone || '')
+    setDirty(false)
+  }, [application])
 
   const generateStudentId = () => 'STU-' + Math.floor(1000 + Math.random() * 9000)
   const generateParentId = () => 'PAR-' + Math.floor(1000 + Math.random() * 9000)
@@ -148,6 +170,7 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
       setDirty(false)
       resetForm()
       if (onAdd) onAdd()
+      onEnrollmentComplete?.()
     } catch (err) {
       showToast('Error: ' + (err instanceof Error ? err.message : String(err)), 'error')
     }
@@ -158,6 +181,12 @@ export default function AddStudent({ showToast, onAdd }: AddStudentProps) {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 clamp(0px, 3vw, 20px)' }}>
       <h2 style={{ margin: '0 0 30px', color: '#f8fafc', textAlign: 'center' }}>Register New Student</h2>
+
+      {application && (
+        <div style={{ marginBottom: 24, padding: '14px 16px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.45)', borderRadius: 10, color: '#a7f3d0' }}>
+          Enrolling accepted application {application.application_number}. Confirm the class and create secure passwords before registration.
+        </div>
+      )}
 
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
